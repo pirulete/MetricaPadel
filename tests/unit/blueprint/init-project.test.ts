@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
 const SCRIPT_PATH = join(process.cwd(), 'scripts', 'init-project.mjs');
@@ -109,7 +109,6 @@ describe('init-project.mjs', () => {
       if (!existsSync(FIXTURES_DIR)) {
         execSync(`mkdir -p ${FIXTURES_DIR}`);
       }
-      const { writeFileSync } = require('fs');
       writeFileSync(tmpAnswers, JSON.stringify(MINIMAL_ANSWERS, null, 2));
 
       try {

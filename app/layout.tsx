@@ -12,11 +12,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
   title: 'Padel Evaluation',
-  description: 'Padel Evaluation — plataforma construida sobre skeleton_base.',
+  description: 'Analiza y mejora tu rendimiento en pádel. Evaluaciones profesionales, estadísticas avanzadas y seguimiento de progreso para jugadores y entrenadores.',
 }
 
 export const viewport: Viewport = {
-  themeColor: '#000000',
+  themeColor: '#16a34a',
 }
 
 export default function RootLayout({

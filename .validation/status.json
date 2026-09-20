@@ -1,0 +1,41 @@
+{
+  "status": "pass",
+  "last_validated": "2026-09-20T03:27:32.864Z",
+  "gates_passed": 21,
+  "gates_failed": 0,
+  "gates_warning": 2,
+  "failed_gates": [],
+  "warning_gates": [
+    "lint",
+    "features_check",
+    "loop_metrics"
+  ],
+  "risk_level": "LOW",
+  "gates_run": [
+    "typecheck",
+    "lint",
+    "unit_tests",
+    "api_tests",
+    "e2e_tests",
+    "build",
+    "secrets",
+    "sast",
+    "api_integration",
+    "code_review",
+    "audit_deps",
+    "env_vars",
+    "features_check",
+    "migrations_check",
+    "snapshot_check",
+    "docs_check",
+    "artifact_completeness",
+    "security_check",
+    "file_size",
+    "evidence_check",
+    "risk_policy",
+    "coverage_check",
+    "loop_metrics"
+  ],
+  "test_coverage_delta": 0,
+  "message": "⚠️ All 21 gates passed, 2 warning(s): [lint] Lint, [features_check] FEATURES.md, [loop_metrics] Loop metrics"
+}

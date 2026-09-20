@@ -1,0 +1,15 @@
+[allowlist]
+description = "Street Move allowlist — test fixtures, known configs, Drizzle hashes"
+paths = [
+  # Test fixtures with mock data
+  "tests/",
+  # Auto-generated Drizzle files
+  "drizzle/",
+  # Build artifacts
+  ".next/",
+  "node_modules/",
+  "production_artifacts/",
+  "coverage/",
+  ".validation/",
+  ".unlighthouse/",
+]

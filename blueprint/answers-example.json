@@ -1,0 +1,17 @@
+{
+  "Q1": "fit-tracker",
+  "Q2": "Plataforma SaaS para entrenadores fitness",
+  "Q3": "saas",
+  "Q4": { "primary": "#2563eb", "primaryDark": "#1d4ed8" },
+  "Q5": { "lang": "es", "timezone": "America/Argentina/Buenos_Aires" },
+  "Q6": ["cms", "push", "notifications"],
+  "Q7": "stripe",
+  "Q8": "welcome+reset",
+  "Q9": "gtm",
+  "Q10": "sentry",
+  "Q11": ["rutinas", "ejercicios", "progresos", "clientes"],
+  "Q12": { "rutinas": ["hasMany:ejercicios"], "clientes": ["hasMany:rutinas"] },
+  "Q13": ["USER", "TRAINER", "ADMIN"],
+  "Q14": ["home", "pricing", "about", "blog"],
+  "Q15": { "metrics": ["clientes_activos", "rutinas_creadas", "tasa_completado"] }
+}

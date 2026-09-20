@@ -1,0 +1,172 @@
+{
+  "timestamp": "2026-09-20T03:27:32.860Z",
+  "sha": "09e8068f4bd773541820297ccc13aea7f2bb0988",
+  "env": "local",
+  "riskLevel": "LOW",
+  "most_sensitive_file": null,
+  "completionClaim": true,
+  "gatesRun": {
+    "typecheck": {
+      "status": "pass",
+      "command": "npx tsc --noEmit",
+      "exitCode": 0,
+      "durationMs": 4825,
+      "testCount": null,
+      "testDelta": null
+    },
+    "lint": {
+      "status": "fail",
+      "command": "pnpm run lint",
+      "exitCode": 1,
+      "durationMs": 8425,
+      "testCount": null,
+      "testDelta": null
+    },
+    "unit_tests": {
+      "status": "pass",
+      "command": "bash -c 'set -o pipefail; pnpm run test:unit 2>&1 | tail -40'",
+      "exitCode": 0,
+      "durationMs": 5207,
+      "testCount": 255,
+      "testDelta": 0
+    },
+    "api_tests": {
+      "status": "pass",
+      "command": "npx playwright test tests/api/ --reporter=list 2>&1 | tail -30",
+      "exitCode": 0,
+      "durationMs": 2240,
+      "testCount": null,
+      "testDelta": null
+    },
+    "e2e_tests": {
+      "status": "pass",
+      "command": "npx playwright test tests/e2e/ --reporter=list 2>&1 | tail -30",
+      "exitCode": 0,
+      "durationMs": 20538,
+      "testCount": null,
+      "testDelta": null
+    },
+    "build": {
+      "status": "pass",
+      "command": "npx next build",
+      "exitCode": 0,
+      "durationMs": 19464,
+      "testCount": null,
+      "testDelta": null
+    },
+    "secrets": {
+      "status": "pass",
+      "command": "pnpm run security:secrets 2>&1 | tail -20",
+      "exitCode": 0,
+      "durationMs": 776,
+      "testCount": null,
+      "testDelta": null
+    },
+    "sast": {
+      "status": "pass",
+      "command": "pnpm run security:sast 2>&1 && echo '---JSON-REPORT---' && cat .validation/semgrep-report.json",
+      "exitCode": 0,
+      "durationMs": 13040,
+      "testCount": null,
+      "testDelta": null
+    },
+    "api_integration": {
+      "status": "pass",
+      "command": "node scripts/check-api-integration.js",
+      "exitCode": 0,
+      "durationMs": 89,
+      "testCount": null,
+      "testDelta": null
+    },
+    "code_review": {
+      "status": "pass",
+      "command": "node scripts/ocr-review.js 2>&1",
+      "exitCode": 0,
+      "durationMs": 74,
+      "testCount": null,
+      "testDelta": null
+    },
+    "audit_deps": {
+      "status": "pass",
+      "command": "pnpm run security:deps 2>&1 | tail -30",
+      "exitCode": 0,
+      "durationMs": 4731,
+      "testCount": null,
+      "testDelta": null
+    },
+    "env_vars": {
+      "status": "pass",
+      "command": "node scripts/check-env-vars.js 2>&1",
+      "exitCode": 0,
+      "durationMs": 119,
+      "testCount": null,
+      "testDelta": null
+    },
+    "features_check": {
+      "status": "fail",
+      "command": null,
+      "exitCode": null,
+      "durationMs": null
+    },
+    "migrations_check": {
+      "status": "pass",
+      "command": null,
+      "exitCode": null,
+      "durationMs": null
+    },
+    "snapshot_check": {
+      "status": "pass",
+      "command": null,
+      "exitCode": null,
+      "durationMs": null
+    },
+    "docs_check": {
+      "status": "pass",
+      "command": null,
+      "exitCode": null,
+      "durationMs": null
+    },
+    "artifact_completeness": {
+      "status": "pass",
+      "command": null,
+      "exitCode": null,
+      "durationMs": null
+    },
+    "security_check": {
+      "status": "pass",
+      "command": null,
+      "exitCode": null,
+      "durationMs": null
+    },
+    "file_size": {
+      "status": "pass",
+      "command": null,
+      "exitCode": null,
+      "durationMs": null
+    },
+    "evidence_check": {
+      "status": "pass",
+      "command": null,
+      "exitCode": null,
+      "durationMs": null
+    },
+    "risk_policy": {
+      "status": "pass",
+      "command": null,
+      "exitCode": null,
+      "durationMs": null
+    },
+    "coverage_check": {
+      "status": "pass",
+      "command": null,
+      "exitCode": null,
+      "durationMs": null
+    },
+    "loop_metrics": {
+      "status": "pass",
+      "command": null,
+      "exitCode": null,
+      "durationMs": null
+    }
+  }
+}

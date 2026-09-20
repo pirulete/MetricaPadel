@@ -1,0 +1,74 @@
+name: CI
+on: [push]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install security tools (semgrep + gitleaks)
+        run: |
+          python3 -m pip install --quiet semgrep
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz | tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+
+      - name: TypeScript
+        run: node scripts/validate-harness.js --typecheck
+
+      - name: Lint
+        run: node scripts/validate-harness.js --lint
+
+      - name: Unit Tests
+        run: node scripts/validate-harness.js --tests
+
+      - name: Secrets (gitleaks)
+        run: node scripts/validate-harness.js --secrets
+
+      - name: SAST (semgrep)
+        run: node scripts/validate-harness.js --sast
+
+      - name: Migration journal
+        run: node scripts/validate-harness.js --migrations
+
+      - name: Snapshot consistency
+        run: node scripts/validate-harness.js --snapshot
+
+      # --evidence y --risk-policy se omiten en CI: requieren el evidence-manifest.json
+      # del último entry de production_artifacts/ (no versionado en git) y el diff contra
+      # origin/main. Son gates de release local/PR. Ver ARCHITECTURE.md > AOSE.
+
+      - name: Build
+        run: node scripts/validate-harness.js --build
+
+      # Loop Engineering (G2): deja el evidence.json/status.json del run como artifact
+      # descargable para poder medir la eficiencia del inner loop (duración por gate).
+      - name: Upload loop metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-metrics-${{ github.sha }}
+          path: |
+            .validation/evidence.json
+            .validation/status.json
+            .validation/loop-metrics.json
+          if-no-files-found: ignore

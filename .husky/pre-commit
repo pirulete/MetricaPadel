@@ -1,0 +1,24 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Tests for staged files only
+STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' | tr '\n' ' ')
+if [ -n "$STAGED" ]; then
+  npx jest --findRelatedTests --passWithNoTests --silent $STAGED 2>&1 | tail -5
+fi
+
+# Security pre-commit checks (non-blocking)
+if command -v gitleaks &>/dev/null; then
+  gitleaks detect --source . --no-git -v 2>&1 | tail -5
+fi
+
+# Schema/migration sync check (non-blocking advisory)
+if git diff --cached --name-only | grep -q "lib/db/schema.ts"; then
+  if ! git diff --cached --name-only | grep -q "^drizzle/"; then
+    echo ""
+    echo "⚠️  Schema changed (lib/db/schema.ts) but no migration files staged."
+    echo "   If you modified the schema, remember to run:  pnpm run db:generate"
+    echo "   Then stage the generated files in drizzle/."
+    echo ""
+  fi
+fi

@@ -1,0 +1,11 @@
+# Street Move — Semgrep ignore rules
+#
+# Scripts de tooling: child_process, path-traversal y format string
+# son falsos positivos porque no reciben input de usuario
+scripts/
+
+# Tests de E2E: child_process con argumentos de test fixture, no de usuario real
+tests/
+
+# NeonDB requiere bypass TLS (self-signed certs)
+lib/db/index.ts

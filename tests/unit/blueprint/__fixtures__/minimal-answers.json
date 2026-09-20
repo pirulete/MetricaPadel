@@ -1,0 +1,30 @@
+{
+  "Q1": "test-project",
+  "Q2": "Test project",
+  "Q3": "none",
+  "Q4": {
+    "primary": "#6366f1",
+    "primaryDark": "#4f46e5"
+  },
+  "Q5": {
+    "lang": "es",
+    "timezone": "UTC"
+  },
+  "Q6": [],
+  "Q7": "none",
+  "Q8": "verify+reset",
+  "Q9": "none",
+  "Q10": "none",
+  "Q11": [],
+  "Q12": {},
+  "Q13": [
+    "USER",
+    "ADMIN"
+  ],
+  "Q14": [
+    "home"
+  ],
+  "Q15": {
+    "metrics": []
+  }
+}

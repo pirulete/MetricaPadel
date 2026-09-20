@@ -24,7 +24,12 @@ export const metadata: Metadata = {
 }
 
 export default async function BlogPage() {
-  const posts = await getCachedPosts(20)
+  let posts: Awaited<ReturnType<typeof getCachedPosts>> = []
+  try {
+    posts = await getCachedPosts(20)
+  } catch {
+    // DB unreachable — render empty state
+  }
 
   return (
     <Section>

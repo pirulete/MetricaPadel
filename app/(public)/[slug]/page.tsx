@@ -12,7 +12,12 @@ type Params = { params: Promise<{ slug: string }> }
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params
   if (isReservedSlug(slug)) return {}
-  const data = await getCachedPage(slug)
+  let data = null
+  try {
+    data = await getCachedPage(slug)
+  } catch {
+    // DB unreachable — return empty metadata
+  }
   if (!data) return {}
   return {
     title: data.page.seoTitle || data.page.title,
@@ -27,7 +32,12 @@ export default async function DynamicPage({ params }: Params) {
     notFound()
   }
 
-  const data = await getCachedPage(slug)
+  let data = null
+  try {
+    data = await getCachedPage(slug)
+  } catch {
+    // DB unreachable — show notFound
+  }
   if (!data) {
     notFound()
   }

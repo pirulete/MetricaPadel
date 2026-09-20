@@ -10,7 +10,12 @@ export const dynamic = "force-dynamic"
  * Si no existe → fallback al hero estático (retrocompatibilidad).
  */
 export default async function HomePage() {
-  const data = await getCachedPage("home")
+  let data = null
+  try {
+    data = await getCachedPage("home")
+  } catch {
+    // DB unreachable — render static fallback
+  }
 
   if (!data) {
     return <StaticFallback />

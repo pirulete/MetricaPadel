@@ -24,7 +24,12 @@ export const metadata: Metadata = {
 }
 
 export default async function ShopPage() {
-  const products = await getCachedProducts()
+  let products: Awaited<ReturnType<typeof getCachedProducts>> = []
+  try {
+    products = await getCachedProducts()
+  } catch {
+    // DB unreachable — render empty state
+  }
 
   return (
     <Section>

@@ -21,3 +21,12 @@
 ## Patrones Detectados
 
 <!-- Los patrones se agregan automáticamente aquí después de cada fix. -->
+
+### DB Connection Crash on Layout Import
+- **Síntoma:** `password authentication failed for user 'user'` when DB is unreachable; app crashes on any public page
+- **Causa raíz:** `app/(public)/layout.tsx` calls `getCachedNavigation()` which queries DB at request time; when NeonDB is unreachable, the query throws and the entire layout fails
+- **Fix:** Add try/catch in layout with `DEFAULT_NAVIGATION` fallback when `getCachedNavigation()` throws
+- **Archivos afectados:** `app/(public)/layout.tsx`
+- **Primera detección:** 2026-09-20
+- **Ocurrencias:** 1
+- **Última vez:** 2026-09-20

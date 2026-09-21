@@ -9,10 +9,12 @@ import { adminCreateUserSchema, adminUserQuerySchema } from "@/lib/validations/p
 export const runtime = "nodejs";
 
 function isUniqueViolation(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const e = error as { code?: string; message?: string; cause?: { code?: string } };
   return (
-    typeof error === "object" &&
-    error !== null &&
-    (error as { code?: string }).code === "23505"
+    e.code === "23505" ||
+    e.cause?.code === "23505" ||
+    (typeof e.message === "string" && e.message.includes("unique constraint"))
   );
 }
 

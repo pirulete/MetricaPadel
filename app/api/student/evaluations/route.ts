@@ -17,6 +17,10 @@ export async function GET(_request: NextRequest) {
     if (session!.user.status !== "ACTIVE") {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
+    // Student endpoints are only for USER role (not ADMIN/coach)
+    if (session!.user.role !== "USER") {
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+    }
 
     const evaluations = await listStudentEvaluations(session!.user.id as string);
     return NextResponse.json({ evaluations }, { status: 200 });

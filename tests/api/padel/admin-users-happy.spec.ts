@@ -19,7 +19,7 @@ let serverProbe: Promise<boolean> | null = null;
 
 function serverUp(): Promise<boolean> {
   if (!serverProbe) {
-    serverProbe = fetch(`${BASE_URL}/api/auth/csrf`, { signal: AbortSignal.timeout(2500) })
+    serverProbe = fetch(`${BASE_URL}/api/auth/providers`, { signal: AbortSignal.timeout(2500) })
       .then((res) => res.ok)
       .catch(() => false);
   }

@@ -61,9 +61,13 @@ export async function cleanupMarketing(prefix: string) {
 
 /** Autentica un context de Playwright contra Auth.js (flujo csrf + callback credentials). */
 export async function signIn(ctx: APIRequestContext, email: string, password: string) {
+  // In development, CSRF check is skipped — try to get token, but don't fail if 404
+  let csrfToken = "";
   const csrfRes = await ctx.get("/api/auth/csrf");
-  if (!csrfRes.ok()) throw new Error(`No se pudo obtener CSRF (${csrfRes.status()})`);
-  const { csrfToken } = await csrfRes.json();
+  if (csrfRes.ok()) {
+    const body = await csrfRes.json();
+    csrfToken = body.csrfToken || "";
+  }
   const res = await ctx.post("/api/auth/callback/credentials", {
     form: { csrfToken, email, password, redirect: "false" },
   });

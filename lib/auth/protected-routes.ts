@@ -45,6 +45,13 @@ export const routeProtection = {
     roles: ['ADMIN'],
     description: 'Detalle de jugador (solo role USER; 404 si no existe o no es USER)',
   },
+  'POST /api/admin/users/[id]/promote': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Promueve jugador a ADMIN (query filtra role USER: self-promote y ya-ADMIN → null → 404 idempotente; anti-IDOR)',
+    audit: 'auditUpdate(user, role USER→ADMIN)',
+  },
 
   // ─── ADMIN MARKETING (CMS) ─────────────────────────────────────
   'GET /api/admin/marketing/pages': {
@@ -351,6 +358,12 @@ export const routeProtection = {
     allowedStatuses: ['ACTIVE'],
     description: 'Inscribe alumno por inviteCode (case-insensitive; 400 si coach se une a su propio curso; 404 código inválido/archivado; 409 ya inscrito)',
     audit: 'auditCreate(course_enrollment)',
+  },
+  'DELETE /api/courses/[id]/enrollment': {
+    guard: 'guardUser',
+    allowedStatuses: ['ACTIVE'],
+    description: 'Auto-desinscripción del alumno (role USER obligatorio → ADMIN/coach 403; query filtra studentId=me → no inscrito/curso ajeno 404; doble DELETE 404)',
+    audit: 'auditDelete(course_enrollment)',
   },
 
   // ─── PADEL EVALUATIVO — Dashboard (derivado por rol) ───────────

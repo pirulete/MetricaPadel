@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { guardAdmin } from "@/lib/auth/admin-guard";
 import { auditUpdate, extractRequestContext } from "@/lib/audit/helpers";
 import { publishEvaluation } from "@/lib/db/queries/padel";
+import { triggerEvaluationPublished } from "@/lib/notifications/triggers";
 import { padelIdParamsSchema } from "@/lib/validations/padel";
 
 export const runtime = "nodejs";
@@ -45,6 +46,13 @@ export async function POST(
       { status: "published", publishedAt: result.evaluation.publishedAt },
       { userId: session!.user.id, ...extractRequestContext(request) }
     );
+
+    // G9: notificación al alumno — fire-and-forget (el publish nunca falla por el engine).
+    if (result.evaluation.studentId) {
+      triggerEvaluationPublished(result.evaluation.studentId, id).catch((err) => {
+        console.error("[evaluations/[id]/publish] Error en trigger de notificación:", err);
+      });
+    }
 
     return NextResponse.json({ evaluation: result.evaluation }, { status: 200 });
   } catch (error) {

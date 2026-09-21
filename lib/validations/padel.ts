@@ -11,12 +11,12 @@ export const padelIdParamsSchema = z.object({
   id: z.string().uuid("id debe ser un uuid válido"),
 });
 
-/** POST /api/admin/users — crea jugador (USER, status=ACTIVE). */
+/** POST /api/admin/users — crea jugador (USER, status=ACTIVE). password opcional (G4): si no viene, el handler genera una. */
 export const adminCreateUserSchema = z.object({
   email: z.string().trim().email("email inválido").max(255),
   firstName: z.string().trim().min(1, "firstName es requerido").max(255),
   lastName: z.string().trim().min(1, "lastName es requerido").max(255),
-  password: z.string().min(8, "password debe tener mínimo 8 caracteres").max(255),
+  password: z.string().min(8, "password debe tener mínimo 8 caracteres").max(255).optional(),
 });
 
 /** GET /api/admin/users — query de búsqueda opcional. */

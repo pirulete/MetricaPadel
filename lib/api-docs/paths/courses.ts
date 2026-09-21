@@ -134,6 +134,22 @@ export const coursesPaths = {
       },
     },
   },
+  '/api/courses/{id}/enrollment': {
+    delete: {
+      tags: ['Padel Courses'],
+      summary: 'Salirse de un curso (alumno)',
+      description: 'Elimina la inscripción del alumno autenticado (USER, ACTIVE) al curso (G11). 404 si no está inscrito (anti-IDOR). Audita DELETE. El UNIQUE liberado permite re-join.',
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+      responses: {
+        '200': { description: 'Desinscrito', content: { 'application/json': { schema: { type: 'object', properties: { ok: { type: 'boolean', enum: [true] } } } } } },
+        '400': { description: 'id inválido' },
+        '401': { description: 'No autenticado' },
+        '403': { description: 'No autorizado (LOCKED o rol ADMIN)' },
+        '404': { description: 'No inscrito' },
+      },
+    },
+  },
   '/api/dashboard/teacher': {
     get: {
       tags: ['Padel Dashboard'],

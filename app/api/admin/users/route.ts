@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { guardAdmin } from "@/lib/auth/admin-guard";
 import { auditCreate, extractRequestContext } from "@/lib/audit/helpers";
 import { createActiveUser, listPlayers } from "@/lib/db/queries/padel";
+import { generateRandomPassword } from "@/lib/padel/password";
 import { adminCreateUserSchema, adminUserQuerySchema } from "@/lib/validations/padel";
 
 export const runtime = "nodejs";
@@ -47,6 +48,8 @@ export async function GET(request: NextRequest) {
  * POST /api/admin/users
  * Crea usuario jugador (role USER, status=ACTIVE directo, sin verificación de
  * email — D5). Email duplicado → 409. Audita CREATE.
+ * G4: password opcional — si no viene, se genera una segura y se devuelve UNA
+ * vez en `generatedPassword` (nunca se persiste en claro ni se audita).
  */
 export async function POST(request: NextRequest) {
   try {
@@ -57,7 +60,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = adminCreateUserSchema.parse(body);
 
-    const user = await createActiveUser(validated);
+    const generatedPassword = validated.password ?? generateRandomPassword();
+    const user = await createActiveUser({
+      email: validated.email,
+      firstName: validated.firstName,
+      lastName: validated.lastName,
+      password: generatedPassword,
+    });
 
     await auditCreate(
       "user",
@@ -76,6 +85,7 @@ export async function POST(request: NextRequest) {
           role: user.role,
           status: user.status,
         },
+        ...(validated.password ? {} : { generatedPassword }),
       },
       { status: 201 }
     );

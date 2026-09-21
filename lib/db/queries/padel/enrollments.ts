@@ -99,3 +99,18 @@ export async function getEnrollment(courseId: string, studentId: string) {
     .limit(1);
   return row ?? null;
 }
+
+/**
+ * Elimina la inscripción de un alumno a un curso (G11). Retorna la fila
+ * eliminada o null si no existe (404, anti-IDOR). El UNIQUE(courseId,
+ * studentId) liberado permite re-join posterior.
+ */
+export async function deleteEnrollment(courseId: string, studentId: string) {
+  const [row] = await db.delete(courseEnrollments)
+    .where(and(
+      eq(courseEnrollments.courseId, courseId),
+      eq(courseEnrollments.studentId, studentId),
+    ))
+    .returning();
+  return row ?? null;
+}

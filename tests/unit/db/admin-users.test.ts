@@ -17,6 +17,7 @@ jest.mock("@/lib/db", () => {
       valuesLog.push(v);
       return c;
     });
+    c.set = jest.fn(() => c);
     c.returning = jest.fn(async () => queue.shift() ?? []);
     return c;
   };
@@ -25,6 +26,7 @@ jest.mock("@/lib/db", () => {
     db: {
       insert: jest.fn(() => makeChain(dbQueue)),
       select: jest.fn(() => makeChain(dbQueue)),
+      update: jest.fn(() => makeChain(dbQueue)),
     },
     __dbQueue: dbQueue,
     __valuesLog: valuesLog,
@@ -38,6 +40,7 @@ jest.mock("bcryptjs", () => ({
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { createActiveUser, listPlayers } from "@/lib/db/queries/padel/admin-users";
+import { promoteUser } from "@/lib/db/queries/padel/promote";
 
 const mocked = jest.requireMock("@/lib/db") as any;
 const dbQueue = mocked.__dbQueue as any[][];
@@ -89,5 +92,24 @@ describe("listPlayers", () => {
     dbQueue.push([]);
     await listPlayers("ana");
     expect(db.select).toHaveBeenCalled();
+  });
+});
+
+describe("promoteUser", () => {
+  it("promueve USER a ADMIN y retorna el usuario", async () => {
+    dbQueue.push([{ ...player, role: "ADMIN" }]);
+
+    const result = await promoteUser("u1");
+
+    expect(result).toEqual({ ...player, role: "ADMIN" });
+    expect(db.update).toHaveBeenCalled();
+  });
+
+  it("retorna null si el usuario no existe o ya es ADMIN", async () => {
+    dbQueue.push([]);
+
+    const result = await promoteUser("u1");
+
+    expect(result).toBeNull();
   });
 });

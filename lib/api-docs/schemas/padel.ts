@@ -5,12 +5,19 @@
 export const padelSchemas = {
   AdminUserInput: {
     type: 'object',
-    required: ['email', 'firstName', 'lastName', 'password'],
+    required: ['email', 'firstName', 'lastName'],
     properties: {
       email: { type: 'string', format: 'email' },
       firstName: { type: 'string', minLength: 1, maxLength: 255 },
       lastName: { type: 'string', minLength: 1, maxLength: 255 },
-      password: { type: 'string', minLength: 8, description: 'Contraseña (mínimo 8 caracteres)' },
+      password: { type: 'string', minLength: 8, description: 'Contraseña (mínimo 8 caracteres). Opcional (G4): si no se envía, el servidor genera una y la devuelve en generatedPassword.' },
+    },
+  },
+  AdminUserCreateResponse: {
+    type: 'object',
+    properties: {
+      user: { $ref: '#/components/schemas/AdminUserDto' },
+      generatedPassword: { type: 'string', description: 'Contraseña generada por el servidor (solo cuando no se envió password en el body). Se devuelve UNA sola vez; nunca se persiste en claro.' },
     },
   },
   AdminUserDto: {

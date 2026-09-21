@@ -30,15 +30,31 @@ export const padelPaths = {
     post: {
       tags: ['Padel Admin'],
       summary: 'Crear usuario jugador',
-      description: 'Crea USER con status=ACTIVE directo (sin verificación de email). Email duplicado → 409. Audita CREATE.',
+      description: 'Crea USER con status=ACTIVE directo (sin verificación de email). Email duplicado → 409. Audita CREATE. G4: password opcional — si no se envía, el servidor genera una segura y la devuelve en generatedPassword (una sola vez).',
       security: [{ bearerAuth: [] }],
       requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/AdminUserInput' } } } },
       responses: {
-        '201': { description: 'Usuario creado', content: { 'application/json': { schema: { type: 'object', properties: { user: { $ref: '#/components/schemas/AdminUserDto' } } } } } },
+        '201': { description: 'Usuario creado', content: { 'application/json': { schema: { $ref: '#/components/schemas/AdminUserCreateResponse' } } } },
         '400': { description: 'Datos inválidos' },
         '401': { description: 'No autenticado' },
         '403': { description: 'Sin rol ADMIN' },
         '409': { description: 'Email duplicado' },
+      },
+    },
+  },
+  '/api/admin/users/{id}/promote': {
+    post: {
+      tags: ['Padel Admin'],
+      summary: 'Promover usuario USER a ADMIN',
+      description: 'Cambia users.role USER→ADMIN (G3). 404 si inexistente o ya ADMIN (anti-IDOR). Audita UPDATE.',
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+      responses: {
+        '200': { description: 'Usuario promovido', content: { 'application/json': { schema: { type: 'object', properties: { user: { $ref: '#/components/schemas/AdminUserDto' } } } } } },
+        '400': { description: 'id inválido' },
+        '401': { description: 'No autenticado' },
+        '403': { description: 'Sin rol ADMIN' },
+        '404': { description: 'Usuario no encontrado o ya ADMIN' },
       },
     },
   },

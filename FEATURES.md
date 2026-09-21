@@ -1,5 +1,41 @@
 # FEATURES — Registro de Cambios
 
+## ✨ Cierre de Gaps en User Flows: G3/G4/G9/G11 (2026-09-21)
+
+> status: released
+> release: v0.3
+> date: 2026-09-21
+> change_id: gaps-user-flows
+> module: api+auth+db
+> tags: [admin, promotion, users, password, notifications, inbox, enrollment, padel, api, audit]
+
+### Problema
+
+`production_artifacts/2026-09-21-user-flows.md` (§4) detecta 4 gaps que bloquean flujos end-to-end: (G3) no hay endpoint para promover USER→ADMIN — un coach registrado por web no puede operar; (G4) `POST /api/admin/users` crea ACTIVE sin entregar credenciales al alumno; (G9) no hay trigger `evaluation.published` en el inbox; (G11) no existe endpoint para que el alumno abandone un curso.
+
+### Solución Implementada
+
+- **G3** `POST /api/admin/users/[id]/promote` (nuevo, guardAdmin + auditUpdate): cambia `users.role` USER→ADMIN vía `promoteUser(id)` en `lib/db/queries/padel/promote.ts`. 404 si inexistente/ya ADMIN (anti-IDOR); 401/403 guards.
+- **G4** `POST /api/admin/users` (modificado): `password` opcional en `adminCreateUserSchema`; si ausente, `generateRandomPassword()` en `lib/padel/password.ts` (12 chars, crypto.randomBytes, charset sin I/l/0/O/1, mezcla de clases) → hash bcrypt en DB → `generatedPassword` devuelta UNA vez en la respuesta (nunca en audit_logs ni logs).
+- **G9** `lib/notifications/triggers.ts` +`triggerEvaluationPublished(studentId, evaluationId)`: `createNotification` con `groupId = evaluationId` (uuid, dedup 1h del engine), type success, priority P1, category system, `ctaUrl: /evaluaciones/${id}`. Llamada fire-and-forget con try/catch en `POST /api/evaluations/[id]/publish` (el publish nunca falla por el engine).
+- **G11** `DELETE /api/courses/[id]/enrollment` (nuevo, guardUser + ACTIVE + role USER + auditDelete): elimina `course_enrollments` del alumno autenticado vía `deleteEnrollment(courseId, studentId)`; 404 si no inscrito; UNIQUE liberado permite re-join; evaluaciones históricas intactas (FK sin cascade).
+
+### Archivos Modificados
+
+- `app/api/admin/users/route.ts` (POST password opcional + generatedPassword), `app/api/evaluations/[id]/publish/route.ts` (trigger fire-and-forget), `lib/validations/padel.ts` (password `.optional()`), `lib/db/queries/padel/enrollments.ts` (+`deleteEnrollment`), `lib/db/queries/padel/index.ts` (+promote export), `lib/notifications/triggers.ts`, `lib/api-docs/paths/padel.ts`, `lib/api-docs/paths/courses.ts`, `lib/api-docs/schemas/padel.ts` (+`AdminUserCreateResponse`)
+- Nuevos: `app/api/admin/users/[id]/promote/route.ts`, `app/api/courses/[id]/enrollment/route.ts`, `lib/db/queries/padel/promote.ts`, `lib/padel/password.ts`
+
+### Tests
+
+- Unit: `tests/unit/padel/password.test.ts`, `tests/unit/notifications/triggers.test.ts`, `tests/unit/db/admin-users.test.ts` (+promoteUser), `tests/unit/db/enrollments.test.ts` (+deleteEnrollment).
+- API guard: `tests/api/padel/promote.spec.ts`, `tests/api/padel/admin-users-password.spec.ts`, `tests/api/padel/evaluation-published.spec.ts`, `tests/api/padel/course-leave.spec.ts`.
+- API happy-path (SQL real): `tests/api/padel/promote-happy.spec.ts`, `tests/api/padel/admin-users-password-happy.spec.ts` (login real con generatedPassword), `tests/api/padel/evaluation-published-happy.spec.ts` (notificación en DB + dashboard/student), `tests/api/padel/course-leave-happy.spec.ts` (enrollment eliminado + re-join).
+- E2E: `tests/e2e/gaps-user-flows.spec.ts`.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
 ## ✨ Etapa 2 + Etapa 3: Onboarding, Cursos, Dashboard y Management (2026-09-21)
 
 > status: released

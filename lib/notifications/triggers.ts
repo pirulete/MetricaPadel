@@ -33,3 +33,22 @@ export async function triggerEmailVerified(userId: string) {
     category: 'account',
   });
 }
+
+/**
+ * evaluation.published — al publicar una evaluación (G9).
+ * groupId = evaluationId (uuid) para dedup 1h del engine: re-publicar no duplica.
+ * category system + priority P1 (evento importante para el alumno).
+ */
+export async function triggerEvaluationPublished(studentId: string, evaluationId: string) {
+  return createNotification({
+    userId: studentId,
+    type: 'success',
+    priority: 'P1',
+    title: 'Nueva evaluación publicada',
+    body: 'Tu coach publicó una evaluación',
+    ctaUrl: `/evaluaciones/${evaluationId}`,
+    ctaLabel: 'Ver evaluación',
+    groupId: evaluationId,
+    category: 'system',
+  });
+}

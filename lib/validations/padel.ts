@@ -3,6 +3,8 @@ import { z } from "zod";
 export const rubricCategoryValues = ["tecnica", "tactica", "fisica", "actitud"] as const;
 export const rubricStatusValues = ["draft", "active", "archived"] as const;
 export const evaluationStatusValues = ["draft", "published"] as const;
+export const courseLevelValues = ["iniciacion", "intermedio", "avanzado"] as const;
+export const courseStatusValues = ["active", "archived"] as const;
 
 /** Params de ruta [id] (uuid) para rúbricas y evaluaciones. */
 export const padelIdParamsSchema = z.object({
@@ -73,8 +75,45 @@ export const evaluationListQuerySchema = z.object({
   status: z.enum(evaluationStatusValues).optional(),
 });
 
+/** POST /api/courses — crea curso (inviteCode lo genera el handler). */
+export const courseCreateSchema = z.object({
+  name: z.string().trim().min(1, "name es requerido").max(200),
+  level: z.enum(courseLevelValues),
+  schedule: z.string().trim().max(100).optional(),
+  days: z.array(z.string().trim().min(1).max(10)).max(7).optional(),
+});
+
+/** PUT /api/courses/[id] — partial de create. */
+export const courseUpdateSchema = courseCreateSchema.partial();
+
+/** POST /api/courses/join — inviteCode normalizado (case-insensitive, D4). */
+export const courseJoinSchema = z.object({
+  inviteCode: z
+    .string()
+    .trim()
+    .transform((v) => v.toUpperCase())
+    .refine((v) => /^PAD-[A-Z0-9]{4}$/.test(v), "inviteCode debe tener formato PAD-XXXX"),
+});
+
+/** POST /api/courses/[id]/rubrics — asigna rúbrica activa del coach. */
+export const courseRubricAssignSchema = z.object({
+  rubricId: z.string().uuid("rubricId debe ser un uuid válido"),
+});
+
+/** GET /api/history — filtros opcionales (courseId/studentId/status). */
+export const historyQuerySchema = z.object({
+  courseId: z.string().uuid("courseId debe ser un uuid válido").optional(),
+  studentId: z.string().uuid("studentId debe ser un uuid válido").optional(),
+  status: z.enum(evaluationStatusValues).optional(),
+});
+
 export type AdminCreateUserInput = z.infer<typeof adminCreateUserSchema>;
 export type RubricCreateInput = z.infer<typeof rubricCreateSchema>;
 export type RubricUpdateInput = z.infer<typeof rubricUpdateSchema>;
 export type EvaluationCreateInput = z.infer<typeof evaluationCreateSchema>;
 export type EvaluationSaveInput = z.infer<typeof evaluationSaveSchema>;
+export type CourseCreateInput = z.infer<typeof courseCreateSchema>;
+export type CourseUpdateInput = z.infer<typeof courseUpdateSchema>;
+export type CourseJoinInput = z.infer<typeof courseJoinSchema>;
+export type CourseRubricAssignInput = z.infer<typeof courseRubricAssignSchema>;
+export type HistoryQueryInput = z.infer<typeof historyQuerySchema>;

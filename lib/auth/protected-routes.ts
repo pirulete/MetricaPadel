@@ -296,6 +296,83 @@ export const routeProtection = {
     allowedStatuses: ['ACTIVE'],
     description: 'Marca evaluación como leída (idempotente, studentId=owner)',
   },
+
+  // ─── PADEL EVALUATIVO — Cursos (coach/ADMIN, ownership ownerId) ─
+  'GET /api/courses': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Lista cursos del coach (ownerId=me, anti-IDOR)',
+  },
+  'POST /api/courses': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Crea curso con inviteCode generado (ownerId=me)',
+    audit: 'auditCreate(course)',
+  },
+  'GET /api/courses/[id]': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Detalle de curso + students + rubrics (ownerId=me, 404 si ajeno)',
+  },
+  'PUT /api/courses/[id]': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Actualiza curso (ownerId=me, 404 si ajeno)',
+    audit: 'auditUpdate(course)',
+  },
+  'DELETE /api/courses/[id]': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Archiva curso (soft, status=archived; enrollments/rubrics se conservan) (ownerId=me)',
+    audit: 'auditDelete(course, archive)',
+  },
+  'POST /api/courses/[id]/rubrics': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Asigna rúbrica activa propia al curso (ownerId=me; 404 si curso/rúbrica ajenos; 409 si ya asignada)',
+    audit: 'auditCreate(course_rubric)',
+  },
+  'GET /api/courses/[id]/rubrics': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Lista rúbricas asignadas al curso (ownerId=me, 404 si ajeno)',
+  },
+
+  // ─── PADEL EVALUATIVO — Join (alumno/USER) ────────────────────
+  'POST /api/courses/join': {
+    guard: 'guardUser',
+    allowedStatuses: ['ACTIVE'],
+    description: 'Inscribe alumno por inviteCode (case-insensitive; 400 si coach se une a su propio curso; 404 código inválido/archivado; 409 ya inscrito)',
+    audit: 'auditCreate(course_enrollment)',
+  },
+
+  // ─── PADEL EVALUATIVO — Dashboard (derivado por rol) ───────────
+  'GET /api/dashboard/teacher': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Métricas del coach (students/evaluations/average/classesToday) + cursos propios',
+  },
+  'GET /api/dashboard/student': {
+    guard: 'guardUser',
+    allowedStatuses: ['ACTIVE'],
+    description: 'Nivel + cursos del alumno + últimas 5 notificaciones del inbox',
+  },
+
+  // ─── PADEL EVALUATIVO — Historial (coach/ADMIN, teacherId) ─────
+  'GET /api/history': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Historial de evaluaciones del coach (teacherId=me; filtros courseId/studentId/status; anti-IDOR)',
+  },
 } as const
 
 export type RouteKey = keyof typeof routeProtection

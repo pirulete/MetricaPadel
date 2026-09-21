@@ -1,8 +1,46 @@
 # FEATURES — Registro de Cambios
 
+## ✨ Etapa 2 + Etapa 3: Onboarding, Cursos, Dashboard y Management (2026-09-21)
+
+> status: released
+> release: v0.2
+> date: 2026-09-21
+> change_id: etapa2-3-onboarding-dashboard
+> module: auth+api+db+ui
+> tags: [courses, onboarding, dashboard, enrollment, padel, db, migration, api, ui]
+
+### Problema
+
+Etapa 1 (v0.1) entregó el core evaluativo sin contexto: no hay onboarding real (registro/login), ni cursos para agrupar alumnos, ni hubs de navegación (home profesor/alumno), ni historial. El blueprint clasifica auth + cursos como PREREQUISITO y dashboards/management como MANAGEMENT.
+
+### Solución Implementada
+
+- **DB** (por @db-engineer): +2 enums (`course_level`, `course_status`), +3 tablas (`courses`, `course_enrollments`, `course_rubrics`), `evaluations.courseId` nullable (FK set null, D1); migración `0005_goofy_charles_xavier.sql` vía `db:generate`. Queries en `lib/db/queries/padel/courses.ts` y `lib/db/queries/padel/enrollments.ts`.
+- **Lógica pura**: `lib/padel/course-code.ts` (`generateInviteCode` PAD-XXXX) y `lib/padel/dashboard.ts` (`deriveLevel`, `isClassToday`).
+- **Validaciones**: `lib/validations/padel.ts` ampliado — `courseCreateSchema`/`courseUpdateSchema` (name 1-200, level enum, schedule ≤100, days ≤7), `courseJoinSchema` (inviteCode normalizado `^PAD-[A-Z0-9]{4}$`), `courseRubricAssignSchema`, `historyQuerySchema`.
+- **Queries nuevas**: `lib/db/queries/padel/dashboard.ts` (`getTeacherDashboard` métricas COUNT/AVG + `getStudentDashboard` nivel derivado + notificaciones) y `history.ts` (`listHistory` con filtros courseId/studentId/status, join con courses vía courseId, D8). Exportadas desde `index.ts`.
+- **API (7 route handlers nuevos)**: `app/api/courses` (GET list + POST create con retry ≤5 en colisión inviteCode), `app/api/courses/[id]` (GET detail + PUT + DELETE soft archive D7), `app/api/courses/join` (POST 201/400/404/409), `app/api/courses/[id]/rubrics` (GET + POST assign 409 D2), `app/api/dashboard/teacher`, `app/api/dashboard/student`, `app/api/history`. Guards `guardAdmin`/`guardUser` + auditoría en mutaciones + anti-IDOR 404. `POST /api/auth/register` ampliado: `role?` opcional **ignorado** (D6, nunca auto-ADMIN).
+- **API docs**: `lib/api-docs/paths/courses.ts` + `lib/api-docs/schemas/courses.ts` + tags `Padel Courses`/`Padel Dashboard` en `spec.ts` (~13 endpoints nuevos).
+- **UI (6 páginas / 10 componentes)**: SCR-02 `register` (selector coach/player UX pura), SCR-03 `login` (Auth.js signIn), `dashboard` (router por rol D5: P01/A01), `cursos` (P05), `cursos/[id]` (P07 tabs + copiar código + evaluar), `historial` (P10 filtros). Componentes: `bottom-nav`, `course-card`, `course-detail`, `create-course-modal`, `join-course-modal`, `assign-rubric-modal`, `history-list`, `dashboard-metrics`, `teacher-dashboard`, `student-dashboard`.
+
+### Archivos Modificados
+
+- `lib/validations/padel.ts`, `lib/db/queries/padel/index.ts`, `lib/api-docs/spec.ts`, `app/api/auth/register/route.ts`, `ARCHITECTURE.md`, `FEATURES.md`
+- Nuevos: `lib/padel/course-code.ts`, `lib/padel/dashboard.ts`, `lib/db/queries/padel/dashboard.ts`, `lib/db/queries/padel/history.ts`, 7 route handlers en `app/api/courses/route.ts`, `app/api/courses/[id]/route.ts`, `app/api/courses/join/route.ts`, `app/api/courses/[id]/rubrics/route.ts`, `app/api/dashboard/teacher/route.ts`, `app/api/dashboard/student/route.ts`, `app/api/history/route.ts`, `lib/api-docs/paths/courses.ts`, `lib/api-docs/schemas/courses.ts`, 6 páginas en `app/(app)/dashboard/page.tsx`, `app/(app)/cursos/page.tsx`, `app/(app)/cursos/[id]/page.tsx`, `app/(app)/historial/page.tsx`, `app/(public)/login/page.tsx`, `app/(public)/register/page.tsx`, 10 componentes en `components/padel/`
+
+### Tests
+
+- Unit: `tests/unit/padel/course-code.test.ts`, `tests/unit/padel/dashboard.test.ts` (lógica pura), `tests/unit/validations/padel.test.ts` ampliado (course/join/assign/history schemas).
+- API: `tests/api/padel/courses-guard.spec.ts` (401/403), `tests/api/padel/courses-happy.spec.ts`, `tests/api/padel/join-happy.spec.ts`, `tests/api/padel/dashboard-happy.spec.ts`, `tests/api/padel/history-happy.spec.ts` (SQL real contra NeonDB + edge cases join 404/409/400 + IDOR history).
+- E2E (@qa-release): `tests/e2e/onboarding.spec.ts`, `tests/e2e/course-flow.spec.ts`, `tests/e2e/dashboard.spec.ts` (auth-guard + render + API guards).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
 ## ✨ Etapa 1: Core Evaluativo — Rúbricas + Evaluaciones (2026-09-20)
 
-> status: in-progress
+> status: released
 > release: v0.1
 > date: 2026-09-20
 > change_id: etapa1-core-evaluativo

@@ -36,6 +36,13 @@
       "when": 1789946491008,
       "tag": "0004_broken_sinister_six",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789952178790,
+      "tag": "0005_goofy_charles_xavier",
+      "breakpoints": true
     }
   ]
 }

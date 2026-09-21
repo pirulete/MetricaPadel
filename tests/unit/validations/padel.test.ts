@@ -12,6 +12,11 @@ import {
   rubricListQuerySchema,
   evaluationListQuerySchema,
   padelIdParamsSchema,
+  courseCreateSchema,
+  courseUpdateSchema,
+  courseJoinSchema,
+  courseRubricAssignSchema,
+  historyQuerySchema,
 } from "@/lib/validations/padel";
 
 describe("adminCreateUserSchema", () => {
@@ -236,5 +241,99 @@ describe("padelIdParamsSchema", () => {
 
   it("rechaza id no uuid", () => {
     expect(() => padelIdParamsSchema.parse({ id: "abc" })).toThrow();
+  });
+});
+
+describe("courseCreateSchema", () => {
+  const valid = { name: "Pádel iniciación", level: "iniciacion" };
+
+  it("acepta payload mínimo", () => {
+    const result = courseCreateSchema.parse(valid);
+    expect(result.name).toBe("Pádel iniciación");
+    expect(result.level).toBe("iniciacion");
+  });
+
+  it("acepta schedule + days opcionales", () => {
+    const result = courseCreateSchema.parse({
+      ...valid,
+      schedule: "18:00",
+      days: ["Lun", "Mié"],
+    });
+    expect(result.days).toHaveLength(2);
+  });
+
+  it("acepta days vacío (D3)", () => {
+    expect(courseCreateSchema.parse({ ...valid, days: [] }).days).toEqual([]);
+  });
+
+  it("rechaza name vacío", () => {
+    expect(() => courseCreateSchema.parse({ ...valid, name: " " })).toThrow();
+  });
+
+  it("rechaza level inválido", () => {
+    expect(() => courseCreateSchema.parse({ ...valid, level: "pro" })).toThrow();
+  });
+
+  it("rechaza más de 7 días", () => {
+    expect(() =>
+      courseCreateSchema.parse({ ...valid, days: ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom", "Otro"] })
+    ).toThrow();
+  });
+});
+
+describe("courseUpdateSchema", () => {
+  it("acepta partial (solo schedule)", () => {
+    expect(courseUpdateSchema.parse({ schedule: "19:00" })).toEqual({ schedule: "19:00" });
+  });
+
+  it("rechaza level inválido en partial", () => {
+    expect(() => courseUpdateSchema.parse({ level: "pro" })).toThrow();
+  });
+});
+
+describe("courseJoinSchema", () => {
+  it("normaliza inviteCode a mayúsculas", () => {
+    expect(courseJoinSchema.parse({ inviteCode: "  pad-ab12 " }).inviteCode).toBe("PAD-AB12");
+  });
+
+  it("rechaza formato inválido", () => {
+    expect(() => courseJoinSchema.parse({ inviteCode: "PAD-AB1" })).toThrow();
+    expect(() => courseJoinSchema.parse({ inviteCode: "ABC-AB12" })).toThrow();
+    expect(() => courseJoinSchema.parse({ inviteCode: "" })).toThrow();
+  });
+});
+
+describe("courseRubricAssignSchema", () => {
+  it("acepta rubricId uuid", () => {
+    expect(
+      courseRubricAssignSchema.parse({ rubricId: "00000000-0000-0000-0000-000000000001" }).rubricId
+    ).toBe("00000000-0000-0000-0000-000000000001");
+  });
+
+  it("rechaza rubricId inválido", () => {
+    expect(() => courseRubricAssignSchema.parse({ rubricId: "no-uuid" })).toThrow();
+  });
+});
+
+describe("historyQuerySchema", () => {
+  it("acepta sin filtros", () => {
+    expect(historyQuerySchema.parse({})).toEqual({});
+  });
+
+  it("acepta filtros válidos", () => {
+    const result = historyQuerySchema.parse({
+      courseId: "00000000-0000-0000-0000-000000000001",
+      studentId: "00000000-0000-0000-0000-000000000002",
+      status: "published",
+    });
+    expect(result.status).toBe("published");
+  });
+
+  it("rechaza status inválido", () => {
+    expect(() => historyQuerySchema.parse({ status: "archived" })).toThrow();
+  });
+
+  it("rechaza courseId no uuid", () => {
+    expect(() => historyQuerySchema.parse({ courseId: "abc" })).toThrow();
   });
 });

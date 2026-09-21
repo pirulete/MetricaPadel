@@ -153,6 +153,9 @@ export const usersRelations = relations(users, ({ many }) => ({
   pushSubscriptions: many(pushSubscriptions),
   notificationPreferences: many(notificationPreferences),
   rubrics: many(rubrics),
+  courses: many(courses),
+  courseEnrollments: many(courseEnrollments),
+  courseRubricsAssigned: many(courseRubrics),
   evaluationsAsStudent: many(evaluations, { relationName: "studentEvaluations" }),
   evaluationsAsTeacher: many(evaluations, { relationName: "teacherEvaluations" }),
 }));
@@ -401,6 +404,17 @@ export type RubricCategory = (typeof rubricCategoryEnum.enumValues)[number];
 export type RubricStatus = (typeof rubricStatusEnum.enumValues)[number];
 export type EvaluationStatus = (typeof evaluationStatusEnum.enumValues)[number];
 
+export const courseLevelEnum = pgEnum('course_level', [
+  'iniciacion', 'intermedio', 'avanzado',
+]);
+
+export const courseStatusEnum = pgEnum('course_status', [
+  'active', 'archived',
+]);
+
+export type CourseLevel = (typeof courseLevelEnum.enumValues)[number];
+export type CourseStatus = (typeof courseStatusEnum.enumValues)[number];
+
 // Rúbrica del coach (ADMIN). ownerId = coach. Archivar = soft (status=archived),
 // nunca hard delete: las evaluaciones referencian la rúbrica.
 export const rubrics = pgTable("rubrics", {
@@ -413,6 +427,24 @@ export const rubrics = pgTable("rubrics", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => [
   index("rubrics_owner_idx").on(table.ownerId),
+]);
+
+// Curso del coach (ADMIN). ownerId = coach. Archivar = soft (status=archived);
+// enrollments y course_rubrics se conservan (historial protegido, D7).
+export const courses = pgTable("courses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  ownerId: uuid("owner_id").notNull().references(() => users.id, { onDelete: "no action" }),
+  name: varchar("name", { length: 200 }).notNull(),
+  level: courseLevelEnum("level").notNull(),
+  schedule: varchar("schedule", { length: 100 }),
+  days: jsonb("days").notNull().default([]),
+  inviteCode: varchar("invite_code", { length: 10 }).notNull(),
+  status: courseStatusEnum("status").notNull().default('active'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("courses_owner_idx").on(table.ownerId),
+  uniqueIndex("courses_invite_code_idx").on(table.inviteCode),
 ]);
 
 // Niveles fijos 4 en Etapa 1 (Excelente 4 / Bueno 3 / Aceptable 2 / En desarrollo 1).
@@ -452,6 +484,7 @@ export const evaluations = pgTable("evaluations", {
   studentId: uuid("student_id").notNull().references(() => users.id, { onDelete: "no action" }),
   teacherId: uuid("teacher_id").notNull().references(() => users.id, { onDelete: "no action" }),
   rubricId: uuid("rubric_id").notNull().references(() => rubrics.id, { onDelete: "no action" }),
+  courseId: uuid("course_id").references(() => courses.id, { onDelete: "set null" }),
   status: evaluationStatusEnum("status").notNull().default('draft'),
   totalScore: integer("total_score"),
   maxScore: integer("max_score"),
@@ -479,6 +512,32 @@ export const evaluationScores = pgTable("evaluation_scores", {
   uniqueIndex("evaluation_scores_evaluation_criteria_idx").on(table.evaluationId, table.criteriaId),
 ]);
 
+// Inscripción de alumno (USER) a un curso. UNIQUE (courseId, studentId) evita
+// duplicados; cascade en courseId (archivar curso conserva, borrar curso limpia).
+export const courseEnrollments = pgTable("course_enrollments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  courseId: uuid("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  studentId: uuid("student_id").notNull().references(() => users.id, { onDelete: "no action" }),
+  joinedAt: timestamp("joined_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("course_enrollments_course_student_idx").on(table.courseId, table.studentId),
+  index("course_enrollments_course_idx").on(table.courseId),
+  index("course_enrollments_student_idx").on(table.studentId),
+]);
+
+// Rúbrica asignada a un curso (P08). UNIQUE (courseId, rubricId) → re-asignar
+// la misma rúbrica da 409 (D2). rubricId sin cascade: historial protegido.
+export const courseRubrics = pgTable("course_rubrics", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  courseId: uuid("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  rubricId: uuid("rubric_id").notNull().references(() => rubrics.id, { onDelete: "no action" }),
+  assignedById: uuid("assigned_by_id").notNull().references(() => users.id, { onDelete: "no action" }),
+  assignedAt: timestamp("assigned_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("course_rubrics_course_rubric_idx").on(table.courseId, table.rubricId),
+  index("course_rubrics_course_idx").on(table.courseId),
+]);
+
 export const rubricsRelations = relations(rubrics, ({ one, many }) => ({
   owner: one(users, {
     fields: [rubrics.ownerId],
@@ -487,6 +546,7 @@ export const rubricsRelations = relations(rubrics, ({ one, many }) => ({
   levels: many(rubricLevels),
   criteria: many(rubricCriteria),
   evaluations: many(evaluations),
+  courseRubrics: many(courseRubrics),
 }));
 
 export const rubricLevelsRelations = relations(rubricLevels, ({ one, many }) => ({
@@ -532,6 +592,10 @@ export const evaluationsRelations = relations(evaluations, ({ one, many }) => ({
     fields: [evaluations.rubricId],
     references: [rubrics.id],
   }),
+  course: one(courses, {
+    fields: [evaluations.courseId],
+    references: [courses.id],
+  }),
   scores: many(evaluationScores),
 }));
 
@@ -550,6 +614,41 @@ export const evaluationScoresRelations = relations(evaluationScores, ({ one }) =
   }),
 }));
 
+export const coursesRelations = relations(courses, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [courses.ownerId],
+    references: [users.id],
+  }),
+  enrollments: many(courseEnrollments),
+  rubrics: many(courseRubrics),
+}));
+
+export const courseEnrollmentsRelations = relations(courseEnrollments, ({ one }) => ({
+  course: one(courses, {
+    fields: [courseEnrollments.courseId],
+    references: [courses.id],
+  }),
+  student: one(users, {
+    fields: [courseEnrollments.studentId],
+    references: [users.id],
+  }),
+}));
+
+export const courseRubricsRelations = relations(courseRubrics, ({ one }) => ({
+  course: one(courses, {
+    fields: [courseRubrics.courseId],
+    references: [courses.id],
+  }),
+  rubric: one(rubrics, {
+    fields: [courseRubrics.rubricId],
+    references: [rubrics.id],
+  }),
+  assignedBy: one(users, {
+    fields: [courseRubrics.assignedById],
+    references: [users.id],
+  }),
+}));
+
 export type Rubric = typeof rubrics.$inferSelect;
 export type NewRubric = typeof rubrics.$inferInsert;
 export type RubricLevel = typeof rubricLevels.$inferSelect;
@@ -562,3 +661,9 @@ export type Evaluation = typeof evaluations.$inferSelect;
 export type NewEvaluation = typeof evaluations.$inferInsert;
 export type EvaluationScore = typeof evaluationScores.$inferSelect;
 export type NewEvaluationScore = typeof evaluationScores.$inferInsert;
+export type Course = typeof courses.$inferSelect;
+export type NewCourse = typeof courses.$inferInsert;
+export type CourseEnrollment = typeof courseEnrollments.$inferSelect;
+export type NewCourseEnrollment = typeof courseEnrollments.$inferInsert;
+export type CourseRubric = typeof courseRubrics.$inferSelect;
+export type NewCourseRubric = typeof courseRubrics.$inferInsert;

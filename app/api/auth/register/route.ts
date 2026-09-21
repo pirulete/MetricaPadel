@@ -12,6 +12,8 @@ const registerSchema = z.object({
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
   firstName: z.string().min(1, "El nombre es requerido"),
   lastName: z.string().min(1, "El apellido es requerido"),
+  // D6: selector UX coach/player — SIEMPRE se ignora; createUser crea USER/TEMPORARY.
+  role: z.enum(['coach', 'player']).optional(),
 });
 
 export async function POST(request: NextRequest) {

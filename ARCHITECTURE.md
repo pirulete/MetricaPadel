@@ -100,7 +100,7 @@ Principio: **NUNCA permitir LOCKED** en rutas privadas. TEMPORARY solo si explí
 
 ## Padel Evaluativo — Core (v0.1)
 
-- **Roles**: `ADMIN` = coach (crea jugadores, rúbricas, evalúa, publica); `USER` = alumno (ve evaluaciones publicadas, marca leído). Sin `padel_role`.
+- **Roles**: `ADMIN` = coach (crea jugadores, rúbricas, cursos, evalúa, publica); `USER` = alumno (ve evaluaciones publicadas, marca leído, se une a cursos). Sin `padel_role`.
 - **Tablas DB** (6): `rubrics` (ownerId FK users no cascade, category enum, status draft/active/archived), `rubric_levels` (4 niveles fijos: Excelente 4 / Bueno 3 / Aceptable 2 / En desarrollo 1), `rubric_criteria`, `rubric_descriptors` (UNIQUE criteria+level), `evaluations` (studentId/teacherId/rubricId, status draft/published, totalScore/maxScore denormalizados, publishedAt, readAt), `evaluation_scores` (FK criteria/levels sin cascade → historial protegido).
 - **Enums DB** (3): `rubric_category` (tecnica/tactica/fisica/actitud), `rubric_status`, `evaluation_status`.
 - **Ownership anti-IDOR**: toda query recibe `ownerId`/`teacherId`/`studentId` y filtra; recurso ajeno → 404 (no 403).
@@ -108,6 +108,17 @@ Principio: **NUNCA permitir LOCKED** en rutas privadas. TEMPORARY solo si explí
 - **UI**: `app/(app)/rubricas` (P02 biblioteca + P03 editor), `app/(app)/evaluar` (P09 canvas score en vivo), `app/(app)/evaluaciones` (A03 lista + detalle alumno). Componentes en `components/padel/`.
 - **Lógica pura**: `lib/padel/score.ts` (computeMaxScore/TotalScore, validatePublish); validaciones Zod en `lib/validations/padel.ts`.
 - **Migración**: `0004_*` (enums + 6 tablas + índices).
+
+## Padel Evaluativo — Onboarding, Cursos y Dashboard (v0.2)
+
+- **Roles**: mismos USER/ADMIN (ADMIN=coach, USER=player). Registro público con selector coach/player es UX pura — el backend **ignora** `role` y siempre crea USER/TEMPORARY (D6, nunca auto-ADMIN).
+- **Tablas DB nuevas** (3): `courses` (ownerId FK users no cascade = coach, level enum, schedule varchar, days jsonb default `[]`, inviteCode varchar(10) UNIQUE `PAD-XXXX` mayúsculas, status active/archived), `course_enrollments` (UNIQUE courseId+studentId, cascade en courseId), `course_rubrics` (UNIQUE courseId+rubricId, rubricId sin cascade → historial protegido). Cambio aditivo: `evaluations.courseId` nullable FK courses `onDelete: set null` (D1).
+- **Enums DB nuevos** (2): `course_level` (iniciacion/intermedio/avanzado), `course_status` (active/archived).
+- **inviteCode** (D4): generado en `lib/padel/course-code.ts` (`PAD-` + 4 chars alfanuméricos sin I/O/0/1), lookup case-insensitive (`upper()`), retry ≤5 en colisión UNIQUE.
+- **Endpoints nuevos** (7 route handlers / ~13 endpoints): `app/api/courses` (GET+POST), `app/api/courses/[id]` (GET+PUT+DELETE soft archive D7), `app/api/courses/join` (POST 201/400/404/409), `app/api/courses/[id]/rubrics` (GET+POST assign 409 D2), `app/api/dashboard/teacher` (P01 métricas COUNT/AVG), `app/api/dashboard/student` (A01 nivel derivado + notificaciones), `app/api/history` (P10 filtros courseId/studentId/status, D8). Guards `guardAdmin`/`guardUser` + auditoría + anti-IDOR 404.
+- **Queries**: `lib/db/queries/padel/{courses,enrollments,dashboard,history}.ts` — CRUD cursos con ownership, join transaccional con validaciones, métricas derivadas (sin tablas nuevas), historial con join a courses vía `evaluations.courseId`.
+- **UI**: `app/(public)/{login,register}` (SCR-02/03 reales), `app/(app)/dashboard` (router por rol D5: P01/A01), `app/(app)/cursos` (P05) + `cursos/[id]` (P07 tabs + copiar código + evaluar), `app/(app)/historial` (P10 filtros). 10 componentes en `components/padel/` (bottom-nav, course-card/detail, create/join/assign modals, history-list, dashboard-metrics, teacher/student-dashboard).
+- **Migración**: `0005_*` (enums + 3 tablas + evaluations.courseId + índices).
 
 ## Convenciones de Migraciones
 

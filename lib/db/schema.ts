@@ -479,6 +479,8 @@ export const rubricDescriptors = pgTable("rubric_descriptors", {
 
 // Evaluación: coach (teacherId) evalúa a alumno (studentId) con una rúbrica.
 // totalScore/maxScore denormalizados → historial estable ante ediciones de rúbrica.
+// version (G6): solo publicadas tienen versión 1..N por (studentId, rubricId);
+// drafts quedan null. El cómputo vive en publishEvaluation (COALESCE(MAX,0)+1).
 export const evaluations = pgTable("evaluations", {
   id: uuid("id").primaryKey().defaultRandom(),
   studentId: uuid("student_id").notNull().references(() => users.id, { onDelete: "no action" }),
@@ -486,6 +488,7 @@ export const evaluations = pgTable("evaluations", {
   rubricId: uuid("rubric_id").notNull().references(() => rubrics.id, { onDelete: "no action" }),
   courseId: uuid("course_id").references(() => courses.id, { onDelete: "set null" }),
   status: evaluationStatusEnum("status").notNull().default('draft'),
+  version: integer("version"),
   totalScore: integer("total_score"),
   maxScore: integer("max_score"),
   globalComment: text("global_comment"),
@@ -497,6 +500,7 @@ export const evaluations = pgTable("evaluations", {
   index("evaluations_student_idx").on(table.studentId),
   index("evaluations_teacher_idx").on(table.teacherId),
   index("evaluations_rubric_idx").on(table.rubricId),
+  index("evaluations_student_rubric_status_idx").on(table.studentId, table.rubricId, table.status),
 ]);
 
 // Scores por criterio. FKs a criteria/levels SIN cascade: si se edita la rúbrica,

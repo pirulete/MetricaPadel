@@ -1,5 +1,40 @@
 # FEATURES — Registro de Cambios
 
+## ✨ Etapa 4: Evolución del Alumno y Gestión de Alumnos por Curso — G6/G7/G12 (2026-09-21)
+
+> status: in-progress
+> release: v0.4
+> date: 2026-09-21
+> change_id: etapa4-evolution-management
+> module: api+db+ui
+> tags: [padel, evaluations, versions, evolution, courses, enrollment, migration, api, ui]
+
+### Problema
+
+El loop evaluativo tiene 3 gaps HIGH abiertos (`production_artifacts/2026-09-21-user-flows-v2.md` §7): (G6) el coach solo puede publicar una evaluación por fila y no existe concepto de versión para mostrar progresión del alumno; (G7) el alumno ve sus evaluaciones como lista plana sin vista de evolución/tendencia por categoría; (G12) los alumnos solo entran a un curso por invite code y el coach no puede agregar/remover alumnos manualmente.
+
+### Solución Implementada
+
+- **G6 — Versiones**: columna `evaluations.version` (integer, nullable) + índice `(studentId, rubricId, status)` + backfill legacy (migración `0007_*`); `publishEvaluation` asigna `version = MAX+1` por (studentId, rubricId) publicado; endpoints `GET /api/evaluations/series` (coach) y `GET /api/student/evaluations/series` (alumno); badge "v{N}" en `evaluation-card.tsx` (solo version > 1) y en el header de `scoring-canvas.tsx` al editar una evaluación existente.
+- **G7 — Evolución**: lógica pura `lib/padel/evolution.ts` (`computeTrend` up/down/stable + `groupByCategory` genérica, sin imports server-side); endpoint `GET /api/student/evolution` (guardUser + ACTIVE + role USER, anti-IDOR por studentId de sesión); página server `app/(app)/evolucion/page.tsx` + `components/padel/evolution-view.tsx` (client: tarjeta por categoría con flecha de tendencia, comparación última vs anterior, lista de versiones); link `/evolucion` en `bottom-nav.tsx` (rol USER).
+- **G12 — Gestión de alumnos**: `POST /api/courses/[id]/students` (add por studentId, 201/400/404/409, audita CREATE), `DELETE /api/courses/[id]/students/[studentId]` (200/404, audita DELETE), `GET /api/courses/[id]/students/search?q=` (candidatos ACTIVE/USER no inscritos, limit 20); UI en tab Alumnos de `course-detail.tsx` con botón "Agregar alumno" (`add-student-modal.tsx` con búsqueda debounced 300ms) y remover por fila con confirmación. Auditoría + anti-IDOR 404 en mutaciones.
+- **API docs**: `lib/api-docs/paths/evolution.ts` (nuevo, tag Padel Evolution) + endpoints G12 en `lib/api-docs/paths/courses.ts`; schemas `EvolutionGroupDto` (padel.ts) y `CourseStudentAddInput`/`CourseEnrollmentDto`/`CourseStudentCandidateDto` (courses.ts); compuestos en `lib/api-docs/spec.ts`.
+
+### Archivos Modificados
+
+- `lib/padel/evolution.ts` (nuevo), `app/api/student/evolution/route.ts` (nuevo), `app/(app)/evolucion/page.tsx` (nuevo), `components/padel/evolution-view.tsx` (nuevo), `components/padel/add-student-modal.tsx` (nuevo), `app/api/courses/[id]/students/route.ts` (nuevo), `app/api/courses/[id]/students/[studentId]/route.ts` (nuevo), `app/api/courses/[id]/students/search/route.ts` (nuevo), `lib/api-docs/paths/evolution.ts` (nuevo).
+- `components/padel/evaluation-card.tsx`, `components/padel/scoring-canvas.tsx`, `components/padel/bottom-nav.tsx`, `components/padel/course-detail.tsx`, `lib/validations/padel.ts`, `lib/api-docs/paths/courses.ts`, `lib/api-docs/schemas/padel.ts`, `lib/api-docs/schemas/courses.ts`, `lib/api-docs/spec.ts`.
+
+### Tests
+
+- Unit: `tests/unit/padel/evolution.test.ts` (7 casos, 100% cobertura computeTrend/groupByCategory).
+- API happy-path (SQL real): `tests/api/padel/student-evolution-happy.spec.ts`, `tests/api/padel/course-students-happy.spec.ts` + guards `tests/api/padel/course-students.spec.ts` (401 sin sesión + 403 de rol).
+- E2E: `evaluation-version.spec.ts`, `student-evolution.spec.ts`, `course-students.spec.ts` (pendientes en etapa QA).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
 ## ✨ G10: Admin UI de gestión de usuarios (CRUD completo) (2026-09-21)
 
 > status: released

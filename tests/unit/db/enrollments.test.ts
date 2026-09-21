@@ -15,6 +15,7 @@ jest.mock("@/lib/db", () => {
     c.limit = jest.fn(() => c);
     c.values = jest.fn(() => c);
     c.returning = jest.fn(async () => queue.shift() ?? []);
+    c.getSQL = jest.fn(() => ({ sql: "not exists", params: [] }));
     return c;
   };
 
@@ -38,11 +39,14 @@ jest.mock("@/lib/db", () => {
 
 import { db } from "@/lib/db";
 import {
+  addStudentToCourse,
   deleteEnrollment,
   getEnrollment,
   getStudentCourseDetail,
   joinCourse,
+  searchCourseCandidates,
 } from "@/lib/db/queries/padel/enrollments";
+import { removeStudentFromCourse } from "@/lib/db/queries/padel/courses";
 
 const mocked = jest.requireMock("@/lib/db") as any;
 const txQueue = mocked.__txQueue as any[][];
@@ -233,5 +237,85 @@ describe("getStudentCourseDetail", () => {
     expect(result).not.toBeNull();
     expect(result!.evaluations).toEqual([]);
     expect(result!.rubrics).toEqual([rubricRow]);
+  });
+});
+
+describe("addStudentToCourse", () => {
+  const activeStudent = { id: "s2", role: "USER", status: "ACTIVE" };
+
+  it("agrega alumno ACTIVE/USER a un curso activo del coach", async () => {
+    txQueue.push([course]); // curso existe + owner
+    txQueue.push([activeStudent]); // alumno existe
+    txQueue.push([]); // no ya inscrito
+    txQueue.push([enrollment]); // insert returning
+
+    const result = await addStudentToCourse("c1", "s2", "coach-1");
+    expect(result).toEqual({ ok: true, enrollment });
+  });
+
+  it("retorna course_not_found si el curso no existe o no es del coach (anti-IDOR)", async () => {
+    txQueue.push([]); // curso → null
+    const result = await addStudentToCourse("c1", "s2", "coach-1");
+    expect(result).toEqual({ ok: false, reason: "course_not_found" });
+  });
+
+  it("retorna course_archived si el curso no está activo", async () => {
+    txQueue.push([{ ...course, status: "archived" }]);
+    const result = await addStudentToCourse("c1", "s2", "coach-1");
+    expect(result).toEqual({ ok: false, reason: "course_archived" });
+  });
+
+  it("retorna own_course si intenta agregar al coach", async () => {
+    txQueue.push([course]);
+    const result = await addStudentToCourse("c1", "coach-1", "coach-1");
+    expect(result).toEqual({ ok: false, reason: "own_course" });
+  });
+
+  it("retorna student_not_found si el alumno no existe", async () => {
+    txQueue.push([course]);
+    txQueue.push([]); // alumno → null
+    const result = await addStudentToCourse("c1", "s2", "coach-1");
+    expect(result).toEqual({ ok: false, reason: "student_not_found" });
+  });
+
+  it("retorna student_not_active si el alumno no es USER/ACTIVE", async () => {
+    txQueue.push([course]);
+    txQueue.push([{ id: "s2", role: "USER", status: "TEMPORARY" }]);
+    const result = await addStudentToCourse("c1", "s2", "coach-1");
+    expect(result).toEqual({ ok: false, reason: "student_not_active" });
+  });
+
+  it("retorna already_enrolled si ya está inscrito", async () => {
+    txQueue.push([course]);
+    txQueue.push([activeStudent]);
+    txQueue.push([{ id: "e1" }]); // ya inscrito
+    const result = await addStudentToCourse("c1", "s2", "coach-1");
+    expect(result).toEqual({ ok: false, reason: "already_enrolled" });
+  });
+});
+
+describe("searchCourseCandidates", () => {
+  it("retorna candidatos USER/ACTIVE no inscritos con ILIKE", async () => {
+    const candidates = [
+      { id: "s2", firstName: "Ana", lastName: "Pérez", email: "ana@test.com" },
+    ];
+    dbQueue.push(candidates);
+    const result = await searchCourseCandidates("c1", "ana");
+    expect(result).toEqual(candidates);
+  });
+});
+
+describe("removeStudentFromCourse", () => {
+  it("elimina la inscripción y retorna la fila", async () => {
+    dbQueue.push([enrollment]);
+    const result = await removeStudentFromCourse("c1", "s1");
+    expect(result).toEqual(enrollment);
+    expect(db.delete).toHaveBeenCalled();
+  });
+
+  it("retorna null si no existe la inscripción (404)", async () => {
+    dbQueue.push([]);
+    const result = await removeStudentFromCourse("c1", "s1");
+    expect(result).toBeNull();
   });
 });

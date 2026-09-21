@@ -53,6 +53,9 @@ import {
   getStudentEvaluationById,
   listEvaluations,
   listStudentEvaluations,
+  listEvaluationSeries,
+  listStudentEvaluationSeries,
+  listStudentEvolution,
   saveEvaluationScores,
   publishEvaluation,
   markEvaluationRead,
@@ -212,11 +215,89 @@ describe("publishEvaluation", () => {
       [evaluation], // select evaluation
       [{ id: "c1" }, { id: "c2" }], // criteria
       [{ criteriaId: "c1" }, { criteriaId: "c2" }], // scores completos
-      [{ ...evaluation, status: "published", publishedAt: new Date(), updatedAt: new Date() }], // update returning
+      [{ maxVersion: 1 }], // MAX(version) → nextVersion = 2
+      [{ ...evaluation, status: "published", publishedAt: new Date(), version: 2, updatedAt: new Date() }], // update returning
     );
     const result = await publishEvaluation("coach1", "e1");
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.evaluation.status).toBe("published");
+    if (result.ok) {
+      expect(result.evaluation.status).toBe("published");
+      expect(result.evaluation.version).toBe(2);
+    }
+  });
+
+  it("asigna version 1 cuando no hay publicadas previas (MAX null → 1)", async () => {
+    txQueue.push(
+      [evaluation], // select evaluation
+      [{ id: "c1" }, { id: "c2" }], // criteria
+      [{ criteriaId: "c1" }, { criteriaId: "c2" }], // scores completos
+      [{ maxVersion: null }], // MAX(version) → nextVersion = 1
+      [{ ...evaluation, status: "published", publishedAt: new Date(), version: 1, updatedAt: new Date() }], // update returning
+    );
+    const result = await publishEvaluation("coach1", "e1");
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.evaluation.version).toBe(1);
+  });
+});
+
+describe("listEvaluationSeries", () => {
+  it("retorna serie del coach con scores enriquecidos ordenada por version", async () => {
+    const rows = [
+      { id: "e1", version: 1, status: "published", totalScore: 7, maxScore: 8, publishedAt: new Date(), studentId: "stu1", teacherId: "coach1", rubricId: "r1" },
+      { id: "e2", version: 2, status: "published", totalScore: 8, maxScore: 8, publishedAt: new Date(), studentId: "stu1", teacherId: "coach1", rubricId: "r1" },
+    ];
+    dbQueue.push(rows); // select evaluations
+    dbQueue.push([{ evaluationId: "e1", criteriaId: "c1", levelId: "lv2", score: 3, comment: null }]); // scores
+    dbQueue.push([{ id: "c1", name: "Drive" }]); // criteria
+    dbQueue.push([{ id: "lv2", name: "Bueno" }]); // levels
+
+    const result = await listEvaluationSeries("coach1", "stu1", "r1");
+    expect(result).toHaveLength(2);
+    expect(result[0].version).toBe(1);
+    expect(result[0].scores).toEqual([
+      { criteriaId: "c1", criterionName: "Drive", levelId: "lv2", levelName: "Bueno", score: 3, comment: null },
+    ]);
+  });
+
+  it("retorna [] si no hay evaluaciones del teacher (anti-IDOR)", async () => {
+    dbQueue.push([]);
+    const result = await listEvaluationSeries("coach1", "stu1", "r1");
+    expect(result).toEqual([]);
+  });
+});
+
+describe("listStudentEvaluationSeries", () => {
+  it("retorna solo publicadas del alumno ordenadas por version", async () => {
+    const rows = [
+      { id: "e1", version: 1, status: "published", totalScore: 7, maxScore: 8, publishedAt: new Date(), studentId: "stu1", teacherId: "coach1", rubricId: "r1" },
+    ];
+    dbQueue.push(rows); // select evaluations (filtro status=published en where)
+    dbQueue.push([]); // scores
+    dbQueue.push([]); // criteria
+    dbQueue.push([]); // levels
+
+    const result = await listStudentEvaluationSeries("stu1", "r1");
+    expect(result).toHaveLength(1);
+    expect(result[0].version).toBe(1);
+  });
+});
+
+describe("listStudentEvolution", () => {
+  it("retorna evaluaciones publicadas con rubricTitle y scores, ordenadas por publishedAt", async () => {
+    const rows = [
+      { id: "e1", rubricId: "r1", rubricTitle: "Saque", category: "tecnica_basica", version: 1, totalScore: 7, maxScore: 8, publishedAt: new Date("2026-09-01"), readAt: null },
+      { id: "e2", rubricId: "r1", rubricTitle: "Saque", category: "tecnica_basica", version: 2, totalScore: 8, maxScore: 8, publishedAt: new Date("2026-09-10"), readAt: null },
+    ];
+    dbQueue.push(rows); // select evaluations + innerJoin rubrics
+    dbQueue.push([]); // scores
+    dbQueue.push([]); // criteria
+    dbQueue.push([]); // levels
+
+    const result = await listStudentEvolution("stu1");
+    expect(result).toHaveLength(2);
+    expect(result[0].rubricTitle).toBe("Saque");
+    expect(result[0].category).toBe("tecnica_basica");
+    expect(result[1].version).toBe(2);
   });
 });
 

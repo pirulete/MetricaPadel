@@ -42,6 +42,7 @@ export function ScoringCanvas({ evaluationId }: ScoringCanvasProps) {
   const [globalComment, setGlobalComment] = React.useState("")
   const [saving, setSaving] = React.useState(false)
   const [publishing, setPublishing] = React.useState(false)
+  const [version, setVersion] = React.useState<number | null>(null)
 
   const rubric = rubrics.find((r) => r.rubric.id === rubricId) ?? null
   const totalScore = computeTotalScore(
@@ -82,6 +83,7 @@ export function ScoringCanvas({ evaluationId }: ScoringCanvasProps) {
           const evBody = await evRes.json()
           setRubricId(evBody.evaluation.rubricId)
           setStudentId(evBody.evaluation.studentId)
+          setVersion(evBody.evaluation.version ?? null)
           setGlobalComment(evBody.evaluation.globalComment ?? "")
           setScores(
             evBody.scores.map((s: { criteriaId: string; levelId: string; comment?: string }) => ({
@@ -221,6 +223,11 @@ export function ScoringCanvas({ evaluationId }: ScoringCanvasProps) {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">
           {evaluationId ? "Evaluación en curso" : "Evaluar alumno"}
+          {version && version > 1 && (
+            <span className="ml-2 align-middle text-sm font-medium text-muted-foreground">
+              v{version}
+            </span>
+          )}
         </h1>
         <p className="text-sm text-muted-foreground">
           Selecciona nivel por criterio. El score se calcula en vivo.

@@ -253,4 +253,29 @@ export const padelSchemas = {
       },
     },
   },
+  EvolutionGroupDto: {
+    type: 'object',
+    description: 'Grupo de evaluaciones de una categoría con tendencia (G7).',
+    properties: {
+      category: { type: 'string', enum: ['reglas', 'tecnica_basica', 'tecnica_especifica', 'tactica', 'fisica', 'actitud_equipo'] },
+      trend: { type: 'string', enum: ['up', 'down', 'stable'], description: 'Tendencia entre la última y la anterior evaluación' },
+      items: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            rubricId: { type: 'string', format: 'uuid' },
+            rubricTitle: { type: 'string' },
+            category: { type: 'string', enum: ['reglas', 'tecnica_basica', 'tecnica_especifica', 'tactica', 'fisica', 'actitud_equipo'] },
+            version: { type: 'integer', nullable: true, description: 'Versión 1..N por (studentId, rubricId); null en drafts legacy' },
+            totalScore: { type: 'integer', nullable: true },
+            maxScore: { type: 'integer', nullable: true },
+            publishedAt: { type: 'string', format: 'date-time', nullable: true },
+            readAt: { type: 'string', format: 'date-time', nullable: true },
+          },
+        },
+      },
+    },
+  },
 } as const;

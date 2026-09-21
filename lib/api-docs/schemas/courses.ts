@@ -99,6 +99,31 @@ export const coursesSchemas = {
       rubricId: { type: 'string', format: 'uuid' },
     },
   },
+  CourseStudentAddInput: {
+    type: 'object',
+    required: ['studentId'],
+    properties: {
+      studentId: { type: 'string', format: 'uuid' },
+    },
+  },
+  CourseEnrollmentDto: {
+    type: 'object',
+    properties: {
+      id: { type: 'string', format: 'uuid' },
+      courseId: { type: 'string', format: 'uuid' },
+      studentId: { type: 'string', format: 'uuid' },
+      joinedAt: { type: 'string', format: 'date-time' },
+    },
+  },
+  CourseStudentCandidateDto: {
+    type: 'object',
+    properties: {
+      id: { type: 'string', format: 'uuid' },
+      firstName: { type: 'string', nullable: true },
+      lastName: { type: 'string', nullable: true },
+      email: { type: 'string', format: 'email' },
+    },
+  },
   CourseRubricDto: {
     type: 'object',
     properties: {

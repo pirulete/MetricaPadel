@@ -12,9 +12,9 @@ import {
   getPool,
 } from "../admin/marketing/helpers";
 
-const ADMIN_EMAIL = `padel-coverage-admin-${Date.now()}@test.local`;
+const ADMIN_EMAIL = "padel-coverage-admin@test.local";
 const ADMIN_PASSWORD = "TestPass123!";
-const STUDENT_EMAIL = `padel-coverage-student-${Date.now()}@test.local`;
+const STUDENT_EMAIL = "padel-coverage-student@test.local";
 const STUDENT_PASSWORD = "TestPass123!";
 
 let serverProbe: Promise<boolean> | null = null;
@@ -37,6 +37,16 @@ test.describe("Cobertura dimensional (R5) — happy-path (SQL real)", () => {
   }
 
   test.beforeAll(async () => {
+    const pool = getPool();
+    // Aggressive cleanup before creating users (handles stale UUIDs)
+    await pool.query(`DELETE FROM evaluation_scores WHERE evaluation_id IN (SELECT e.id FROM evaluations e INNER JOIN users u ON e.student_id = u.id WHERE u.email = $1)`, [STUDENT_EMAIL]);
+    await pool.query(`DELETE FROM evaluation_scores WHERE evaluation_id IN (SELECT e.id FROM evaluations e INNER JOIN users u ON e.teacher_id = u.id WHERE u.email = $1)`, [ADMIN_EMAIL]);
+    await pool.query(`DELETE FROM evaluations WHERE student_id IN (SELECT id FROM users WHERE email = $1)`, [STUDENT_EMAIL]);
+    await pool.query(`DELETE FROM evaluations WHERE teacher_id IN (SELECT id FROM users WHERE email = $1)`, [ADMIN_EMAIL]);
+    await pool.query(`DELETE FROM rubrics WHERE owner_id IN (SELECT id FROM users WHERE email = $1)`, [ADMIN_EMAIL]);
+    await pool.query(`DELETE FROM notifications WHERE user_id IN (SELECT id FROM users WHERE email = $1)`, [STUDENT_EMAIL]);
+    await pool.query(`DELETE FROM users WHERE email = ANY($1)`, [[ADMIN_EMAIL, STUDENT_EMAIL]]);
+    // Now create fresh
     await createUser({ role: "ADMIN", email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
     await createUser({ role: "USER", email: STUDENT_EMAIL, password: STUDENT_PASSWORD });
   });
@@ -78,6 +88,12 @@ test.describe("Cobertura dimensional (R5) — happy-path (SQL real)", () => {
     const rubricId = rubric.rubric.rubric.id;
     const levels = rubric.rubric.levels;
     const criteria = rubric.rubric.criteria;
+
+    // Publish rubric (must be active for evaluation) — only set status
+    await ctx.put(`/api/rubrics/${rubricId}`, {
+      data: { status: "active" },
+      headers: { "Content-Type": "application/json" },
+    });
 
     const post = await ctx.post("/api/evaluations", {
       data: { studentId, rubricId },

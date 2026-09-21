@@ -58,7 +58,20 @@ export async function POST(
       });
     }
 
-    return NextResponse.json({ evaluation: result.evaluation }, { status: 200 });
+    // R5: cobertura dimensional — soft-block warning
+    let alreadyEvaluated = false;
+    if (result.evaluation.studentId) {
+      const [rubricRow] = await db.select({ category: rubrics.category })
+        .from(rubrics)
+        .where(eq(rubrics.id, result.evaluation.rubricId))
+        .limit(1);
+      if (rubricRow) {
+        const coverage = await checkDimensionalCoverage(result.evaluation.studentId, rubricRow.category, id);
+        alreadyEvaluated = coverage.alreadyEvaluated;
+      }
+    }
+
+    return NextResponse.json({ evaluation: result.evaluation, alreadyEvaluated }, { status: 200 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Datos inválidos", details: error.errors }, { status: 400 });

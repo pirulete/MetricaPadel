@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { CopyIcon, UsersIcon, BookOpenIcon } from "lucide-react"
+import { CopyIcon, UsersIcon, BookOpenIcon, Trash2Icon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -16,6 +16,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { EmptyState } from "@/components/padel/empty-state"
 import { AssignRubricModal } from "@/components/padel/assign-rubric-modal"
+import { AddStudentModal } from "@/components/padel/add-student-modal"
 
 export type CourseDetailData = {
   course: {
@@ -52,6 +53,7 @@ const LEVEL_LABELS: Record<CourseDetailData["course"]["level"], string> = {
 export function CourseDetail({ course }: { course: CourseDetailData }) {
   const router = useRouter()
   const [copied, setCopied] = React.useState(false)
+  const [removingId, setRemovingId] = React.useState<string | null>(null)
 
   const copyCode = async () => {
     try {
@@ -60,6 +62,27 @@ export function CourseDetail({ course }: { course: CourseDetailData }) {
       setTimeout(() => setCopied(false), 1500)
     } catch {
       toast.error("No se pudo copiar el código")
+    }
+  }
+
+  const handleRemoveStudent = async (studentId: string) => {
+    if (!window.confirm("¿Quitar a este alumno del curso? Sus evaluaciones se conservan.")) return
+    setRemovingId(studentId)
+    try {
+      const res = await fetch(`/api/courses/${course.course.id}/students/${studentId}`, {
+        method: "DELETE",
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error ?? "No se pudo quitar al alumno")
+        return
+      }
+      toast.success("Alumno quitado del curso")
+      router.refresh()
+    } catch {
+      toast.error("Error de conexión")
+    } finally {
+      setRemovingId(null)
     }
   }
 
@@ -96,10 +119,13 @@ export function CourseDetail({ course }: { course: CourseDetailData }) {
         </TabsList>
 
         <TabsContent value="students" className="mt-4">
+          <div className="mb-4">
+            <AddStudentModal courseId={course.course.id} onAdded={() => router.refresh()} />
+          </div>
           {course.students.length === 0 ? (
             <EmptyState
               title="Sin alumnos todavía"
-              description="Comparte el código de invitación para que tus alumnos se unan."
+              description="Comparte el código de invitación o agrega alumnos manualmente."
             />
           ) : (
             <Card>
@@ -118,9 +144,21 @@ export function CourseDetail({ course }: { course: CourseDetailData }) {
                       </p>
                       <p className="text-xs text-muted-foreground">{s.email}</p>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(s.joinedAt).toLocaleDateString("es-ES")}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(s.joinedAt).toLocaleDateString("es-ES")}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => void handleRemoveStudent(s.id)}
+                        disabled={removingId === s.id}
+                        aria-label={`Quitar a ${s.firstName} ${s.lastName} del curso`}
+                      >
+                        <Trash2Icon className="size-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </CardContent>

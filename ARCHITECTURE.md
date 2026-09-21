@@ -120,6 +120,16 @@ Principio: **NUNCA permitir LOCKED** en rutas privadas. TEMPORARY solo si explí
 - **UI**: `app/(public)/{login,register}` (SCR-02/03 reales), `app/(app)/dashboard` (router por rol D5: P01/A01), `app/(app)/cursos` (P05) + `cursos/[id]` (P07 tabs + copiar código + evaluar), `app/(app)/historial` (P10 filtros), `app/(app)/settings` (G5: perfil + cambio de contraseña). 11 componentes en `components/padel/` (bottom-nav, course-card/detail, create/join/assign modals, history-list, dashboard-metrics, teacher/student-dashboard, profile-form).
 - **Migración**: `0005_*` (enums + 3 tablas + evaluations.courseId + índices).
 
+## Padel Evaluativo — Evolución y Gestión de Alumnos (v0.4)
+
+- **Roles**: mismos USER/ADMIN (ADMIN=coach, USER=player). Sin cambios de auth.
+- **DB**: cambio aditivo en `evaluations`: columna `version` (integer, **nullable** — solo publicadas tienen 1..N por (studentId, rubricId); drafts null) + índice `evaluations_student_rubric_status_idx` (studentId, rubricId, status). Cómputo de versión en `publishEvaluation` (`COALESCE(MAX(version),0)+1` dentro de la transacción). Backfill legacy con `row_number() OVER (PARTITION BY student_id, rubric_id ORDER BY published_at)`.
+- **Queries**: `lib/db/queries/padel/evaluations.ts` (+`listEvaluationSeries` coach, `listStudentEvaluationSeries` alumno, `listStudentEvolution` G7, MOD `publishEvaluation`), `lib/db/queries/padel/enrollments.ts` (+`addStudentToCourse` transaccional, `searchCourseCandidates`), `lib/db/queries/padel/courses.ts` (+`removeStudentFromCourse`).
+- **Endpoints nuevos** (6 route handlers): `app/api/evaluations/series` (G6 coach), `app/api/student/evaluations/series` (G6 alumno), `app/api/student/evolution` (G7), `app/api/courses/[id]/students` (POST G12), `app/api/courses/[id]/students/[studentId]` (DELETE G12), `app/api/courses/[id]/students/search` (GET G12). Guards `guardAdmin`/`guardUser` + auditoría en mutaciones + anti-IDOR 404.
+- **Lógica pura**: `lib/padel/evolution.ts` (computeTrend up/down/equal + groupByCategory, sin imports server-side).
+- **UI**: `app/(app)/evolucion` + `components/padel/evolution-view.tsx` (G7); badge "Versión N" en `scoring-canvas` y `evaluation-card` (G6); tab Alumnos en `course-detail.tsx` con modal de búsqueda + remover (G12); link `/evolucion` en `bottom-nav` y lista del alumno.
+- **Migración**: `0007_nostalgic_dagger.sql` (columna + índice + backfill custom).
+
 ## Convenciones de Migraciones
 
 - **Siempre usar `pnpm run db:generate` tras modificar `lib/db/schema.ts`** — nunca crear SQL a mano.

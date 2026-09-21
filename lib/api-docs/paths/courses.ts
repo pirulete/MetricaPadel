@@ -150,6 +150,62 @@ export const coursesPaths = {
       },
     },
   },
+  '/api/courses/{id}/students': {
+    post: {
+      tags: ['Padel Courses'],
+      summary: 'Agregar alumno al curso (G12)',
+      description: 'Agrega un alumno (USER, ACTIVE) al curso manualmente. 404 curso ajeno/inexistente (anti-IDOR) o alumno inexistente; 400 alumno no activo o coach; 409 ya inscrito. Audita CREATE.',
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CourseStudentAddInput' } } } },
+      responses: {
+        '201': { description: 'Alumno agregado', content: { 'application/json': { schema: { type: 'object', properties: { enrollment: { $ref: '#/components/schemas/CourseEnrollmentDto' } } } } } },
+        '400': { description: 'Datos inválidos, alumno no activo o coach' },
+        '401': { description: 'No autenticado' },
+        '403': { description: 'Sin rol ADMIN' },
+        '404': { description: 'Curso o alumno no encontrado' },
+        '409': { description: 'Ya inscrito' },
+      },
+    },
+  },
+  '/api/courses/{id}/students/{studentId}': {
+    delete: {
+      tags: ['Padel Courses'],
+      summary: 'Quitar alumno del curso (G12)',
+      description: 'Elimina la inscripción de un alumno al curso. 404 curso ajeno/inexistente (anti-IDOR) o inscripción inexistente. Las evaluaciones conservan courseId (historial intacto). Audita DELETE.',
+      security: [{ bearerAuth: [] }],
+      parameters: [
+        { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+        { name: 'studentId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+      ],
+      responses: {
+        '200': { description: 'Alumno quitado', content: { 'application/json': { schema: { type: 'object', properties: { ok: { type: 'boolean', enum: [true] } } } } } },
+        '400': { description: 'id o studentId inválido' },
+        '401': { description: 'No autenticado' },
+        '403': { description: 'Sin rol ADMIN' },
+        '404': { description: 'Curso no encontrado o alumno no inscrito' },
+      },
+    },
+  },
+  '/api/courses/{id}/students/search': {
+    get: {
+      tags: ['Padel Courses'],
+      summary: 'Buscar candidatos a agregar al curso (G12)',
+      description: 'Usuarios role USER + ACTIVE no inscritos al curso, ILIKE por email/nombre, limit 20. 404 curso ajeno/inexistente (anti-IDOR). Solo lectura, sin auditoría.',
+      security: [{ bearerAuth: [] }],
+      parameters: [
+        { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+        { name: 'q', in: 'query', required: true, schema: { type: 'string', minLength: 1, maxLength: 100 } },
+      ],
+      responses: {
+        '200': { description: 'Candidatos', content: { 'application/json': { schema: { type: 'object', properties: { candidates: { type: 'array', items: { $ref: '#/components/schemas/CourseStudentCandidateDto' } } } } } } },
+        '400': { description: 'id o q inválido' },
+        '401': { description: 'No autenticado' },
+        '403': { description: 'Sin rol ADMIN' },
+        '404': { description: 'Curso no encontrado' },
+      },
+    },
+  },
   '/api/dashboard/teacher': {
     get: {
       tags: ['Padel Dashboard'],

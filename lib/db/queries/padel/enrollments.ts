@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, notExists, or, sql } from "drizzle-orm";
 import {
   courses,
   courseEnrollments,
@@ -22,6 +22,84 @@ export type JoinCourseResult =
       courseName: string;
     }
   | { ok: false; reason: 'not_found' | 'archived' | 'own_course' | 'already_enrolled' };
+
+export type AddStudentResult =
+  | { ok: true; enrollment: typeof courseEnrollments.$inferSelect }
+  | { ok: false; reason: 'course_not_found' | 'course_archived' | 'student_not_found' | 'student_not_active' | 'own_course' | 'already_enrolled' };
+
+/**
+ * Agrega alumno a un curso manualmente (G12, coach). Transaccional:
+ * valida curso existe + activo + ownerId=addedById (404), alumno existe +
+ * role USER + status ACTIVE (400), no es el coach (400), no ya inscrito (409).
+ * UNIQUE(courseId, studentId) respalda en DB.
+ */
+export async function addStudentToCourse(courseId: string, studentId: string, addedById: string): Promise<AddStudentResult> {
+  return await db.transaction(async (tx) => {
+    const [course] = await tx.select().from(courses)
+      .where(eq(courses.id, courseId))
+      .limit(1);
+    if (!course || course.ownerId !== addedById) return { ok: false as const, reason: 'course_not_found' as const };
+    if (course.status !== 'active') return { ok: false as const, reason: 'course_archived' as const };
+    if (course.ownerId === studentId) return { ok: false as const, reason: 'own_course' as const };
+
+    const [student] = await tx.select().from(users)
+      .where(eq(users.id, studentId))
+      .limit(1);
+    if (!student) return { ok: false as const, reason: 'student_not_found' as const };
+    if (student.role !== 'USER' || student.status !== 'ACTIVE') return { ok: false as const, reason: 'student_not_active' as const };
+
+    const [existing] = await tx.select({ id: courseEnrollments.id }).from(courseEnrollments)
+      .where(and(
+        eq(courseEnrollments.courseId, courseId),
+        eq(courseEnrollments.studentId, studentId),
+      ))
+      .limit(1);
+    if (existing) return { ok: false as const, reason: 'already_enrolled' as const };
+
+    const [enrollment] = await tx.insert(courseEnrollments).values({
+      courseId,
+      studentId,
+    }).returning();
+
+    return { ok: true as const, enrollment };
+  });
+}
+
+/**
+ * Candidatos a agregar a un curso (G12 search): usuarios role USER + status
+ * ACTIVE no inscritos al curso, ILIKE por email/firstName/lastName, limit 20.
+ * Excluye al coach (owner) — el coach es ADMIN, ya filtrado por role USER.
+ */
+export async function searchCourseCandidates(courseId: string, q: string) {
+  const pattern = `%${q}%`;
+
+  return await db
+    .select({
+      id: users.id,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      email: users.email,
+    })
+    .from(users)
+    .where(and(
+      eq(users.role, 'USER'),
+      eq(users.status, 'ACTIVE'),
+      or(
+        ilike(users.email, pattern),
+        ilike(users.firstName, pattern),
+        ilike(users.lastName, pattern),
+      ),
+      notExists(
+        db.select({ id: courseEnrollments.id })
+          .from(courseEnrollments)
+          .where(and(
+            eq(courseEnrollments.courseId, courseId),
+            eq(courseEnrollments.studentId, users.id),
+          )),
+      ),
+    ))
+    .limit(20);
+}
 
 /**
  * Inscribe alumno a un curso por inviteCode (case-insensitive) en transacción.

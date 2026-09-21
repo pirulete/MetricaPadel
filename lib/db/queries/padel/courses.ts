@@ -206,3 +206,19 @@ export async function listCourseRubrics(courseId: string) {
     .where(eq(courseRubrics.courseId, courseId))
     .orderBy(desc(courseRubrics.assignedAt));
 }
+
+/**
+ * Remueve alumno de un curso (G12, coach). Delete scoped: retorna la fila
+ * eliminada o null si no existe la inscripción (404, anti-IDOR). El guard de
+ * ownership del curso (ownerId) vive en el route handler. Las evaluaciones
+ * conservan courseId (historial intacto, FK set null no aplica aquí).
+ */
+export async function removeStudentFromCourse(courseId: string, studentId: string) {
+  const [row] = await db.delete(courseEnrollments)
+    .where(and(
+      eq(courseEnrollments.courseId, courseId),
+      eq(courseEnrollments.studentId, studentId),
+    ))
+    .returning();
+  return row ?? null;
+}

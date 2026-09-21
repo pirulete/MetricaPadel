@@ -30,6 +30,7 @@ export type CreateRubricInput = {
 export type UpdateRubricInput = {
   title?: string;
   category?: RubricCategory;
+  status?: "draft" | "active" | "archived";
   /** Reemplazo completo de criteria/descriptors (se borran y recrean). */
   criteria?: Array<{ name: string; descriptors: string[] }>;
 };
@@ -158,6 +159,7 @@ export async function updateRubric(ownerId: string, id: string, data: UpdateRubr
       .set({
         ...(data.title !== undefined ? { title: data.title } : {}),
         ...(data.category !== undefined ? { category: data.category } : {}),
+        ...(data.status !== undefined ? { status: data.status } : {}),
         updatedAt: new Date(),
       })
       .where(eq(rubrics.id, id))

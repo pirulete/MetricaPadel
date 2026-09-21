@@ -52,8 +52,10 @@ export const rubricCreateSchema = z.object({
     .max(50, "máximo 50 criterios"),
 });
 
-/** PUT /api/rubrics/[id] — partial de create (reemplazo completo de criteria si viene). */
-export const rubricUpdateSchema = rubricCreateSchema.partial();
+/** PUT /api/rubrics/[id] — partial de create + status (reemplazo completo de criteria si viene). */
+export const rubricUpdateSchema = rubricCreateSchema.extend({
+  status: z.enum(["draft", "active", "archived"]).optional(),
+}).partial();
 
 /** POST /api/evaluations — crea borrador (studentId + rubricId). */
 export const evaluationCreateSchema = z.object({
@@ -118,6 +120,16 @@ export const historyQuerySchema = z.object({
   status: z.enum(evaluationStatusValues).optional(),
 });
 
+/** POST /api/courses/[id]/students — agrega alumno por id (G12, coach). */
+export const courseStudentAddSchema = z.object({
+  studentId: z.string().uuid("studentId debe ser un uuid válido"),
+});
+
+/** GET /api/courses/[id]/students/search — query de búsqueda de candidatos (G12). */
+export const courseStudentSearchQuerySchema = z.object({
+  q: z.string().trim().min(1, "q es requerido").max(100, "q no puede superar 100 caracteres"),
+});
+
 export type AdminCreateUserInput = z.infer<typeof adminCreateUserSchema>;
 export type AdminUpdateUserInput = z.infer<typeof adminUpdateUserSchema>;
 export type RubricCreateInput = z.infer<typeof rubricCreateSchema>;
@@ -129,3 +141,5 @@ export type CourseUpdateInput = z.infer<typeof courseUpdateSchema>;
 export type CourseJoinInput = z.infer<typeof courseJoinSchema>;
 export type CourseRubricAssignInput = z.infer<typeof courseRubricAssignSchema>;
 export type HistoryQueryInput = z.infer<typeof historyQuerySchema>;
+export type CourseStudentAddInput = z.infer<typeof courseStudentAddSchema>;
+export type CourseStudentSearchQueryInput = z.infer<typeof courseStudentSearchQuerySchema>;

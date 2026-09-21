@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BookOpenIcon, ClipboardListIcon, HomeIcon, HistoryIcon, User } from "lucide-react"
+import { BookOpenIcon, ClipboardListIcon, HomeIcon, HistoryIcon, TrendingUpIcon, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface BottomNavProps {
@@ -21,6 +21,7 @@ const USER_ITEMS = [
   { href: "/dashboard", label: "Inicio", icon: HomeIcon },
   { href: "/cursos", label: "Cursos", icon: BookOpenIcon },
   { href: "/evaluaciones", label: "Mis evaluaciones", icon: ClipboardListIcon },
+  { href: "/evolucion", label: "Evolución", icon: TrendingUpIcon },
   { href: "/settings", label: "Perfil", icon: User },
 ]
 

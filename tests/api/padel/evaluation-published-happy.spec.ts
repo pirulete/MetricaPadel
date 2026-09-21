@@ -38,6 +38,12 @@ test.describe("Evaluation published — happy-path (SQL real)", () => {
   test.beforeAll(async () => {
     await createUser({ role: "ADMIN", email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
     await createUser({ role: "USER", email: STUDENT_EMAIL, password: STUDENT_PASSWORD });
+    // Cleanup leftover data from previous runs
+    const pool = getPool();
+    await pool.query(`DELETE FROM notifications WHERE user_id IN (SELECT id FROM users WHERE email = $1)`, [STUDENT_EMAIL]);
+    await pool.query(`DELETE FROM evaluation_scores WHERE evaluation_id IN (SELECT id FROM evaluations WHERE student_id IN (SELECT id FROM users WHERE email = $1))`, [STUDENT_EMAIL]);
+    await pool.query(`DELETE FROM evaluations WHERE student_id IN (SELECT id FROM users WHERE email = $1)`, [STUDENT_EMAIL]);
+    await pool.query(`DELETE FROM rubrics WHERE owner_id IN (SELECT id FROM users WHERE email = $1)`, [ADMIN_EMAIL]);
   });
 
   test.afterAll(async () => {

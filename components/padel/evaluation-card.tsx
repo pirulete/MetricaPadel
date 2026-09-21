@@ -13,6 +13,7 @@ export type StudentEvaluationListItem = {
   id: string
   rubricTitle: string
   category: "reglas" | "tecnica_basica" | "tecnica_especifica" | "tactica" | "fisica" | "actitud_equipo"
+  version: number | null
   totalScore: number | null
   maxScore: number | null
   publishedAt: string | null
@@ -36,9 +37,14 @@ export function EvaluationCard({ evaluation }: { evaluation: StudentEvaluationLi
       <CardHeader className="gap-1">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-base">{evaluation.rubricTitle}</CardTitle>
-          <Badge variant={isRead ? "outline" : "secondary"}>
-            {isRead ? "Leída" : "Nueva"}
-          </Badge>
+          <div className="flex items-center gap-1.5">
+            {evaluation.version && evaluation.version > 1 && (
+              <Badge variant="outline" className="text-[10px]">v{evaluation.version}</Badge>
+            )}
+            <Badge variant={isRead ? "outline" : "secondary"}>
+              {isRead ? "Leída" : "Nueva"}
+            </Badge>
+          </div>
         </div>
         <Badge variant="outline" className="w-fit">
           {CATEGORY_LABELS[evaluation.category]}

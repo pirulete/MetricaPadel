@@ -3,7 +3,6 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -28,18 +27,31 @@ export default function LoginPage() {
     if (!email.trim() || !password) return
     setLoading(true)
     try {
-      const result = await signIn("credentials", {
-        email: email.trim(),
-        password,
-        redirect: false,
+      // Use fetch directly to avoid ClientFetchError from signIn() when
+      // CSRF endpoint returns empty body in development (skipCSRFCheck).
+      const res = await fetch("/api/auth/callback/credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          email: email.trim(),
+          password,
+          redirect: "false",
+          callbackUrl: "/dashboard",
+        }),
+        redirect: "manual",
       })
-      if (result?.error) {
-        toast.error("Credenciales inválidas o cuenta bloqueada")
+
+      // redirect: "manual" — we handle navigation ourselves.
+      // On success Auth.js sets the session cookie and returns 302.
+      if (res.type === "opaqueredirect" || res.status >= 300 && res.status < 400) {
+        toast.success("Sesión iniciada")
+        router.push("/dashboard")
+        router.refresh()
         return
       }
-      toast.success("Sesión iniciada")
-      router.push("/dashboard")
-      router.refresh()
+
+      // If we got here, login failed (401/403 or CredentialsSignin redirect in body)
+      toast.error("Credenciales inválidas o cuenta bloqueada")
     } catch {
       toast.error("Error de conexión")
     } finally {

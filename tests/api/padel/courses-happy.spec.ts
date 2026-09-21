@@ -110,7 +110,7 @@ test.describe("Courses — happy-path (SQL real)", () => {
       const rubricPost = await ctx.post("/api/rubrics", {
         data: {
           title: "Saque",
-          category: "tecnica",
+          category: "tecnica_basica",
           criteria: [{ name: "Precisión", descriptors: ["A", "B", "C", "D"] }],
         },
         headers: { "Content-Type": "application/json" },

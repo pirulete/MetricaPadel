@@ -185,6 +185,24 @@ const spec = {
         },
       },
     },
+    '/api/user/password': {
+      put: {
+        tags: ['User'],
+        summary: 'Cambiar contraseña propia',
+        description: 'Valida la contraseña actual contra el hash almacenado y actualiza a la nueva. Requiere usuario ACTIVE.',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/ChangePasswordInput' } } },
+        },
+        responses: {
+          '200': { description: 'Contraseña actualizada' },
+          '400': { description: 'Contraseña actual incorrecta o datos inválidos' },
+          '401': { description: 'No autenticado' },
+          '403': { description: 'No autorizado (LOCKED o no ACTIVE)' },
+        },
+      },
+    },
   },
   components: {
     securitySchemes: {
@@ -261,6 +279,14 @@ const spec = {
           firstName: { type: 'string' },
           lastName: { type: 'string' },
           phone: { type: 'string' },
+        },
+      },
+      ChangePasswordInput: {
+        type: 'object',
+        required: ['currentPassword', 'newPassword'],
+        properties: {
+          currentPassword: { type: 'string', minLength: 1, description: 'Contraseña actual' },
+          newPassword: { type: 'string', minLength: 8, description: 'Nueva contraseña (mínimo 8 caracteres, distinta de la actual)' },
         },
       },
       AuthResponse: {

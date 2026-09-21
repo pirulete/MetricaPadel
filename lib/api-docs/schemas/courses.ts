@@ -106,7 +106,7 @@ export const coursesSchemas = {
       courseId: { type: 'string', format: 'uuid' },
       rubricId: { type: 'string', format: 'uuid' },
       title: { type: 'string' },
-      category: { type: 'string', enum: ['tecnica', 'tactica', 'fisica', 'actitud'] },
+      category: { type: 'string', enum: ['reglas', 'tecnica_basica', 'tecnica_especifica', 'tactica', 'fisica', 'actitud_equipo'] },
       assignedAt: { type: 'string', format: 'date-time' },
     },
   },

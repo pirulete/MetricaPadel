@@ -389,7 +389,7 @@ export type NewNotificationPreference = typeof notificationPreferences.$inferIns
 // ---------------------------------------------------------------------------
 
 export const rubricCategoryEnum = pgEnum('rubric_category', [
-  'tecnica', 'tactica', 'fisica', 'actitud',
+  'reglas', 'tecnica_basica', 'tecnica_especifica', 'tactica', 'fisica', 'actitud_equipo',
 ]);
 
 export const rubricStatusEnum = pgEnum('rubric_status', [

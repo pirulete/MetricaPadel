@@ -43,7 +43,7 @@ test.describe("Promote — happy-path (SQL real)", () => {
   test.afterAll(async () => {
     const pool = getPool();
     await pool.query(
-      `DELETE FROM audit_logs WHERE entity_name = 'user' AND entity_id IN (SELECT id FROM users WHERE email = $1)`,
+      `DELETE FROM audit_logs WHERE entity_name = 'user' AND entity_id::uuid IN (SELECT id FROM users WHERE email = $1)`,
       [USER_EMAIL]
     );
     await pool.query(`DELETE FROM users WHERE email = ANY($1)`, [[ADMIN_EMAIL, USER_EMAIL]]);

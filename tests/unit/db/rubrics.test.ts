@@ -65,7 +65,7 @@ const rubric = {
   id: "r1",
   ownerId: "coach1",
   title: "Saque",
-  category: "tecnica",
+  category: "tecnica_basica",
   status: "draft",
   createdAt: new Date("2026-09-20T10:00:00Z"),
   updatedAt: new Date("2026-09-20T10:00:00Z"),
@@ -100,7 +100,7 @@ describe("createRubric", () => {
     const result = await createRubric({
       ownerId: "coach1",
       title: "Saque",
-      category: "tecnica",
+      category: "tecnica_basica",
       criteria: [{ name: "Precisión", descriptors: ["desc 0", "desc 1", "desc 2", "desc 3"] }],
     });
 
@@ -122,7 +122,7 @@ describe("createRubric", () => {
     const result = await createRubric({
       ownerId: "coach1",
       title: "Saque",
-      category: "tecnica",
+      category: "tecnica_basica",
       criteria: [
         { name: "Precisión", descriptors: ["a", "b", "c", "d"] },
         { name: "Potencia", descriptors: ["e", "f", "g", "h"] },

@@ -40,6 +40,7 @@ import { db } from "@/lib/db";
 import {
   deleteEnrollment,
   getEnrollment,
+  getStudentCourseDetail,
   joinCourse,
 } from "@/lib/db/queries/padel/enrollments";
 
@@ -120,5 +121,117 @@ describe("deleteEnrollment", () => {
     const result = await deleteEnrollment("c1", "s1");
 
     expect(result).toBeNull();
+  });
+});
+
+describe("getStudentCourseDetail", () => {
+  const courseRow = {
+    id: "c1",
+    name: "Pádel iniciación",
+    level: "iniciacion",
+    schedule: "18:00",
+    days: ["Lun", "Mié"],
+    status: "active",
+    ownerId: "coach-1",
+    inviteCode: "PAD-AB12",
+  };
+  const rubricRow = {
+    id: "cr1",
+    rubricId: "r1",
+    title: "Rúbrica base",
+    category: "tecnica_basica",
+    assignedAt: new Date("2026-09-21T10:00:00Z"),
+  };
+  const evaluationRow = {
+    id: "ev1",
+    studentId: "s1",
+    teacherId: "coach-1",
+    rubricId: "r1",
+    courseId: "c1",
+    status: "published",
+    totalScore: 3,
+    maxScore: 3,
+    publishedAt: new Date("2026-09-21T11:00:00Z"),
+    readAt: null,
+  };
+  const scoreRow = {
+    id: "sc1",
+    evaluationId: "ev1",
+    criteriaId: "crit1",
+    levelId: "lv1",
+    score: 3,
+    comment: null,
+  };
+
+  it("retorna course + rubrics + evaluaciones enriquecidas si está inscrito", async () => {
+    dbQueue.push([enrollment]); // getEnrollment
+    dbQueue.push([courseRow]); // course
+    dbQueue.push([rubricRow]); // listCourseRubrics
+    dbQueue.push([evaluationRow]); // evaluations
+    dbQueue.push([{ id: "r1", title: "Rúbrica base", category: "tecnica_basica" }]); // rubricRows
+    dbQueue.push([scoreRow]); // scores
+    dbQueue.push([{ id: "crit1", rubricId: "r1", name: "Drive" }]); // criteria
+    dbQueue.push([{ id: "lv1", rubricId: "r1", name: "Bueno" }]); // levels
+
+    const result = await getStudentCourseDetail("s1", "c1");
+
+    expect(result).not.toBeNull();
+    expect(result!.course).toEqual({
+      id: "c1",
+      name: "Pádel iniciación",
+      level: "iniciacion",
+      schedule: "18:00",
+      days: ["Lun", "Mié"],
+    });
+    expect(result!.rubrics).toEqual([rubricRow]);
+    expect(result!.evaluations).toHaveLength(1);
+    expect(result!.evaluations[0]).toMatchObject({
+      id: "ev1",
+      rubricTitle: "Rúbrica base",
+      category: "tecnica_basica",
+      totalScore: 3,
+      maxScore: 3,
+    });
+    expect(result!.evaluations[0].scores).toEqual([
+      {
+        criteriaId: "crit1",
+        criterionName: "Drive",
+        levelId: "lv1",
+        levelName: "Bueno",
+        score: 3,
+        comment: null,
+      },
+    ]);
+  });
+
+  it("retorna null si el alumno no está inscrito (anti-IDOR)", async () => {
+    dbQueue.push([]); // getEnrollment → null
+
+    const result = await getStudentCourseDetail("s1", "c1");
+
+    expect(result).toBeNull();
+  });
+
+  it("retorna null si el curso no existe", async () => {
+    dbQueue.push([enrollment]); // getEnrollment
+    dbQueue.push([]); // course → null
+
+    const result = await getStudentCourseDetail("s1", "c1");
+
+    expect(result).toBeNull();
+  });
+
+  it("retorna evaluaciones vacías si no hay publicadas", async () => {
+    dbQueue.push([enrollment]); // getEnrollment
+    dbQueue.push([courseRow]); // course
+    dbQueue.push([rubricRow]); // listCourseRubrics
+    dbQueue.push([]); // evaluations → vacío
+    // rubricIds vacío → Promise.resolve([]) sin tocar la cola
+
+    const result = await getStudentCourseDetail("s1", "c1");
+
+    expect(result).not.toBeNull();
+    expect(result!.evaluations).toEqual([]);
+    expect(result!.rubrics).toEqual([rubricRow]);
   });
 });

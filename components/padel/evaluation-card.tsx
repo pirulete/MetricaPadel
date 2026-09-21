@@ -12,7 +12,7 @@ import {
 export type StudentEvaluationListItem = {
   id: string
   rubricTitle: string
-  category: "tecnica" | "tactica" | "fisica" | "actitud"
+  category: "reglas" | "tecnica_basica" | "tecnica_especifica" | "tactica" | "fisica" | "actitud_equipo"
   totalScore: number | null
   maxScore: number | null
   publishedAt: string | null
@@ -20,10 +20,12 @@ export type StudentEvaluationListItem = {
 }
 
 const CATEGORY_LABELS: Record<StudentEvaluationListItem["category"], string> = {
-  tecnica: "Técnica",
+  reglas: "Reglas",
+  tecnica_basica: "Técnica Básica",
+  tecnica_especifica: "Técnica Específica",
   tactica: "Táctica",
   fisica: "Física",
-  actitud: "Actitud",
+  actitud_equipo: "Actitud y Trabajo en Equipo",
 }
 
 /** Card de evaluación para la lista del alumno (A03). */

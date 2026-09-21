@@ -1,6 +1,8 @@
 /**
  * Funciones puras de score del Core Evaluativo (Etapa 1).
  * Escala fija: Excelente 4 / Bueno 3 / Aceptable 2 / En desarrollo 1.
+ * NOTA: Este archivo es "puro" — NO importa db/pg ni módulos server-side.
+ *       Las funciones de DB (coverage) viven en lib/padel/coverage.ts.
  */
 
 export type ScoreRow = { criteriaId: string; score: number };

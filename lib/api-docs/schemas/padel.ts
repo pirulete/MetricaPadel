@@ -20,6 +20,15 @@ export const padelSchemas = {
       generatedPassword: { type: 'string', description: 'Contraseña generada por el servidor (solo cuando no se envió password en el body). Se devuelve UNA sola vez; nunca se persiste en claro.' },
     },
   },
+  AdminUserUpdateInput: {
+    type: 'object',
+    description: 'Al menos un campo requerido (G10).',
+    properties: {
+      firstName: { type: 'string', minLength: 1, maxLength: 255 },
+      lastName: { type: 'string', minLength: 1, maxLength: 255 },
+      phone: { type: 'string', maxLength: 20, description: 'Teléfono (opcional, se puede limpiar con string vacío)' },
+    },
+  },
   AdminUserDto: {
     type: 'object',
     properties: {
@@ -27,8 +36,10 @@ export const padelSchemas = {
       email: { type: 'string', format: 'email' },
       firstName: { type: 'string', nullable: true },
       lastName: { type: 'string', nullable: true },
+      phone: { type: 'string', nullable: true },
       role: { type: 'string', enum: ['USER', 'ADMIN'] },
       status: { type: 'string', enum: ['TEMPORARY', 'ACTIVE', 'LOCKED'] },
+      createdAt: { type: 'string', format: 'date-time' },
     },
   },
   RubricInput: {
@@ -36,7 +47,7 @@ export const padelSchemas = {
     required: ['title', 'category', 'criteria'],
     properties: {
       title: { type: 'string', minLength: 1, maxLength: 200 },
-      category: { type: 'string', enum: ['tecnica', 'tactica', 'fisica', 'actitud'] },
+      category: { type: 'string', enum: ['reglas', 'tecnica_basica', 'tecnica_especifica', 'tactica', 'fisica', 'actitud_equipo'] },
       criteria: {
         type: 'array',
         minItems: 1,
@@ -63,7 +74,7 @@ export const padelSchemas = {
     properties: {
       id: { type: 'string', format: 'uuid' },
       title: { type: 'string' },
-      category: { type: 'string', enum: ['tecnica', 'tactica', 'fisica', 'actitud'] },
+      category: { type: 'string', enum: ['reglas', 'tecnica_basica', 'tecnica_especifica', 'tactica', 'fisica', 'actitud_equipo'] },
       status: { type: 'string', enum: ['draft', 'active', 'archived'] },
       createdAt: { type: 'string', format: 'date-time' },
       updatedAt: { type: 'string', format: 'date-time' },
@@ -74,7 +85,7 @@ export const padelSchemas = {
     properties: {
       id: { type: 'string', format: 'uuid' },
       title: { type: 'string' },
-      category: { type: 'string', enum: ['tecnica', 'tactica', 'fisica', 'actitud'] },
+      category: { type: 'string', enum: ['reglas', 'tecnica_basica', 'tecnica_especifica', 'tactica', 'fisica', 'actitud_equipo'] },
       status: { type: 'string', enum: ['draft', 'active', 'archived'] },
       criteriaCount: { type: 'integer' },
       levelCount: { type: 'integer' },
@@ -206,7 +217,7 @@ export const padelSchemas = {
     properties: {
       id: { type: 'string', format: 'uuid' },
       rubricTitle: { type: 'string' },
-      category: { type: 'string', enum: ['tecnica', 'tactica', 'fisica', 'actitud'] },
+      category: { type: 'string', enum: ['reglas', 'tecnica_basica', 'tecnica_especifica', 'tactica', 'fisica', 'actitud_equipo'] },
       totalScore: { type: 'integer', nullable: true },
       maxScore: { type: 'integer', nullable: true },
       publishedAt: { type: 'string', format: 'date-time', nullable: true },
@@ -222,7 +233,7 @@ export const padelSchemas = {
         properties: {
           id: { type: 'string', format: 'uuid' },
           title: { type: 'string' },
-          category: { type: 'string', enum: ['tecnica', 'tactica', 'fisica', 'actitud'] },
+          category: { type: 'string', enum: ['reglas', 'tecnica_basica', 'tecnica_especifica', 'tactica', 'fisica', 'actitud_equipo'] },
         },
       },
       scores: {

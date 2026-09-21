@@ -17,15 +17,17 @@ import { EmptyState } from "@/components/padel/empty-state"
 type RubricOption = {
   id: string
   title: string
-  category: "tecnica" | "tactica" | "fisica" | "actitud"
+  category: "reglas" | "tecnica_basica" | "tecnica_especifica" | "tactica" | "fisica" | "actitud_equipo"
   status: "draft" | "active" | "archived"
 }
 
 const CATEGORY_LABELS: Record<RubricOption["category"], string> = {
-  tecnica: "Técnica",
+  reglas: "Reglas",
+  tecnica_basica: "Técnica Básica",
+  tecnica_especifica: "Técnica Específica",
   tactica: "Táctica",
   fisica: "Física",
-  actitud: "Actitud",
+  actitud_equipo: "Actitud y Trabajo en Equipo",
 }
 
 /** Modal de asignación de rúbrica a curso (P08). POST /api/courses/[id]/rubrics. */

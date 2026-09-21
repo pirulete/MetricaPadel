@@ -39,7 +39,7 @@ jest.mock("bcryptjs", () => ({
 
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
-import { createActiveUser, listPlayers } from "@/lib/db/queries/padel/admin-users";
+import { createActiveUser, listPlayers, lockPlayer, unlockPlayer, updatePlayer } from "@/lib/db/queries/padel/admin-users";
 import { promoteUser } from "@/lib/db/queries/padel/promote";
 
 const mocked = jest.requireMock("@/lib/db") as any;
@@ -109,6 +109,68 @@ describe("promoteUser", () => {
     dbQueue.push([]);
 
     const result = await promoteUser("u1");
+
+    expect(result).toBeNull();
+  });
+});
+
+describe("updatePlayer", () => {
+  it("actualiza firstName/lastName/phone y retorna el usuario", async () => {
+    dbQueue.push([{ ...player, firstName: "Ana María", phone: "+34600111222" }]);
+
+    const result = await updatePlayer("u1", {
+      firstName: "Ana María",
+      lastName: "Pérez",
+      phone: "+34600111222",
+    });
+
+    expect(result?.firstName).toBe("Ana María");
+    expect(result?.phone).toBe("+34600111222");
+    expect(db.update).toHaveBeenCalled();
+  });
+
+  it("retorna null si el target no existe o no es role USER (anti-IDOR)", async () => {
+    dbQueue.push([]);
+
+    const result = await updatePlayer("u1", { firstName: "X" });
+
+    expect(result).toBeNull();
+  });
+});
+
+describe("lockPlayer", () => {
+  it("bloquea (status=LOCKED) y retorna el usuario", async () => {
+    dbQueue.push([{ ...player, status: "LOCKED" }]);
+
+    const result = await lockPlayer("u1");
+
+    expect(result?.status).toBe("LOCKED");
+    expect(db.update).toHaveBeenCalled();
+  });
+
+  it("retorna null si el target no existe o es ADMIN", async () => {
+    dbQueue.push([]);
+
+    const result = await lockPlayer("u1");
+
+    expect(result).toBeNull();
+  });
+});
+
+describe("unlockPlayer", () => {
+  it("desbloquea (status=ACTIVE) y retorna el usuario", async () => {
+    dbQueue.push([{ ...player, status: "ACTIVE" }]);
+
+    const result = await unlockPlayer("u1");
+
+    expect(result?.status).toBe("ACTIVE");
+    expect(db.update).toHaveBeenCalled();
+  });
+
+  it("retorna null si el target no existe o es ADMIN", async () => {
+    dbQueue.push([]);
+
+    const result = await unlockPlayer("u1");
 
     expect(result).toBeNull();
   });

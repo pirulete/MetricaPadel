@@ -43,6 +43,13 @@
       "when": 1789952178790,
       "tag": "0005_goofy_charles_xavier",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789999461990,
+      "tag": "0006_handy_proemial_gods",
+      "breakpoints": true
     }
   ]
 }

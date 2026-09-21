@@ -75,3 +75,13 @@ export const updateProfileSchema = z.object({
 })
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>
+
+// Schema para cambiar contraseña desde settings (G5)
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8),
+}).refine(data => data.currentPassword !== data.newPassword, {
+  message: "La nueva contraseña debe ser diferente",
+})
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>

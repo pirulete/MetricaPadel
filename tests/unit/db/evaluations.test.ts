@@ -146,7 +146,7 @@ describe("listEvaluations", () => {
 
 describe("listStudentEvaluations", () => {
   it("lista solo publicadas para el alumno", async () => {
-    const rows = [{ id: "e1", rubricTitle: "Saque", category: "tecnica", totalScore: 7, maxScore: 8, publishedAt: new Date(), readAt: null }];
+    const rows = [{ id: "e1", rubricTitle: "Saque", category: "tecnica_basica", totalScore: 7, maxScore: 8, publishedAt: new Date(), readAt: null }];
     dbQueue.push(rows);
     const result = await listStudentEvaluations("stu1");
     expect(result).toEqual(rows);

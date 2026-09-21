@@ -73,6 +73,49 @@ export const padelPaths = {
         '404': { description: 'No encontrado' },
       },
     },
+    put: {
+      tags: ['Padel Admin'],
+      summary: 'Actualizar jugador (G10)',
+      description: 'Actualiza firstName/lastName/phone de un jugador (solo role USER; ADMIN/inexistente → 404 anti-IDOR). Audita UPDATE.',
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/AdminUserUpdateInput' } } } },
+      responses: {
+        '200': { description: 'Usuario actualizado', content: { 'application/json': { schema: { type: 'object', properties: { user: { $ref: '#/components/schemas/AdminUserDto' } } } } } },
+        '400': { description: 'Datos inválidos o body vacío' },
+        '401': { description: 'No autenticado' },
+        '403': { description: 'Sin rol ADMIN' },
+        '404': { description: 'No encontrado o no es USER' },
+      },
+    },
+    delete: {
+      tags: ['Padel Admin'],
+      summary: 'Bloquear jugador (soft-lock, G10)',
+      description: 'Soft-lock: status → LOCKED. No puedes bloquearte a ti mismo (400) ni a otro ADMIN (403). Inexistente/no USER → 404. Audita UPDATE.',
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+      responses: {
+        '200': { description: 'Usuario bloqueado', content: { 'application/json': { schema: { type: 'object', properties: { user: { $ref: '#/components/schemas/AdminUserDto' } } } } } },
+        '400': { description: 'No puedes bloquearte a ti mismo' },
+        '401': { description: 'No autenticado' },
+        '403': { description: 'Sin rol ADMIN o target es ADMIN' },
+        '404': { description: 'No encontrado' },
+      },
+    },
+    post: {
+      tags: ['Padel Admin'],
+      summary: 'Desbloquear jugador (G10)',
+      description: 'Desbloquea un jugador: status → ACTIVE. Solo role USER (404 si ADMIN o inexistente). Audita UPDATE.',
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+      responses: {
+        '200': { description: 'Usuario desbloqueado', content: { 'application/json': { schema: { type: 'object', properties: { user: { $ref: '#/components/schemas/AdminUserDto' } } } } } },
+        '400': { description: 'id inválido' },
+        '401': { description: 'No autenticado' },
+        '403': { description: 'Sin rol ADMIN' },
+        '404': { description: 'No encontrado o no es USER' },
+      },
+    },
   },
   '/api/rubrics': {
     get: {
@@ -211,11 +254,11 @@ export const padelPaths = {
     post: {
       tags: ['Padel Admin'],
       summary: 'Publicar evaluación',
-      description: 'Publica evaluación validando que todos los criteria tengan score. 400 si no es borrador o faltan criterios. Audita UPDATE.',
+      description: 'Publica evaluación validando que todos los criteria tengan score. 400 si no es borrador o faltan criterios. Audita UPDATE. R5: devuelve alreadyEvaluated (soft-block de cobertura dimensional — no bloquea el publish).',
       security: [{ bearerAuth: [] }],
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
       responses: {
-        '200': { description: 'Evaluación publicada', content: { 'application/json': { schema: { type: 'object', properties: { evaluation: { $ref: '#/components/schemas/EvaluationDto' } } } } } },
+        '200': { description: 'Evaluación publicada', content: { 'application/json': { schema: { type: 'object', properties: { evaluation: { $ref: '#/components/schemas/EvaluationDto' }, alreadyEvaluated: { type: 'boolean', description: 'true si la categoría de la rúbrica ya fue publicada para el alumno (soft-block)' } } } } } },
         '400': { description: 'No es borrador o faltan criterios' },
         '401': { description: 'No autenticado' },
         '403': { description: 'Sin rol ADMIN' },

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const rubricCategoryValues = ["tecnica", "tactica", "fisica", "actitud"] as const;
+export const rubricCategoryValues = ["reglas", "tecnica_basica", "tecnica_especifica", "tactica", "fisica", "actitud_equipo"] as const;
 export const rubricStatusValues = ["draft", "active", "archived"] as const;
 export const evaluationStatusValues = ["draft", "published"] as const;
 export const courseLevelValues = ["iniciacion", "intermedio", "avanzado"] as const;
@@ -23,6 +23,17 @@ export const adminCreateUserSchema = z.object({
 export const adminUserQuerySchema = z.object({
   search: z.string().trim().max(100).optional(),
 });
+
+/** PUT /api/admin/users/[id] — actualiza firstName/lastName/phone (G10). Al menos un campo. */
+export const adminUpdateUserSchema = z
+  .object({
+    firstName: z.string().trim().min(1, "firstName es requerido").max(255).optional(),
+    lastName: z.string().trim().min(1, "lastName es requerido").max(255).optional(),
+    phone: z.string().trim().max(20, "phone no puede superar 20 caracteres").optional(),
+  })
+  .refine((v) => v.firstName !== undefined || v.lastName !== undefined || v.phone !== undefined, {
+    message: "Debe enviar al menos un campo para actualizar",
+  });
 
 /** POST /api/rubrics — crea rúbrica con criteria + 4 descriptores por criterio. */
 export const rubricCreateSchema = z.object({
@@ -108,6 +119,7 @@ export const historyQuerySchema = z.object({
 });
 
 export type AdminCreateUserInput = z.infer<typeof adminCreateUserSchema>;
+export type AdminUpdateUserInput = z.infer<typeof adminUpdateUserSchema>;
 export type RubricCreateInput = z.infer<typeof rubricCreateSchema>;
 export type RubricUpdateInput = z.infer<typeof rubricUpdateSchema>;
 export type EvaluationCreateInput = z.infer<typeof evaluationCreateSchema>;

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { guardAdmin } from "@/lib/auth/admin-guard";
 import { auditUpdate, extractRequestContext } from "@/lib/audit/helpers";
+import { db } from "@/lib/db";
+import { rubrics } from "@/lib/db/schema";
 import { publishEvaluation } from "@/lib/db/queries/padel";
+import { checkDimensionalCoverage } from "@/lib/padel/coverage";
 import { triggerEvaluationPublished } from "@/lib/notifications/triggers";
 import { padelIdParamsSchema } from "@/lib/validations/padel";
 

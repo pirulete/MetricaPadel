@@ -58,7 +58,7 @@ test.describe("Padel Evaluation — API Guards", () => {
 
   test("POST /api/rubrics returns 401 without auth", async ({ request }) => {
     const res = await request.post("/api/rubrics", {
-      data: { title: "Test", category: "tecnica" },
+      data: { title: "Test", category: "tecnica_basica" },
     });
     expect(res.status()).toBe(401);
   });

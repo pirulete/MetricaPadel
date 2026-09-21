@@ -1,10 +1,18 @@
 import { db } from "@/lib/db";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import {
   courses,
   courseEnrollments,
+  evaluations,
+  evaluationScores,
+  rubrics,
+  rubricCriteria,
+  rubricLevels,
   users,
+  courseLevelEnum,
+  rubricCategoryEnum,
 } from "@/lib/db/schema";
+import { listCourseRubrics } from "./courses";
 
 export type JoinCourseResult =
   | {
@@ -113,4 +121,136 @@ export async function deleteEnrollment(courseId: string, studentId: string) {
     ))
     .returning();
   return row ?? null;
+}
+
+export type StudentCourseDetail = {
+  course: {
+    id: string;
+    name: string;
+    level: (typeof courseLevelEnum.enumValues)[number];
+    schedule: string | null;
+    days: string[];
+  };
+  rubrics: Array<{
+    id: string;
+    rubricId: string;
+    title: string;
+    category: (typeof rubricCategoryEnum.enumValues)[number];
+    assignedAt: Date;
+  }>;
+  evaluations: Array<{
+    id: string;
+    rubricTitle: string | null;
+    category: (typeof rubricCategoryEnum.enumValues)[number] | null;
+    totalScore: number | null;
+    maxScore: number | null;
+    publishedAt: Date | null;
+    readAt: Date | null;
+    scores: Array<{
+      criteriaId: string;
+      criterionName: string | null;
+      levelId: string;
+      levelName: string | null;
+      score: number;
+      comment: string | null;
+    }>;
+  }>;
+};
+
+/**
+ * Detalle de curso para el alumno (G8): verifica inscripción (anti-IDOR),
+ * info del curso, rúbricas asignadas y evaluaciones publicadas propias del
+ * curso con scores enriquecidos (criterionName/levelName). Retorna null si
+ * el alumno no está inscrito o el curso no existe (404, no 403).
+ */
+export async function getStudentCourseDetail(
+  studentId: string,
+  courseId: string
+): Promise<StudentCourseDetail | null> {
+  const enrollment = await getEnrollment(courseId, studentId);
+  if (!enrollment) return null;
+
+  const [course] = await db.select().from(courses)
+    .where(eq(courses.id, courseId))
+    .limit(1);
+  if (!course) return null;
+
+  const [rubricsList, evaluationsList] = await Promise.all([
+    listCourseRubrics(courseId),
+    db.select().from(evaluations)
+      .where(and(
+        eq(evaluations.studentId, studentId),
+        eq(evaluations.courseId, courseId),
+        eq(evaluations.status, 'published'),
+      ))
+      .orderBy(desc(evaluations.publishedAt)),
+  ]);
+
+  const rubricIds = [...new Set(evaluationsList.map((e) => e.rubricId))];
+  const evaluationIds = evaluationsList.map((e) => e.id);
+
+  const [rubricRows, scores, criteria, levels] = await Promise.all([
+    rubricIds.length > 0
+      ? db.select({ id: rubrics.id, title: rubrics.title, category: rubrics.category })
+          .from(rubrics)
+          .where(inArray(rubrics.id, rubricIds))
+      : Promise.resolve([]),
+    evaluationIds.length > 0
+      ? db.select().from(evaluationScores)
+          .where(inArray(evaluationScores.evaluationId, evaluationIds))
+      : Promise.resolve([]),
+    rubricIds.length > 0
+      ? db.select({ id: rubricCriteria.id, rubricId: rubricCriteria.rubricId, name: rubricCriteria.name })
+          .from(rubricCriteria)
+          .where(inArray(rubricCriteria.rubricId, rubricIds))
+      : Promise.resolve([]),
+    rubricIds.length > 0
+      ? db.select({ id: rubricLevels.id, rubricId: rubricLevels.rubricId, name: rubricLevels.name })
+          .from(rubricLevels)
+          .where(inArray(rubricLevels.rubricId, rubricIds))
+      : Promise.resolve([]),
+  ]);
+
+  const rubricById = new Map(rubricRows.map((r) => [r.id, r]));
+  const criterionById = new Map(criteria.map((c) => [c.id, c.name]));
+  const levelById = new Map(levels.map((l) => [l.id, l.name]));
+  const scoresByEvaluation = new Map<string, typeof scores>();
+  for (const s of scores) {
+    const list = scoresByEvaluation.get(s.evaluationId) ?? [];
+    list.push(s);
+    scoresByEvaluation.set(s.evaluationId, list);
+  }
+
+  const evaluationsEnriched = evaluationsList.map((e) => {
+    const rubric = rubricById.get(e.rubricId);
+    return {
+      id: e.id,
+      rubricTitle: rubric?.title ?? null,
+      category: rubric?.category ?? null,
+      totalScore: e.totalScore,
+      maxScore: e.maxScore,
+      publishedAt: e.publishedAt,
+      readAt: e.readAt,
+      scores: (scoresByEvaluation.get(e.id) ?? []).map((s) => ({
+        criteriaId: s.criteriaId,
+        criterionName: criterionById.get(s.criteriaId) ?? null,
+        levelId: s.levelId,
+        levelName: levelById.get(s.levelId) ?? null,
+        score: s.score,
+        comment: s.comment,
+      })),
+    };
+  });
+
+  return {
+    course: {
+      id: course.id,
+      name: course.name,
+      level: course.level,
+      schedule: course.schedule,
+      days: course.days as string[],
+    },
+    rubrics: rubricsList,
+    evaluations: evaluationsEnriched,
+  };
 }

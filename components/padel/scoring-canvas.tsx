@@ -195,7 +195,14 @@ export function ScoringCanvas({ evaluationId }: ScoringCanvasProps) {
         const body = await res.json().catch(() => null)
         throw new Error(body?.error ?? "No se pudo publicar")
       }
-      toast.success("Evaluación publicada")
+      const body = await res.json()
+      if (body.alreadyEvaluated && rubric) {
+        toast.warning(
+          `Ya evaluaste ${rubric.rubric.category} para este alumno. Puedes publicar pero considera evaluar otras dimensiones.`
+        )
+      } else {
+        toast.success("Evaluación publicada")
+      }
       router.push("/evaluaciones")
       router.refresh()
     } catch (e) {

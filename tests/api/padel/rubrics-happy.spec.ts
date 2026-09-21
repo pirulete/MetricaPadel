@@ -58,7 +58,7 @@ test.describe("Rubrics — happy-path (SQL real)", () => {
       const post = await ctx.post("/api/rubrics", {
         data: {
           title: "Saque de padel",
-          category: "tecnica",
+          category: "tecnica_basica",
           criteria: [
             { name: "Precisión", descriptors: ["Excelente", "Bueno", "Aceptable", "En desarrollo"] },
             { name: "Potencia", descriptors: ["Alta", "Media", "Baja", "Muy baja"] },
@@ -132,7 +132,7 @@ test.describe("Rubrics — happy-path (SQL real)", () => {
 
       // POST inválido → 400
       const bad = await ctx.post("/api/rubrics", {
-        data: { title: "", category: "tecnica", criteria: [] },
+        data: { title: "", category: "tecnica_basica", criteria: [] },
         headers: { "Content-Type": "application/json" },
       });
       expect(bad.status()).toBe(400);

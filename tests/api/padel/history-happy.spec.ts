@@ -65,7 +65,7 @@ test.describe("History — happy-path (SQL real)", () => {
       const rubricPost = await ctx.post("/api/rubrics", {
         data: {
           title: "Historial rubric",
-          category: "tecnica",
+          category: "tecnica_basica",
           criteria: [{ name: "Precisión", descriptors: ["A", "B", "C", "D"] }],
         },
         headers: { "Content-Type": "application/json" },

@@ -77,7 +77,7 @@ describe("adminUserQuerySchema", () => {
 describe("rubricCreateSchema", () => {
   const valid = {
     title: "Saque",
-    category: "tecnica",
+    category: "tecnica_basica",
     criteria: [
       {
         name: "Precisión",

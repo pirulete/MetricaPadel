@@ -40,7 +40,7 @@ test.describe("Padel — 401 sin sesión", () => {
 
   test("POST /api/rubrics → 401", async ({ request }) => {
     const res = await request.post(`${BASE_URL}/api/rubrics`, {
-      data: { title: "X", category: "tecnica", criteria: [] },
+      data: { title: "X", category: "tecnica_basica", criteria: [] },
       headers: { "Content-Type": "application/json" },
     });
     expect(res.status()).toBe(401);
@@ -133,7 +133,7 @@ test.describe("Padel — 403 de rol + 404 IDOR (SQL real)", () => {
       expect((await ctx.get("/api/evaluations")).status()).toBe(403);
       expect((await ctx.get("/api/admin/users")).status()).toBe(403);
       const post = await ctx.post("/api/rubrics", {
-        data: { title: "X", category: "tecnica", criteria: [] },
+        data: { title: "X", category: "tecnica_basica", criteria: [] },
         headers: { "Content-Type": "application/json" },
       });
       expect(post.status()).toBe(403);

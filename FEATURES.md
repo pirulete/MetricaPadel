@@ -1,5 +1,150 @@
 # FEATURES — Registro de Cambios
 
+## ✨ G10: Admin UI de gestión de usuarios (CRUD completo) (2026-09-21)
+
+> status: released
+> release: v0.3
+> date: 2026-09-21
+> change_id: g10-admin-users-ui
+> module: admin+api+ui
+> tags: [admin, users, crud, ui, api, audit, soft-lock]
+
+### Problema
+
+El back-office solo permitía crear/listar jugadores y promoverlos (G3/G4). No existía UI admin para editar datos, bloquear/desbloquear cuentas ni una página de gestión de usuarios navegable desde `/admin`.
+
+### Solución Implementada
+
+- **API** `app/api/admin/users/[id]/route.ts` (+PUT +DELETE +POST unlock):
+  - `PUT` actualiza firstName/lastName/phone (guardAdmin + auditUpdate + Zod `adminUpdateUserSchema` con refine "al menos un campo"). Solo role USER (anti-IDOR → 404 si ADMIN/inexistente).
+  - `DELETE` soft-lock (status → LOCKED, guardAdmin + auditUpdate). Reglas: no puedes bloquearte a ti mismo → 400; no puedes bloquear a otro ADMIN → 403; inexistente/no USER → 404.
+  - `POST` desbloquea (status → ACTIVE, guardAdmin + auditUpdate, solo role USER).
+- **Queries** `lib/db/queries/padel/admin-users.ts`: +`updatePlayer`, +`lockPlayer`, +`unlockPlayer` (todas filtran role='USER' a nivel query); `listPlayers` y `getPlayerById` ahora incluyen `phone` y `createdAt`.
+- **UI** `app/admin/users/page.tsx` (server) + `components/admin/users/`:
+  - `user-list.tsx` (client): search debounced 300ms, tabla (Nombre/Email/Estado/Rol/Creado/Acciones), badges de status/rol, acciones Edit (dialog), Lock/Unlock toggle, Promote (solo USER), botón "Crear usuario".
+  - `create-user-form.tsx` (client): email/nombre/apellido/password opcional ("Dejar vacío para auto-generar"); muestra `generatedPassword` en alert una sola vez.
+  - `edit-user-form.tsx` (client): firstName/lastName/phone → PUT; toasts con sonner.
+- **Nav** `app/admin/page.tsx`: Card link a `/admin/users`.
+
+### Archivos Modificados
+
+- `app/api/admin/users/[id]/route.ts` (+PUT/DELETE/POST unlock), `lib/db/queries/padel/admin-users.ts` (+3 queries, +phone/createdAt), `lib/validations/padel.ts` (+`adminUpdateUserSchema`), `app/admin/page.tsx` (link Usuarios), `lib/api-docs/paths/padel.ts` (+PUT/DELETE/POST en `/api/admin/users/{id}`), `lib/api-docs/schemas/padel.ts` (+`AdminUserUpdateInput`, +phone/createdAt en `AdminUserDto`), `FEATURES.md`
+- Nuevos: `app/admin/users/page.tsx`, `components/admin/users/user-list.tsx`, `components/admin/users/create-user-form.tsx`, `components/admin/users/edit-user-form.tsx`
+
+### Tests
+
+- Unit: `tests/unit/db/admin-users.test.ts` (+6 casos: updatePlayer ok/null, lockPlayer ok/null, unlockPlayer ok/null).
+- API happy-path + guards (SQL real): `tests/api/padel/admin-users-crud.spec.ts` (PUT 200 + verificación SQL + auditoría + 400 body vacío; DELETE lock 200 + status=LOCKED en DB + auditoría + unlock 200; self-lock 400; otro ADMIN 403; inexistente 404; USER 403; 401 sin sesión).
+- E2E: `tests/e2e/admin-users.spec.ts` (página requiere auth, link en /admin, guards 401 de PUT/DELETE).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ G8: Detalle de curso del alumno (2026-09-21)
+
+> status: released
+> release: v0.3
+> date: 2026-09-21
+> change_id: student-course-detail
+> module: api+db+ui
+> tags: [courses, student, padel, api, ui, anti-idor]
+
+### Problema
+
+El detalle de curso (`/cursos/[id]`) era solo para el coach (P07, guardAdmin): el alumno no tenía vista de sus cursos (las cards del dashboard no eran clickeables) ni podía ver las rúbricas asignadas ni sus evaluaciones publicadas por curso.
+
+### Solución Implementada
+
+- **Query** `getStudentCourseDetail(studentId, courseId)` en `lib/db/queries/padel/enrollments.ts`: verifica inscripción (anti-IDOR → null), info del curso, rúbricas asignadas (`course_rubrics` JOIN `rubrics` con category) y evaluaciones publicadas propias del curso con scores enriquecidos (criterionName/levelName).
+- **API** `GET /api/student/courses/[id]` (nuevo): guardUser + ACTIVE + role USER; 404 si no inscrito (anti-IDOR); read-only sin auditoría. Response `{ course, rubrics, evaluations }`.
+- **UI** `components/padel/student-course-detail.tsx` (nuevo, client): header (nombre, level badge, schedule, days), rúbricas asignadas con category badges, mis evaluaciones con tabla de scores (Card/Badge/Table).
+- **Page** `app/(app)/cursos/[id]/page.tsx` convertida a server component que ramifica por rol (D5): ADMIN → `getCourseById` + `CourseDetail` (P07 existente); USER → `getStudentCourseDetail` + `StudentCourseDetail` (G8). Fechas serializadas a ISO para props de client components.
+- **Dashboard** `components/padel/student-dashboard.tsx`: cards de cursos envueltas en `<Link href={/cursos/${id}}>` (next/link).
+
+### Archivos Modificados
+
+- `lib/db/queries/padel/enrollments.ts` (+`getStudentCourseDetail` + tipos), `app/(app)/cursos/[id]/page.tsx` (server component por rol), `components/padel/student-dashboard.tsx` (cards clickeables), `lib/api-docs/paths/courses.ts` (+path + tag `Padel Student Courses`), `lib/api-docs/schemas/courses.ts` (+`StudentCourseDetailDto`), `lib/api-docs/spec.ts` (+tag)
+- Nuevos: `app/api/student/courses/[id]/route.ts`, `components/padel/student-course-detail.tsx`
+
+### Tests
+
+- Unit: `tests/unit/db/enrollments.test.ts` (+4 casos `getStudentCourseDetail`: inscrito con scores enriquecidos, no inscrito → null, curso inexistente → null, sin evaluaciones).
+- API happy-path (SQL real): `tests/api/padel/student-course-happy.spec.ts` (200 con course+rubrics+evaluations, 404 no inscrito/inexistente, 403 rol ADMIN).
+- E2E: `tests/e2e/student-course-detail.spec.ts` (auth + 401 sin sesión).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ G5: Perfil y Settings con cambio de contraseña (2026-09-21)
+
+> status: released
+> release: v0.3
+> date: 2026-09-21
+> change_id: g5-profile-settings
+> module: app+api+auth
+> tags: [settings, profile, password, ui, api, audit]
+
+### Problema
+
+No existía página de perfil/settings en el área privada: el usuario no podía editar sus datos personales ni cambiar su contraseña desde la app (solo vía reset con token).
+
+### Solución Implementada
+
+- **`PUT /api/user/password`** (nuevo, guardUser + ACTIVE + auditChangePassword): valida `currentPassword` contra el hash almacenado vía `comparePassword` (nunca lanza), hashea la nueva con bcrypt (cost 10) y actualiza `users.passwordHash`. 400 si la actual es incorrecta o si la nueva es igual a la actual (refine de Zod); 403 si no ACTIVE.
+- **`changePasswordSchema`** en `lib/auth/schemas.ts`: `currentPassword` min 1, `newPassword` min 8, refine `currentPassword !== newPassword`.
+- **`app/(app)/settings/page.tsx`** (server component): lee sesión + perfil completo vía `getUserById` (incluye phone, que no viaja en el JWT) y renderiza `ProfileForm`.
+- **`components/padel/profile-form.tsx`** (client): dos Cards — Datos personales (firstName/lastName/phone → PUT /api/user/profile; email inmutable, disabled) y Cambiar contraseña (current/new/confirm → PUT /api/user/password). Toasts con sonner.
+- **Bottom nav**: entrada "Perfil" (`/settings`, icono `User`) agregada a ADMIN_ITEMS y USER_ITEMS.
+
+### Archivos Modificados
+
+- `lib/auth/schemas.ts` (+`changePasswordSchema`), `components/padel/bottom-nav.tsx` (+Perfil), `lib/api-docs/spec.ts` (+path `/api/user/password` + schema `ChangePasswordInput`)
+- Nuevos: `app/api/user/password/route.ts`, `app/(app)/settings/page.tsx`, `components/padel/profile-form.tsx`
+
+### Tests
+
+- Unit: `tests/unit/auth/change-password.test.ts` (5 casos: válido, current vacío, new <8, refine igual, campo faltante).
+- API happy-path (SQL real): `tests/api/padel/profile-happy.spec.ts` (GET perfil 200, PUT actualiza + verificación SQL, PUT password correcto 200 + hash actualizado, incorrecto 400, igual 400, corta 400).
+- E2E: `tests/e2e/settings-profile.spec.ts` (página requiere auth, render autenticado, guards 401 de ambos endpoints).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ R5 — Cobertura Dimensional Soft-Block en Evaluaciones (2026-09-21)
+
+> status: released
+> release: v0.3
+> date: 2026-09-21
+> change_id: r5-dimensional-coverage
+> module: api+ui
+> tags: [padel, evaluations, rubric, coverage, soft-block, api, ui]
+
+### Problema
+
+Un coach podía publicar múltiples evaluaciones del mismo alumno con rúbricas de la misma categoría (ej: `tecnica_basica`) sin ninguna señal de que esa dimensión ya estaba cubierta. R5 pide un soft-block: advertir sin bloquear.
+
+### Solución Implementada
+
+- **`checkDimensionalCoverage(studentId, currentRubricCategory)`** en `lib/padel/score.ts`: `SELECT DISTINCT r.category` con JOIN `evaluations → rubrics` filtrando `student_id` y `status='published'`. Retorna `{ alreadyEvaluated, coveredCategories }`.
+- **`POST /api/evaluations/[id]/publish`** (modificado): tras publicar, consulta la categoría de la rúbrica y llama a `checkDimensionalCoverage`; la respuesta ahora es `{ evaluation, alreadyEvaluated }`. El publish nunca se bloquea (soft-block).
+- **`components/padel/scoring-canvas.tsx`** (modificado): si `alreadyEvaluated` es true muestra toast warning "Ya evaluaste [categoría] para este alumno. Puedes publicar pero considera evaluar otras dimensiones." El botón Publicar no se deshabilita.
+
+### Archivos Modificados
+
+- `lib/padel/score.ts` (+`checkDimensionalCoverage`), `app/api/evaluations/[id]/publish/route.ts` (respuesta con `alreadyEvaluated`), `components/padel/scoring-canvas.tsx` (toast soft-block), `lib/api-docs/paths/padel.ts` (schema de respuesta publish)
+
+### Tests
+
+- Unit: `tests/unit/padel/coverage.test.ts` (db mockeado — false sin publicaciones, false con otra categoría, true con categoría repetida).
+- API happy-path (SQL real): `tests/api/padel/coverage-happy.spec.ts` (publish → `alreadyEvaluated=false` en primera evaluación; `true` al repetir categoría).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
 ## ✨ Cierre de Gaps en User Flows: G3/G4/G9/G11 (2026-09-21)
 
 > status: released

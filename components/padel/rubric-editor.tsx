@@ -17,10 +17,12 @@ import {
 } from "@/components/ui/select"
 
 const CATEGORIES = [
-  { value: "tecnica", label: "Técnica" },
+  { value: "reglas", label: "Reglas" },
+  { value: "tecnica_basica", label: "Técnica Básica" },
+  { value: "tecnica_especifica", label: "Técnica Específica" },
   { value: "tactica", label: "Táctica" },
   { value: "fisica", label: "Física" },
-  { value: "actitud", label: "Actitud" },
+  { value: "actitud_equipo", label: "Actitud y Trabajo en Equipo" },
 ] as const
 
 const LEVEL_NAMES = ["Excelente", "Bueno", "Aceptable", "En desarrollo"]
@@ -39,7 +41,7 @@ interface RubricEditorProps {
 export function RubricEditor({ rubricId }: RubricEditorProps) {
   const router = useRouter()
   const [title, setTitle] = React.useState("")
-  const [category, setCategory] = React.useState<string>("tecnica")
+  const [category, setCategory] = React.useState<string>("reglas")
   const [criteria, setCriteria] = React.useState<CriterionDraft[]>([emptyCriterion()])
   const [loading, setLoading] = React.useState(Boolean(rubricId))
   const [saving, setSaving] = React.useState(false)

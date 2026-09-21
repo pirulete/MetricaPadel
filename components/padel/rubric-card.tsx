@@ -15,7 +15,7 @@ import {
 export type RubricListItem = {
   id: string
   title: string
-  category: "tecnica" | "tactica" | "fisica" | "actitud"
+  category: "reglas" | "tecnica_basica" | "tecnica_especifica" | "tactica" | "fisica" | "actitud_equipo"
   status: "draft" | "active" | "archived"
   criteriaCount: number
   levelCount: number
@@ -24,10 +24,12 @@ export type RubricListItem = {
 }
 
 const CATEGORY_LABELS: Record<RubricListItem["category"], string> = {
-  tecnica: "Técnica",
+  reglas: "Reglas",
+  tecnica_basica: "Técnica Básica",
+  tecnica_especifica: "Técnica Específica",
   tactica: "Táctica",
   fisica: "Física",
-  actitud: "Actitud",
+  actitud_equipo: "Actitud y Trabajo en Equipo",
 }
 
 const STATUS_LABELS: Record<RubricListItem["status"], string> = {

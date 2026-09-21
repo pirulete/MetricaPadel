@@ -1,5 +1,43 @@
 # FEATURES — Registro de Cambios
 
+## ✨ Etapa 1: Core Evaluativo — Rúbricas + Evaluaciones (2026-09-20)
+
+> status: in-progress
+> release: v0.1
+> date: 2026-09-20
+> change_id: etapa1-core-evaluativo
+> module: admin+api+db+ui
+> tags: [rubrics, evaluations, padel, db, migration, api, ui]
+
+### Problema
+
+La app de evaluación de pádel no tiene capacidad de rúbricas ni evaluaciones (greenfield). El mockup `components/preview/etapa1-core-evaluativo.tsx` define el loop de valor: coach crea rúbrica → evalúa alumno → alumno ve su evaluación. El blueprint previo proponía 16 pantallas; el usuario confirmó alcance reducido: 4 pantallas, cursos fuera (Etapa 2), roles USER/ADMIN (sin `padel_role`).
+
+### Solución Implementada
+
+- **DB**: +3 enums (`rubric_status`, `evaluation_status`, `rubric_category`), +6 tablas (`rubrics`, `rubric_levels`, `rubric_criteria`, `rubric_descriptors`, `evaluations`, `evaluation_scores`); migración `0004_*` vía `db:generate`.
+- **Queries**: `lib/db/queries/padel/{rubrics,evaluations,admin-users}.ts` — CRUD transaccional, ownership anti-IDOR (ownerId/teacherId/studentId → 404), publish con validación de criterios completos, markRead idempotente, `createActiveUser` (bcrypt + ACTIVE + USER).
+- **Validaciones**: `lib/validations/padel.ts` — schemas Zod (adminCreateUser, rubricCreate/Update con 4 descriptores fijos, evaluationCreate/Save, list queries, id params).
+- **Score**: `lib/padel/score.ts` — funciones puras `computeMaxScore`/`computeTotalScore`/`validatePublish`.
+- **API (10 route handlers / 15 endpoints)**: `app/api/admin/users` (GET+POST+[id]), `app/api/rubrics` (GET+POST+[id] GET/PUT/DELETE archive), `app/api/evaluations` (GET+POST+[id] GET/PUT+publish), `app/api/student/evaluations` (GET+[id]+read). Guards server-side (`guardAdmin`/`guardUser`), auditoría en mutaciones, 409 email duplicado, 404 IDOR.
+- **API docs**: `lib/api-docs/paths/padel.ts` + `lib/api-docs/schemas/padel.ts` + tags `Padel Admin`/`Padel Student` en `spec.ts`.
+- **UI (7 páginas / 8 componentes)**: P02 `rubricas` (RubricLibrary + RubricCard + EmptyState), P03 `rubricas/nueva` + `rubricas/[id]` (RubricEditor), P09 `evaluar` + `evaluar/[id]` (ScoringCanvas + StudentPicker), A03 `evaluaciones` + `evaluaciones/[id]` (EvaluationCard + RubricViewer). Páginas coach con `validateAdmin`; alumno protegidas por layout `validateUser`.
+
+### Archivos Modificados
+
+- `lib/db/schema.ts`, `lib/db/queries/padel/*`, `lib/auth/protected-routes.ts`, `lib/api-docs/spec.ts`, `ARCHITECTURE.md`, `FEATURES.md`
+- Nuevos: `lib/validations/padel.ts`, `lib/padel/score.ts`, 10 route handlers en `app/api/{admin/users,rubrics,evaluations,student/evaluations}`, `lib/api-docs/{paths,schemas}/padel.ts`, 7 páginas en `app/(app)/{rubricas,evaluar,evaluaciones}`, 8 componentes en `components/padel/`
+
+### Tests
+
+- Unit: `tests/unit/validations/padel.test.ts` (Zod), `tests/unit/padel/score.test.ts` (score puro), `tests/unit/db/{rubrics,evaluations,admin-users}.test.ts` (queries).
+- API: `tests/api/padel/guard.spec.ts` (401/403/IDOR), `tests/api/padel/{admin-users,rubrics,evaluations,student}-happy.spec.ts` (SQL real contra NeonDB).
+- E2E (pendiente @qa-release): `rubric-editor.spec.ts`, `evaluation-flow.spec.ts`, `student-view.spec.ts`.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
 ## ✨ Project Blueprint: questionnaire + scaffolding para nuevos proyectos (2026-09-16)
 
 > status: proposed

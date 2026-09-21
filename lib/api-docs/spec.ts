@@ -7,6 +7,8 @@ import {
   notificationsTags,
 } from './paths/notifications'
 import { notificationsSchemas } from './schemas/notifications'
+import { padelAdminTags, padelPaths, padelStudentTags } from './paths/padel'
+import { padelSchemas } from './schemas/padel'
 
 const spec = {
   openapi: '3.0.3',
@@ -286,11 +288,11 @@ const spec = {
 // en lib/api-docs/{paths,schemas}/ para no acumular líneas en este archivo.
 const apiSpec = {
   ...spec,
-  tags: [...spec.tags, adminMarketingTags, notificationsTags, adminNotificationsTags],
-  paths: { ...spec.paths, ...publicMarketingPaths, ...adminMarketingPaths, ...notificationsPaths },
+  tags: [...spec.tags, adminMarketingTags, notificationsTags, adminNotificationsTags, padelAdminTags, padelStudentTags],
+  paths: { ...spec.paths, ...publicMarketingPaths, ...adminMarketingPaths, ...notificationsPaths, ...padelPaths },
   components: {
     ...spec.components,
-    schemas: { ...spec.components.schemas, ...marketingSchemas, ...notificationsSchemas },
+    schemas: { ...spec.components.schemas, ...marketingSchemas, ...notificationsSchemas, ...padelSchemas },
   },
 }
 

@@ -98,6 +98,17 @@ Principio: **NUNCA permitir LOCKED** en rutas privadas. TEMPORARY solo si explí
 - `.opencode/` — agent team y comandos
 - `.agents/` — workflows y patrones
 
+## Padel Evaluativo — Core (v0.1)
+
+- **Roles**: `ADMIN` = coach (crea jugadores, rúbricas, evalúa, publica); `USER` = alumno (ve evaluaciones publicadas, marca leído). Sin `padel_role`.
+- **Tablas DB** (6): `rubrics` (ownerId FK users no cascade, category enum, status draft/active/archived), `rubric_levels` (4 niveles fijos: Excelente 4 / Bueno 3 / Aceptable 2 / En desarrollo 1), `rubric_criteria`, `rubric_descriptors` (UNIQUE criteria+level), `evaluations` (studentId/teacherId/rubricId, status draft/published, totalScore/maxScore denormalizados, publishedAt, readAt), `evaluation_scores` (FK criteria/levels sin cascade → historial protegido).
+- **Enums DB** (3): `rubric_category` (tecnica/tactica/fisica/actitud), `rubric_status`, `evaluation_status`.
+- **Ownership anti-IDOR**: toda query recibe `ownerId`/`teacherId`/`studentId` y filtra; recurso ajeno → 404 (no 403).
+- **Endpoints** (10 route handlers / 15 endpoints): `app/api/admin/users` (GET+POST+[id]), `app/api/rubrics` (GET+POST+[id] GET/PUT/DELETE archive), `app/api/evaluations` (GET+POST+[id] GET/PUT+publish), `app/api/student/evaluations` (GET+[id]+read). Guards `guardAdmin`/`guardUser` + auditoría en mutaciones.
+- **UI**: `app/(app)/rubricas` (P02 biblioteca + P03 editor), `app/(app)/evaluar` (P09 canvas score en vivo), `app/(app)/evaluaciones` (A03 lista + detalle alumno). Componentes en `components/padel/`.
+- **Lógica pura**: `lib/padel/score.ts` (computeMaxScore/TotalScore, validatePublish); validaciones Zod en `lib/validations/padel.ts`.
+- **Migración**: `0004_*` (enums + 6 tablas + índices).
+
 ## Convenciones de Migraciones
 
 - **Siempre usar `pnpm run db:generate` tras modificar `lib/db/schema.ts`** — nunca crear SQL a mano.

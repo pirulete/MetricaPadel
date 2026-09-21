@@ -152,6 +152,9 @@ export const usersRelations = relations(users, ({ many }) => ({
   notifications: many(notifications),
   pushSubscriptions: many(pushSubscriptions),
   notificationPreferences: many(notificationPreferences),
+  rubrics: many(rubrics),
+  evaluationsAsStudent: many(evaluations, { relationName: "studentEvaluations" }),
+  evaluationsAsTeacher: many(evaluations, { relationName: "teacherEvaluations" }),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -377,3 +380,185 @@ export type PushClickEvent = typeof pushClickEvents.$inferSelect;
 export type NewPushClickEvent = typeof pushClickEvents.$inferInsert;
 export type NotificationPreference = typeof notificationPreferences.$inferSelect;
 export type NewNotificationPreference = typeof notificationPreferences.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// Padel Evaluativo — Core (v0.1 — etapa1-core-evaluativo)
+// ---------------------------------------------------------------------------
+
+export const rubricCategoryEnum = pgEnum('rubric_category', [
+  'tecnica', 'tactica', 'fisica', 'actitud',
+]);
+
+export const rubricStatusEnum = pgEnum('rubric_status', [
+  'draft', 'active', 'archived',
+]);
+
+export const evaluationStatusEnum = pgEnum('evaluation_status', [
+  'draft', 'published',
+]);
+
+export type RubricCategory = (typeof rubricCategoryEnum.enumValues)[number];
+export type RubricStatus = (typeof rubricStatusEnum.enumValues)[number];
+export type EvaluationStatus = (typeof evaluationStatusEnum.enumValues)[number];
+
+// Rúbrica del coach (ADMIN). ownerId = coach. Archivar = soft (status=archived),
+// nunca hard delete: las evaluaciones referencian la rúbrica.
+export const rubrics = pgTable("rubrics", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  ownerId: uuid("owner_id").notNull().references(() => users.id, { onDelete: "no action" }),
+  title: varchar("title", { length: 200 }).notNull(),
+  category: rubricCategoryEnum("category").notNull(),
+  status: rubricStatusEnum("status").notNull().default('draft'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("rubrics_owner_idx").on(table.ownerId),
+]);
+
+// Niveles fijos 4 en Etapa 1 (Excelente 4 / Bueno 3 / Aceptable 2 / En desarrollo 1).
+export const rubricLevels = pgTable("rubric_levels", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  rubricId: uuid("rubric_id").notNull().references(() => rubrics.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 100 }).notNull(),
+  score: integer("score").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+}, (table) => [
+  index("rubric_levels_rubric_idx").on(table.rubricId),
+]);
+
+export const rubricCriteria = pgTable("rubric_criteria", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  rubricId: uuid("rubric_id").notNull().references(() => rubrics.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 200 }).notNull(),
+  sortOrder: integer("sort_order").notNull(),
+}, (table) => [
+  index("rubric_criteria_rubric_idx").on(table.rubricId),
+]);
+
+// Descriptor por (criterio, nivel). UNIQUE evita duplicados en la matriz.
+export const rubricDescriptors = pgTable("rubric_descriptors", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  criteriaId: uuid("criteria_id").notNull().references(() => rubricCriteria.id, { onDelete: "cascade" }),
+  levelId: uuid("level_id").notNull().references(() => rubricLevels.id, { onDelete: "cascade" }),
+  text: text("text").notNull(),
+}, (table) => [
+  uniqueIndex("rubric_descriptors_criteria_level_idx").on(table.criteriaId, table.levelId),
+]);
+
+// Evaluación: coach (teacherId) evalúa a alumno (studentId) con una rúbrica.
+// totalScore/maxScore denormalizados → historial estable ante ediciones de rúbrica.
+export const evaluations = pgTable("evaluations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  studentId: uuid("student_id").notNull().references(() => users.id, { onDelete: "no action" }),
+  teacherId: uuid("teacher_id").notNull().references(() => users.id, { onDelete: "no action" }),
+  rubricId: uuid("rubric_id").notNull().references(() => rubrics.id, { onDelete: "no action" }),
+  status: evaluationStatusEnum("status").notNull().default('draft'),
+  totalScore: integer("total_score"),
+  maxScore: integer("max_score"),
+  globalComment: text("global_comment"),
+  publishedAt: timestamp("published_at"),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("evaluations_student_idx").on(table.studentId),
+  index("evaluations_teacher_idx").on(table.teacherId),
+  index("evaluations_rubric_idx").on(table.rubricId),
+]);
+
+// Scores por criterio. FKs a criteria/levels SIN cascade: si se edita la rúbrica,
+// los scores apuntan a filas que siguen existiendo (historial protegido).
+export const evaluationScores = pgTable("evaluation_scores", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  evaluationId: uuid("evaluation_id").notNull().references(() => evaluations.id, { onDelete: "cascade" }),
+  criteriaId: uuid("criteria_id").notNull().references(() => rubricCriteria.id, { onDelete: "no action" }),
+  levelId: uuid("level_id").notNull().references(() => rubricLevels.id, { onDelete: "no action" }),
+  score: integer("score").notNull(),
+  comment: text("comment"),
+}, (table) => [
+  uniqueIndex("evaluation_scores_evaluation_criteria_idx").on(table.evaluationId, table.criteriaId),
+]);
+
+export const rubricsRelations = relations(rubrics, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [rubrics.ownerId],
+    references: [users.id],
+  }),
+  levels: many(rubricLevels),
+  criteria: many(rubricCriteria),
+  evaluations: many(evaluations),
+}));
+
+export const rubricLevelsRelations = relations(rubricLevels, ({ one, many }) => ({
+  rubric: one(rubrics, {
+    fields: [rubricLevels.rubricId],
+    references: [rubrics.id],
+  }),
+  descriptors: many(rubricDescriptors),
+}));
+
+export const rubricCriteriaRelations = relations(rubricCriteria, ({ one, many }) => ({
+  rubric: one(rubrics, {
+    fields: [rubricCriteria.rubricId],
+    references: [rubrics.id],
+  }),
+  descriptors: many(rubricDescriptors),
+  scores: many(evaluationScores),
+}));
+
+export const rubricDescriptorsRelations = relations(rubricDescriptors, ({ one }) => ({
+  criterion: one(rubricCriteria, {
+    fields: [rubricDescriptors.criteriaId],
+    references: [rubricCriteria.id],
+  }),
+  level: one(rubricLevels, {
+    fields: [rubricDescriptors.levelId],
+    references: [rubricLevels.id],
+  }),
+}));
+
+export const evaluationsRelations = relations(evaluations, ({ one, many }) => ({
+  student: one(users, {
+    relationName: "studentEvaluations",
+    fields: [evaluations.studentId],
+    references: [users.id],
+  }),
+  teacher: one(users, {
+    relationName: "teacherEvaluations",
+    fields: [evaluations.teacherId],
+    references: [users.id],
+  }),
+  rubric: one(rubrics, {
+    fields: [evaluations.rubricId],
+    references: [rubrics.id],
+  }),
+  scores: many(evaluationScores),
+}));
+
+export const evaluationScoresRelations = relations(evaluationScores, ({ one }) => ({
+  evaluation: one(evaluations, {
+    fields: [evaluationScores.evaluationId],
+    references: [evaluations.id],
+  }),
+  criterion: one(rubricCriteria, {
+    fields: [evaluationScores.criteriaId],
+    references: [rubricCriteria.id],
+  }),
+  level: one(rubricLevels, {
+    fields: [evaluationScores.levelId],
+    references: [rubricLevels.id],
+  }),
+}));
+
+export type Rubric = typeof rubrics.$inferSelect;
+export type NewRubric = typeof rubrics.$inferInsert;
+export type RubricLevel = typeof rubricLevels.$inferSelect;
+export type NewRubricLevel = typeof rubricLevels.$inferInsert;
+export type RubricCriterion = typeof rubricCriteria.$inferSelect;
+export type NewRubricCriterion = typeof rubricCriteria.$inferInsert;
+export type RubricDescriptor = typeof rubricDescriptors.$inferSelect;
+export type NewRubricDescriptor = typeof rubricDescriptors.$inferInsert;
+export type Evaluation = typeof evaluations.$inferSelect;
+export type NewEvaluation = typeof evaluations.$inferInsert;
+export type EvaluationScore = typeof evaluationScores.$inferSelect;
+export type NewEvaluationScore = typeof evaluationScores.$inferInsert;

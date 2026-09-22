@@ -1,5 +1,165 @@
 # FEATURES — Registro de Cambios
 
+## ✨ Landing page rediseñada (2026-09-22)
+
+> status: released
+> release: v0.3
+> date: 2026-09-22
+> change_id: landing-redesign
+> module: marketing+ui
+> tags: [landing, ui, marketing, homepage, español]
+
+### Problema
+
+La página de inicio era un fallback mínimo ("Página Pública" + 2 botones) sin identidad de marca ni contenido informativo.
+
+### Solución Implementada
+
+Landing page completa en español con 5 secciones: Hero (título + subtitle + CTAs + badge "Gratuito"), Features Grid (3 cards: Rúbricas, Evolución, Cursos), How It Works (3 pasos numerados), Stats Bar (6 dimensiones, 4 niveles, 85+ endpoints, 397+ tests) y CTA Final. Todo estático, sin dependencia de DB.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `app/(public)/page.tsx` | 🔧 Reemplazado StaticFallback con landing completa (+138/-16) |
+
+### Tests
+Build exitoso, typecheck 0 errores.
+
+### Variables de Entorno
+Ninguna nueva.
+
+## ✨ G17 — E2E tests completos (2026-09-21)
+
+> status: released
+> release: v0.3
+> date: 2026-09-21
+> change_id: g17-e2e-etapa1
+> module: tests
+> tags: [e2e, padel, tests, playwright, rubric-editor, evaluation-flow, student-view]
+
+### Problema
+
+Los E2E existentes solo verificaban auth guards (401/403) y renderizado básico. No existían tests que navegaran los flujos completos de usuario.
+
+### Solución Implementada
+
+3 specs E2E navegables: `rubric-editor.spec.ts` (10 tests: login admin, nav rubricas, form, guards), `evaluation-flow.spec.ts` (8 tests: coach pages, nav, API guards), `student-view.spec.ts` (14 tests: student nav, authenticated pages, bottom nav, API guards). Total: 32 tests E2E.
+
+### Archivos Creados
+
+| Archivo | Acción |
+|---------|--------|
+| `tests/e2e/rubric-editor.spec.ts` | 🔧 Nuevo — 10 tests |
+| `tests/e2e/evaluation-flow.spec.ts` | 🔧 Nuevo — 8 tests |
+| `tests/e2e/student-view.spec.ts` | 🔧 Nuevo — 14 tests |
+
+### Tests
+32 E2E tests pasando, 397 unit tests, 76 API tests. Build exitoso.
+
+### Variables de Entorno
+Ninguna nueva.
+
+## ✨ Fix Vercel build — deploy en producción (2026-09-22)
+
+> status: released
+> release: v0.3
+> date: 2026-09-22
+> change_id: fix-vercel-build
+> module: infra
+> tags: [vercel, build, deploy, auth, sentry, fix]
+
+### Problema
+
+El deploy en Vercel fallaba con 3 errores: (1) `NEXTAUTH_SECRET` requerido en module load time durante build; (2) migraciones Drizzle fallaban con "type already exists"; (3) `withSentryConfig` rompía el build output cuando `SENTRY_AUTH_TOKEN` no estaba configurado.
+
+### Solución Implementada
+
+1. `auth.ts`: removido throw en build time, genera secret efímero si falta.
+2. `scripts/migrate.ts`: catch para "already exists" en error.cause.message → exit 0.
+3. `next.config.mjs`: `withSentryConfig` solo se aplica si `SENTRY_AUTH_TOKEN` existe.
+4. `app/not-found.tsx` + `app/(public)/error.tsx`: error boundaries para 404 y errores runtime.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `auth.ts` | 🔧 Removido throw en production build |
+| `scripts/migrate.ts` | 🔧 Skip migrations existentes |
+| `next.config.mjs` | 🔧 Sentry condicional |
+| `app/not-found.tsx` | 🔧 Nuevo — página 404 |
+| `app/(public)/error.tsx` | 🔧 Nuevo — error boundary |
+
+### Tests
+Build exitoso en Vercel, deploy funcionando.
+
+### Variables de Entorno
+`SENTRY_AUTH_TOKEN` (opcional, si no está Sentry se desactiva).
+
+## ✨ Fix login + TEMPORARY dashboard (2026-09-22)
+
+> status: released
+> release: v0.3
+| date: 2026-09-22
+> change_id: fix-auth-ux
+> module: auth+ui
+> tags: [fix, login, auth, dashboard, temporary]
+
+### Problema
+
+Dos bugs de UX: (1) `signIn()` de next-auth/react causaba `ClientFetchError` en dev porque el endpoint CSRF devolvía body vacío; (2) usuarios TEMPORARY (email no verificado) veían 403 en todas las APIs del dashboard.
+
+### Solución Implementada
+
+1. Login: reemplazado `signIn()` con `fetch()` directo a `/api/auth/callback/credentials` con `redirect: "manual"`.
+2. Dashboard: si `status === "TEMPORARY"`, renderiza Card informativo "Verificá tu email para empezar" en vez de `<StudentDashboard>`.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `app/(public)/login/page.tsx` | 🔧 fetch directo en vez de signIn() |
+| `app/(app)/dashboard/page.tsx` | 🔧 Banner TEMPORARY con badge |
+
+### Tests
+Typecheck 0 errores, build exitoso.
+
+### Variables de Entorno
+Ninguna nueva.
+
+## ✨ Fix DB graceful fallback en páginas públicas (2026-09-20)
+
+> status: released
+> release: v0.3
+> date: 2026-09-20
+> change_id: fix-db-fallback
+> module: infra+ui
+> tags: [fix, db, fallback, public-pages]
+
+### Problema
+
+La app crasheaba cuando NeonDB no era reachable. El layout y todas las páginas públicas fallaban con errores de conexión.
+
+### Solución Implementada
+
+try/catch en `layout.tsx` y 4 páginas públicas (`page.tsx`, `[slug]/page.tsx`, `blog/page.tsx`, `shop/page.tsx`). Si `getCachedPage()` o `getCachedNavigation()` fallan, se usan datos por defecto (`DEFAULT_NAVIGATION`, `<StaticFallback />`, `[]`).
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `app/(public)/layout.tsx` | 🔧 try/catch en getCachedNavigation() |
+| `app/(public)/page.tsx` | 🔧 try/catch en getCachedPage("home") |
+| `app/(public)/[slug]/page.tsx` | 🔧 try/catch en getCachedPage(slug) |
+| `app/(public)/blog/page.tsx` | 🔧 try/catch en getCachedPosts() |
+| `app/(public)/shop/page.tsx` | 🔧 try/catch en getCachedProducts() |
+
+### Tests
+Typecheck 0 errores, build exitoso.
+
+### Variables de Entorno
+Ninguna nueva.
+
 ## ✨ Etapa 4: Evolución del Alumno y Gestión de Alumnos por Curso — G6/G7/G12 (2026-09-21)
 
 > status: in-progress
@@ -286,7 +446,7 @@ La app de evaluación de pádel no tiene capacidad de rúbricas ni evaluaciones 
 
 - Unit: `tests/unit/validations/padel.test.ts` (Zod), `tests/unit/padel/score.test.ts` (score puro), `tests/unit/db/{rubrics,evaluations,admin-users}.test.ts` (queries).
 - API: `tests/api/padel/guard.spec.ts` (401/403/IDOR), `tests/api/padel/{admin-users,rubrics,evaluations,student}-happy.spec.ts` (SQL real contra NeonDB).
-- E2E (pendiente @qa-release): `rubric-editor.spec.ts`, `evaluation-flow.spec.ts`, `student-view.spec.ts`.
+- E2E: `rubric-editor.spec.ts`, `evaluation-flow.spec.ts`, `student-view.spec.ts` (completados vía G17 — 32 tests).
 
 ### Variables de Entorno
 
@@ -736,7 +896,7 @@ Ninguna nueva.
 > status: released
 > release: v0.3
 > date: 2026-09-16
-> change_id: push-notifications
+> change_id: push-notifications-api
 > module: api
 > tags: [push, notifications, inbox, api, admin]
 

@@ -1,0 +1,33 @@
+{
+  "change_id": "etapa2-3-onboarding-dashboard",
+  "change_class": "feature",
+  "timestamp": "2026-09-21T02:29:02.496Z",
+  "riskLevel": "LOW",
+  "completionClaim": true,
+  "gatesRun": {
+    "typecheck": { "status": "pass" },
+    "lint": { "status": "pass" },
+    "unit_tests": { "status": "pass", "testCount": 342, "testDelta": -6 },
+    "api_tests": { "status": "pass" },
+    "e2e_tests": { "status": "pass" },
+    "build": { "status": "pass" },
+    "secrets": { "status": "pass" },
+    "sast": { "status": "pass" },
+    "api_integration": { "status": "pass" },
+    "code_review": { "status": "pass" },
+    "audit_deps": { "status": "pass" },
+    "env_vars": { "status": "pass" },
+    "features_check": { "status": "warning" },
+    "migrations_check": { "status": "pass" },
+    "snapshot_check": { "status": "pass" },
+    "docs_check": { "status": "pass" },
+    "artifact_completeness": { "status": "pass" },
+    "security_check": { "status": "pass" },
+    "file_size": { "status": "warning" },
+    "evidence_check": { "status": "pass" },
+    "risk_policy": { "status": "pass" },
+    "coverage_check": { "status": "pass" },
+    "loop_metrics": { "status": "warning" }
+  },
+  "summary": "Etapa 2 (Onboarding y Cursos) y Etapa 3 (Dashboard y Management) validadas: 21/23 gates pass, 0 failed, 2 warnings no bloqueantes (FEATURES.md refs, loop metrics, file size en mockups efímeros). Risk LOW."
+}

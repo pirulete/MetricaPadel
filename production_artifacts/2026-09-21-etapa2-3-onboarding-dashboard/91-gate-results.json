@@ -1,0 +1,18 @@
+{
+  "change_id": "2026-09-21-etapa2-3-onboarding-dashboard",
+  "change_class": "feature",
+  "validated_at": "2026-09-21T02:29:02.496Z",
+  "typecheck": "pass",
+  "lint": "pass",
+  "unit_tests": "pass",
+  "api_tests": "pass",
+  "build": "pass",
+  "features_check": "warning",
+  "migrations_check": "pass",
+  "docs_check": "pass",
+  "artifact_completeness": "pass",
+  "security_check": "pass",
+  "gates_passed": 21,
+  "gates_failed": 0,
+  "overall": "pass"
+}

@@ -1,0 +1,12 @@
+{
+  "change_id": "2026-09-20-etapa1-core-evaluativo",
+  "change_class": "feature",
+  "timestamp": "2026-09-21T00:30:00Z",
+  "files_changed": 0,
+  "tests_added": 0,
+  "tests_updated": 0,
+  "test_coverage_delta": null,
+  "gates_passed": 1,
+  "gates_failed": 1,
+  "notes": "Validación manual: API tests 22/22 skipped (probe csrf roto), E2E 9/9 passed."
+}

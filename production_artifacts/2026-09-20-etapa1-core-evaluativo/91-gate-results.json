@@ -1,0 +1,45 @@
+{
+  "change_id": "2026-09-20-etapa1-core-evaluativo",
+  "change_class": "feature",
+  "validated_at": "2026-09-21T00:30:00Z",
+  "typecheck": "skipped",
+  "lint": "skipped",
+  "unit_tests": "skipped",
+  "api_tests": "fail",
+  "e2e_tests": "pass",
+  "build": "skipped",
+  "features_check": "skipped",
+  "migrations_check": "skipped",
+  "docs_check": "skipped",
+  "artifact_completeness": "skipped",
+  "security_check": "skipped",
+  "gates_passed": 1,
+  "gates_failed": 1,
+  "overall": "fail",
+  "details": {
+    "api_tests": {
+      "total": 22,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 22,
+      "reason": "serverUp() probe /api/auth/csrf → 404 (skipCSRFCheck en dev, auth.ts:172). Todos los tests se saltan; la suite nunca ejercita los endpoints."
+    },
+    "e2e_tests": {
+      "total": 9,
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0
+    },
+    "server_probe": {
+      "root": 200,
+      "login": 200,
+      "api/auth/providers": 200,
+      "api/auth/session": 200,
+      "api/auth/csrf": 404,
+      "api/rubrics": 401,
+      "api/evaluations": 401,
+      "api/student/evaluations": 401,
+      "api/admin/users": 401
+    }
+  }
+}

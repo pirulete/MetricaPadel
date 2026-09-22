@@ -1,0 +1,11 @@
+{
+  "change_id": "2026-09-21-gaps-user-flows",
+  "change_class": "feature",
+  "timestamp": "2026-09-21T13:48:32Z",
+  "files_changed": 31,
+  "tests_added": 12,
+  "tests_updated": 1,
+  "test_coverage_delta": 0,
+  "gates_passed": 21,
+  "gates_failed": 0
+}

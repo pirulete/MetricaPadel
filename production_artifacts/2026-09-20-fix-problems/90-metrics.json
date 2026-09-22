@@ -1,0 +1,11 @@
+{
+  "change_id": "2026-09-20-fix-problems",
+  "change_class": "fix",
+  "timestamp": "2026-09-20T21:47:14.522Z",
+  "files_changed": 4,
+  "tests_added": 0,
+  "tests_updated": 0,
+  "test_coverage_delta": null,
+  "gates_passed": 8,
+  "gates_failed": 2
+}

@@ -11,12 +11,10 @@ import { isBcryptHash, comparePassword } from "@/lib/auth/password";
 import { requiresTermsAcceptance } from "@/lib/db/queries/terms";
 import { getSessionConfig } from "@/lib/db/queries/session-config";
 
+// During Vercel build, env vars from project settings are NOT available (only at runtime).
+// So we always generate an ephemeral secret if NEXTAUTH_SECRET is missing. NextAuth will
+// use the runtime-injected secret from Vercel env vars in production.
 if (!process.env.NEXTAUTH_SECRET) {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error("NEXTAUTH_SECRET environment variable is required. Set it in Vercel project settings.")
-  }
-  // Development: generate a random ephemeral secret so the server can start
-  // without requiring every dev to configure NEXTAUTH_SECRET in .env.local
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   process.env.NEXTAUTH_SECRET = require('crypto').randomBytes(32).toString('hex')
 }

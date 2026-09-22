@@ -86,7 +86,7 @@ function StaticFallback() {
           Gratuito para coaches y academias
         </span>
         <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-          Evaluá el juego de tus alumnos con{" "}
+          Evalúa el juego de tus alumnos con{" "}
           <span className="text-primary">datos reales</span>
         </h1>
         <p className="max-w-xl text-lg text-muted-foreground">

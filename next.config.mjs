@@ -64,11 +64,13 @@ const nextConfig = {
   },
 }
 
-export default withSentryConfig(nextConfig, {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  silent: !process.env.CI,
-  hideSourceMaps: true,
-  tunnelRoute: "/monitoring-tunnel",
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-})
+export default process.env.SENTRY_AUTH_TOKEN
+  ? withSentryConfig(nextConfig, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      silent: !process.env.CI,
+      hideSourceMaps: true,
+      tunnelRoute: "/monitoring-tunnel",
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+    })
+  : nextConfig

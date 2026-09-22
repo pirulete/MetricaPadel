@@ -30,28 +30,150 @@ export default async function HomePage() {
   )
 }
 
+/* ------------------------------------------------------------------ */
+/*  Landing page — se renderiza cuando no hay datos CMS (fallback)     */
+/* ------------------------------------------------------------------ */
+
+const features = [
+  {
+    icon: "🎯",
+    title: "Rúbricas personalizadas",
+    desc: "Creá rúbricas con 6 dimensiones de evaluación: reglas, técnica, táctica, física y actitud. Cuatro niveles de desempeño por criterio.",
+  },
+  {
+    icon: "📊",
+    title: "Evolución del jugador",
+    desc: "Seguí el progreso de cada alumno con gráficos de tendencia por categoría. Compará versiones de evaluación a lo largo del tiempo.",
+  },
+  {
+    icon: "🏆",
+    title: "Cursos con código de invitación",
+    desc: "Creá cursos, compartí un código PAD-XXXX y que los alumnos se unan solos. Asigná rúbricas y evaluá desde el panel.",
+  },
+]
+
+const steps = [
+  {
+    n: 1,
+    title: "Creá tu rúbrica",
+    desc: "Elegí las categorías, definí los criterios y asigná descriptores para cada nivel de desempeño.",
+  },
+  {
+    n: 2,
+    title: "Evaluá en cancha",
+    desc: "Seleccioná al alumno, asigná puntajes en vivo y publicá la evaluación con un comentario global.",
+  },
+  {
+    n: 3,
+    title: "Seguí el progreso",
+    desc: "El alumno ve sus evaluaciones, tendencias por categoría y evolución a lo largo de las semanas.",
+  },
+]
+
+const stats = [
+  { value: "6", label: "Dimensiones de evaluación" },
+  { value: "4", label: "Niveles de desempeño" },
+  { value: "85+", label: "Endpoints de API" },
+  { value: "397+", label: "Tests automatizados" },
+]
+
 function StaticFallback() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 px-6 text-center">
-      <h1 className="text-4xl font-bold">Página Pública</h1>
-      <p className="max-w-md text-muted-foreground">
-        Esta es la parte pública del proyecto. Áreas autenticadas viven en /dashboard y el
-        back-office en /admin.
-      </p>
-      <div className="flex gap-4">
-        <Link
-          href="/login"
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-        >
-          Iniciar sesión
-        </Link>
+    <main className="flex flex-col">
+      {/* Hero */}
+      <section className="relative flex flex-col items-center justify-center gap-6 px-6 py-24 text-center md:py-32">
+        <span className="inline-block rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-accent-foreground">
+          Gratuito para coaches y academias
+        </span>
+        <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
+          Evaluá el juego de tus alumnos con{" "}
+          <span className="text-primary">datos reales</span>
+        </h1>
+        <p className="max-w-xl text-lg text-muted-foreground">
+          Rúbricas de evaluación, evolución del jugador y gestión de cursos.
+          Todo lo que necesitás para medir y mejorar el rendimiento en pádel.
+        </p>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Link
+            href="/register"
+            className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+          >
+            Empezá gratis
+          </Link>
+          <Link
+            href="/login"
+            className="inline-flex h-11 items-center justify-center rounded-md border border-border px-8 text-sm font-medium transition-colors hover:bg-secondary"
+          >
+            Ya tengo cuenta
+          </Link>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="mx-auto w-full max-w-5xl px-6 pb-24">
+        <div className="mb-10 text-center">
+          <h2 className="text-2xl font-bold sm:text-3xl">Todo lo que necesitás en un solo lugar</h2>
+          <p className="mt-2 text-muted-foreground">
+            Diseñado para coaches, entrenadores y academias de pádel.
+          </p>
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((f) => (
+            <div key={f.title} className="rounded-xl border border-border bg-card p-6 shadow-sm transition-shadow hover:shadow-md">
+              <div className="mb-4 text-3xl">{f.icon}</div>
+              <h3 className="mb-2 font-semibold">{f.title}</h3>
+              <p className="text-sm text-muted-foreground">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="mx-auto w-full max-w-5xl px-6 pb-24">
+        <div className="mb-10 text-center">
+          <h2 className="text-2xl font-bold sm:text-3xl">¿Cómo funciona?</h2>
+          <p className="mt-2 text-muted-foreground">
+            Tres pasos simples para empezar a evaluar.
+          </p>
+        </div>
+        <div className="grid gap-8 sm:grid-cols-3">
+          {steps.map((s) => (
+            <div key={s.n} className="flex flex-col items-center text-center">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
+                {s.n}
+              </div>
+              <h3 className="mb-2 font-semibold">{s.title}</h3>
+              <p className="text-sm text-muted-foreground">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Stats */}
+      <section className="border-y border-border bg-secondary/40">
+        <div className="mx-auto grid w-full max-w-4xl grid-cols-2 gap-8 px-6 py-16 sm:grid-cols-4">
+          {stats.map((s) => (
+            <div key={s.label} className="text-center">
+              <div className="text-3xl font-bold text-primary">{s.value}</div>
+              <div className="mt-1 text-sm text-muted-foreground">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="px-6 py-24 text-center">
+        <h2 className="mb-4 text-2xl font-bold sm:text-3xl">¿Listo para empezar?</h2>
+        <p className="mb-8 max-w-md mx-auto text-muted-foreground">
+          Creá tu cuenta en un minuto y comenzá a evaluar a tus jugadores hoy mismo.
+        </p>
         <Link
           href="/register"
-          className="rounded-md border border-border px-4 py-2 text-sm font-medium"
+          className="inline-flex h-12 items-center justify-center rounded-md bg-primary px-10 text-base font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
         >
-          Registrarse
+          Crear mi cuenta gratis
         </Link>
-      </div>
+      </section>
     </main>
   )
 }

@@ -112,7 +112,7 @@ Dos bugs de UX: (1) `signIn()` de next-auth/react causaba `ClientFetchError` en 
 ### Solución Implementada
 
 1. Login: reemplazado `signIn()` con `fetch()` directo a `/api/auth/callback/credentials` con `redirect: "manual"`.
-2. Dashboard: si `status === "TEMPORARY"`, renderiza Card informativo "Verificá tu email para empezar" en vez de `<StudentDashboard>`.
+2. Dashboard: si `status === "TEMPORARY"`, renderiza Card informativo "Verifica tu email para empezar" en vez de `<StudentDashboard>`.
 
 ### Archivos Modificados
 

@@ -24,7 +24,7 @@ export default async function DashboardPage() {
         ) : isTemporary ? (
           <Card className="p-8 text-center">
             <Badge variant="secondary" className="mb-4">Email pendiente</Badge>
-            <h2 className="text-xl font-semibold mb-2">Verificá tu email para empezar</h2>
+            <h2 className="text-xl font-semibold mb-2">Verifica tu email para empezar</h2>
             <p className="text-muted-foreground">
               Revisa tu casilla de correo y completa la verificación para acceder a tu dashboard, evaluaciones y cursos.
             </p>

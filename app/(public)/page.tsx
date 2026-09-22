@@ -38,34 +38,34 @@ const features = [
   {
     icon: "🎯",
     title: "Rúbricas personalizadas",
-    desc: "Creá rúbricas con 6 dimensiones de evaluación: reglas, técnica, táctica, física y actitud. Cuatro niveles de desempeño por criterio.",
+    desc: "Crea rúbricas con 6 dimensiones de evaluación: reglas, técnica, táctica, física y actitud. Cuatro niveles de desempeño por criterio.",
   },
   {
     icon: "📊",
     title: "Evolución del jugador",
-    desc: "Seguí el progreso de cada alumno con gráficos de tendencia por categoría. Compará versiones de evaluación a lo largo del tiempo.",
+    desc: "Sigue el progreso de cada alumno con gráficos de tendencia por categoría. Compara versiones de evaluación a lo largo del tiempo.",
   },
   {
     icon: "🏆",
     title: "Cursos con código de invitación",
-    desc: "Creá cursos, compartí un código PAD-XXXX y que los alumnos se unan solos. Asigná rúbricas y evaluá desde el panel.",
+    desc: "Crea cursos, comparte un código PAD-XXXX y que los alumnos se unan solos. Asigna rúbricas y evalúa desde el panel.",
   },
 ]
 
 const steps = [
   {
     n: 1,
-    title: "Creá tu rúbrica",
-    desc: "Elegí las categorías, definí los criterios y asigná descriptores para cada nivel de desempeño.",
+    title: "Crea tu rúbrica",
+    desc: "Elige las categorías, define los criterios y asigna descriptores para cada nivel de desempeño.",
   },
   {
     n: 2,
-    title: "Evaluá en cancha",
-    desc: "Seleccioná al alumno, asigná puntajes en vivo y publicá la evaluación con un comentario global.",
+    title: "Evalúa en cancha",
+    desc: "Selecciona al alumno, asigna puntajes en vivo y publica la evaluación con un comentario global.",
   },
   {
     n: 3,
-    title: "Seguí el progreso",
+    title: "Sigue el progreso",
     desc: "El alumno ve sus evaluaciones, tendencias por categoría y evolución a lo largo de las semanas.",
   },
 ]
@@ -98,7 +98,7 @@ function StaticFallback() {
             href="/register"
             className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
           >
-            Empezá gratis
+            Empieza gratis
           </Link>
           <Link
             href="/login"
@@ -165,7 +165,7 @@ function StaticFallback() {
       <section className="px-6 py-24 text-center">
         <h2 className="mb-4 text-2xl font-bold sm:text-3xl">¿Listo para empezar?</h2>
         <p className="mb-8 max-w-md mx-auto text-muted-foreground">
-          Creá tu cuenta en un minuto y comenzá a evaluar a tus jugadores hoy mismo.
+          Crea tu cuenta en un minuto y comienza a evaluar a tus jugadores hoy mismo.
         </p>
         <Link
           href="/register"

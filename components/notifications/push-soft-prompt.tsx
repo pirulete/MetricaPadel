@@ -78,7 +78,7 @@ export function PushSoftPrompt() {
     <div className="mb-6 flex items-start gap-3 rounded-lg border border-border bg-secondary/50 p-4">
       <Bell className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
       <div className="min-w-0 flex-1">
-        <p className="mb-1 text-sm font-medium">¿Querés recibir notificaciones?</p>
+        <p className="mb-1 text-sm font-medium">¿Quieres recibir notificaciones?</p>
         <p className="mb-3 text-xs text-muted-foreground">
           Te avisamos cuando haya novedades importantes.
         </p>

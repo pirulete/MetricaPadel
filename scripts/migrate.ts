@@ -40,8 +40,8 @@ async function runMigration() {
     console.log('[v0] ✓ Migration completed successfully')
 
     process.exit(0)
-  } catch (error) {
-    const msg = (error as Error)?.message ?? ''
+  } catch (error: any) {
+    const msg = `${error?.message ?? ''} ${error?.cause?.message ?? ''}`
     if (msg.includes('already exists')) {
       console.log('[v0] ⏭ Migrations already applied — skipping')
       process.exit(0)

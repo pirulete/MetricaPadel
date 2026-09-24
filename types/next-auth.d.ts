@@ -22,6 +22,7 @@ declare module "next-auth" {
     status?: string
     role?: string
     avatarUrl?: string | null
+    sessionToken?: string
   }
 }
 
@@ -34,5 +35,6 @@ declare module "next-auth/jwt" {
     role?: string
     avatarUrl?: string | null
     requiresTermsAcceptance?: boolean
+    sessionToken?: string
   }
 }

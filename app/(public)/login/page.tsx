@@ -42,8 +42,17 @@ export default function LoginPage() {
       })
 
       // redirect: "manual" — we handle navigation ourselves.
-      // On success Auth.js sets the session cookie and returns 302.
+      // On success Auth.js sets the session cookie and returns 302 (redirect case)
+      // or 200 JSON with { url } when redirect: "false" is respected.
       if (res.type === "opaqueredirect" || res.status >= 300 && res.status < 400) {
+        toast.success("Sesión iniciada")
+        router.push("/dashboard")
+        router.refresh()
+        return
+      }
+
+      // Auth.js returns 200 JSON when redirect: "false" — session cookie is set
+      if (res.ok) {
         toast.success("Sesión iniciada")
         router.push("/dashboard")
         router.refresh()

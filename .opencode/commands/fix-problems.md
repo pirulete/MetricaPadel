@@ -358,7 +358,7 @@ Estas acciones **SOLO** corresponden a un comando de release **separado** que el
 **El flujo correcto es:**
 ```
 /fix-problems → commitea y pushea a rama-preview
-  → Notifica al usuario: "Cambios listos en rama-preview. Ejecuta el release cuando quieras deploy"
+  → Notifica al usuario: "Cambios listos en rama-preview. Ejecuta /supercommitpro cuando quieras deploy"
   → El usuario decide cuándo deploy
 ```
 
@@ -389,7 +389,7 @@ git push origin rama-preview
 **Si el usuario no responde o dice "no":** NO commitear, NO pushear. Solo mostrar el resumen de cambios.
 
 Después del push a `rama-preview`, notificar al usuario:
-> "Cambios commiteados y pusheados a rama-preview. Ejecuta el release cuando quieras hacer merge a main y deploy."
+> "Cambios commiteados y pusheados a rama-preview. Ejecuta `/supercommitpro` cuando quieras hacer merge a main y deploy."
 
 El usuario decide cuándo merge a main. `/fix-problems` solo prepara el código en rama-preview.
 

@@ -8,7 +8,7 @@ export function MarketingFooter({ navigation }: { navigation: NavigationData }) 
     <footer className="border-t border-border bg-muted/40">
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-8 sm:flex-row lg:px-8">
         <p className="text-sm text-muted-foreground">
-          © {new Date().getFullYear()} {navigation.siteName || "Skeleton"}
+          © {new Date().getFullYear()} {navigation.siteName || "Métrica Pádel"}
         </p>
         {navigation.footerLinks.length > 0 && (
           <nav aria-label="Legal">

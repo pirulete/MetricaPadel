@@ -171,6 +171,44 @@ Reglas:
 
 El resultado se guarda en `.validation/status.json`. Si `status = "fail"`, **no se puede iniciar ningún workflow** hasta resolver.
 
+## Git Workflow
+
+### Branches
+
+| Branch | Propósito | Protección |
+|--------|-----------|------------|
+| `rama-preview` | Desarrollo activo, todos los commits van aquí | No protegida |
+| `main` | Producción, deploy via Vercel | Requiere CI verde |
+
+### Flujo de commits
+
+```
+rama-preview ← todos los workflows commitean aquí (/fix-problems, /ship-feature, etc.)
+     │
+     ▼  (cuando el usuario decide deploy)
+    main ← /supercommitpro ejecuta merge --no-ff + validación + push
+```
+
+### Comandos de commit
+
+| Comando | Acción | Ejecuta |
+|---------|--------|---------|
+| `/supercommitpre` | Sync con main + commit a rama-preview | Desarrollo normal |
+| `/supercommitpro` | Commit a rama-preview + merge a main (deploy) | Release a producción |
+
+### Reglas críticas
+
+- **Ningún workflow** (excepto `/supercommitpro`) ejecuta `git checkout main`, `git merge`, ni `git push origin main`.
+- `/fix-problems` y `/ship-feature` **solo** commitean a `rama-preview` y notifican al usuario para ejecutar `/supercommitpro` cuando esté listo.
+- El merge a main usa `--no-ff` para crear un merge commit explícito.
+- Antes del push a main, se ejecuta validación local (`validate-harness.js --typecheck --lint --tests --build`). Si falla, el merge se revierte.
+
+### Version tracking
+
+- `lib/constants/version.ts` — versión actual (`APP_VERSION`) y fecha de build
+- Se sincroniza automáticamente desde `FEATURES.md` via `supercommit-common.sh`
+- `ARCHITECTURE.md` también se sincroniza con la línea "Último Release"
+
 ## Agent Team
 
 Ver `AGENTS.md` para roles de agentes, workflows y quality gates. La asignación de modelos por agente está en `.opencode/agents/*.md`.

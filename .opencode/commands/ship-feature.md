@@ -381,6 +381,52 @@ task(description="Post-flight validation gate", subagent_type="qa-validator", pr
 | Iteraciones globales | 5 | Detener workflow, escalar al humano |
 | Fix > 5 archivos | - | Activar cross-agent review |
 
+## Commit y Push (Post-Flight)
+
+### ⛔ REGLA CRÍTICA — PRODUCCIÓN ESTÁ PROHIBIDA
+
+**`/ship-feature` NUNCA ejecuta `git checkout main`, `git merge`, ni `git push origin main`.**
+
+Estas acciones **SOLO** corresponden a un comando de release **separado** que el usuario debe ejecutar **explícitamente** después.
+
+**El flujo correcto es:**
+```
+/ship-feature → commitea y pushea a rama-preview
+  → Notifica al usuario: "Feature listo en rama-preview. Ejecuta /supercommitpro cuando quieras deploy"
+  → El usuario decide cuándo deploy
+```
+
+**NUNCA hacer:**
+```bash
+# ❌ PROHIBIDO en /ship-feature — esto es solo para el release
+git checkout main
+git merge rama-preview
+git push origin main
+```
+
+### Gate de Confirmación ANTES de commit+push
+
+**ANTES de ejecutar `git commit` o `git push`, DEBES preguntar al usuario:**
+
+```
+¿Commiteo y pusheo estos cambios a rama-preview? (sí/no)
+```
+
+**Solo si el usuario responde "sí" o "procede", ejecutar:**
+
+```bash
+git add <archivos_modificados>
+git commit -m "feat: <descripción>"
+git push origin rama-preview
+```
+
+**Si el usuario no responde o dice "no":** NO commitear, NO pushear. Solo mostrar el resumen de cambios.
+
+Después del push a `rama-preview`, notificar al usuario:
+> "Feature commiteado y pusheado a rama-preview. Ejecuta `/supercommitpro` cuando quieras hacer merge a main y deploy."
+
+El usuario decide cuándo merge a main. `/ship-feature` solo prepara el código en rama-preview.
+
 ## Escalamiento al Humano
 
 Cuando se alcanza un límite de iteraciones:

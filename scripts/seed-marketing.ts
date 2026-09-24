@@ -75,7 +75,7 @@ async function seed() {
           subtitle:
             "Publica landing pages, blog y catálogo desde un admin panel sin tocar código. Rápido, seguro y accesible.",
           ctas: [
-            { label: "Empezar gratis", href: "/register", variant: "default" },
+            { label: "Empezar", href: "/register", variant: "default" },
             { label: "Ver productos", href: "/shop", variant: "outline" },
           ],
         },

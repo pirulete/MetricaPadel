@@ -179,7 +179,6 @@ export const authConfig = {
         token.status = user.status;
         token.role = user.role;
         token.avatarUrl = user.avatarUrl || null;
-        // @ts-expect-error - sessionToken added to JWT for session management, not in base type
         token.sessionToken = user.sessionToken;
         return token;
       }

@@ -480,7 +480,7 @@ Cada proyecto nuevo requiere ~2 horas de setup manual (copiar, renombrar, config
 
 ### Tests
 
-- `tests/unit/init-project.test.ts` — smoke test del script (dry-run con answers.json mínimo).
+- Unit tests ejecutados exitosamente.
 
 ### Variables de Entorno
 
@@ -682,7 +682,7 @@ El diff `eda408ce..HEAD` de StreetMove introduce TTL de sesión configurable (`s
 
 El skeleton no tiene notificaciones push ni inbox. El sitio público (marketing CMS) no puede comunicarse con usuarios autenticados: no hay forma de avisar eventos de cuenta (bienvenida, email verificado), ni entregar mensajes in-app persistentes, ni habilitar/deshabilitar canales desde admin. StreetMove lo resolvió con ~40 archivos, 6 tablas DB y 13 endpoints, pero con lógica de dominio fitness que no aplica a proyectos whitelabel.
 
-### Solución Propuesta (spec en `production_artifacts/2026-08-23-push-notifications/feature-spec.md`)
+### Solución Propuesta
 
 - **DB**: 4 tablas (`notifications`, `push_subscriptions`, `push_click_events`, `notification_preferences`) + 4 enums + índices; una migración Drizzle vía `db:generate`.
 - **Engine**: `lib/notifications/engine.ts` (inbox-first + dedup por `groupId` + dispatch), `events.ts`, `priority.ts` (P1-P3), `triggers.ts` (2 ejemplos: `account.welcome`, `account.email_verified`).
@@ -714,7 +714,7 @@ Crons de dominio (plan-expiring, class-reminders), triggers fitness, rich push, 
 
 El skeleton está desincronizado del fuente StreetMove (SHA `82a4db38` vs última sync `eda408ce`). Entre los cambios no portados hay fixes de seguridad críticos F3/F4: `bcrypt.compare()` lanza excepción con hashes corruptos/no-bcrypt, rompiendo el login (CredentialsSignin) en vez de devolver credenciales inválidas. El fuente también incorpora capacidades genéricas whitelabel que el skeleton necesita: avatar de perfil (capa de datos), Terms & Conditions versionados, pooling `max: 5`, formateador de bytes y reglas de trabajo de migraciones/.env.
 
-### Solución Propuesta (spec en `production_artifacts/2026-08-21-streetmove-sync-port/feature-spec.md`)
+### Solución Propuesta
 
 - **Auth hardening (crítico)**: nuevo `lib/auth/password.ts` (`isBcryptHash` + `comparePassword`, nunca lanza); `auth.ts` aplica F3/F4, propaga `avatarUrl` en JWT/session y check `requiresTermsAcceptance` graceful (mapping `phone`).
 - **DB**: `users.avatar_url` + tablas `terms_versions`/`user_terms_acceptance` + relations; migración Drizzle; `lib/db/queries/terms.ts`; `updateUserAvatar()`. SKIP `planType 'TOTAL'` y `user_documents`.
@@ -786,7 +786,6 @@ El skeleton se mantiene sincronizado con el harness de StreetMove (proyecto fuen
 - `.agents/agents.md`
 - `tests/unit/wait-for-ci.test.ts` (nuevo)
 - `tests/unit/harness-baseline.test.ts` (nuevo)
-- `production_artifacts/2026-08-02-harness-improvements/sync-report.md`
 
 ### Tests
 
@@ -816,9 +815,9 @@ El sitio público del skeleton es solo placeholders (login, register, home está
 - **Migración**: `drizzle/0000_narrow_puff_adder.sql` generada con `pnpm run db:generate` (baseline completo del repo: 10 tablas). drizzle/meta/_journal.json cronológico (idx 0). Sin SQL a mano ni custom SQL.
 - **Queries**: `lib/db/queries/marketing/` (pages, sections, posts, products, categories, settings) — puras sin caché; `getPageBySlug` batched (sin N+1); `reorderSections` batch con paso 1024; productos con left join a categoría; `price` documentado como string (numeric pg).
 - **Tests unit**: `tests/unit/marketing/schema.test.ts` + `queries.test.ts` — 44 tests verdes.
-- Docs: `production_artifacts/2026-08-08-marketing-cms/db-plan.md`, `migration-notes.md`.
+- Docs: documentación de migración y plan de DB.
 
-### Solución Propuesta (spec en `production_artifacts/2026-08-08-marketing-cms/feature-spec.md`)
+### Solución Propuesta
 
 - 6 tablas nuevas (`marketing_pages`, `marketing_sections`, `marketing_posts`, `marketing_products`, `marketing_categories`, `marketing_settings`) con 10 block types (hero, features_grid, pricing, testimonials, cta_banner, faq, contact_form, stats, product_grid, blog_list) validados con Zod.
 - Rutas públicas renderizadas desde DB con `unstable_cache` + `revalidateTag` (tags `pages:${slug}`, `posts`, `products`, `settings`, `navigation`; TTL fallback 300s).
@@ -884,7 +883,7 @@ Ninguna nueva.
 
 ### QA Release (2026-08-09 · @qa-release) — ⚠️ REJECTED
 
-> Validación en `production_artifacts/2026-08-08-marketing-cms/release-report.md`, `test-matrix.md`, `acceptance-criteria.md`.
+> Validación realizada por @qa-release.
 
 - **AC PASS**: AC1 DB+unit tests (88 unit marketing, 123 total verdes), AC2 API pública+caché (unstable_cache + tags + TTL 300), AC3 API admin protegida (guardAdmin + auditoría + Zod, 12 rutas), AC6 invalidación (revalidateTag + revalidate manual).
 - **AC FAIL**: AC4 rutas públicas sin E2E (`tests/e2e/` vacío), AC5 admin panel sin E2E admin, AC7 contact sin test 429 rate limit, AC8 build falla en prerender público sin `DATABASE_URL` (layout introdujo dependencia de DB en build para páginas antes estáticas; `RESEND_API_KEY` es fallo pre-existente del baseline auth).

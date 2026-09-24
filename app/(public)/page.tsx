@@ -83,7 +83,7 @@ function StaticFallback() {
       {/* Hero */}
       <section className="relative flex flex-col items-center justify-center gap-6 px-6 py-24 text-center md:py-32">
         <span className="inline-block rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-accent-foreground">
-          Gratuito para alumnos
+          Para coaches y academias
         </span>
         <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
           Evalúa el juego de tus alumnos con{" "}
@@ -171,7 +171,7 @@ function StaticFallback() {
           href="/register"
           className="inline-flex h-12 items-center justify-center rounded-md bg-primary px-10 text-base font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
         >
-          Crear mi cuenta gratis
+          Crear mi cuenta
         </Link>
       </section>
     </main>

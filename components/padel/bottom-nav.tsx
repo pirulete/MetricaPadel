@@ -2,33 +2,17 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BookOpenIcon, ClipboardListIcon, HomeIcon, HistoryIcon, TrendingUpIcon, User } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getNavItems } from "@/lib/constants/navigation"
 
 interface BottomNavProps {
   role: "ADMIN" | "USER"
 }
 
-const ADMIN_ITEMS = [
-  { href: "/dashboard", label: "Inicio", icon: HomeIcon },
-  { href: "/cursos", label: "Cursos", icon: BookOpenIcon },
-  { href: "/evaluar", label: "Evaluar", icon: ClipboardListIcon },
-  { href: "/historial", label: "Historial", icon: HistoryIcon },
-  { href: "/settings", label: "Perfil", icon: User },
-]
-
-const USER_ITEMS = [
-  { href: "/dashboard", label: "Inicio", icon: HomeIcon },
-  { href: "/cursos", label: "Cursos", icon: BookOpenIcon },
-  { href: "/evaluaciones", label: "Mis evaluaciones", icon: ClipboardListIcon },
-  { href: "/evolucion", label: "Evolución", icon: TrendingUpIcon },
-  { href: "/settings", label: "Perfil", icon: User },
-]
-
 /** Navegación inferior compartida P01/A01 (mobile-first). */
 export function BottomNav({ role }: BottomNavProps) {
   const pathname = usePathname()
-  const items = role === "ADMIN" ? ADMIN_ITEMS : USER_ITEMS
+  const items = getNavItems(role)
 
   return (
     <nav

@@ -27,6 +27,10 @@ export default function LoginPage() {
     if (!email.trim() || !password) return
     setLoading(true)
     try {
+      // Fetch CSRF token from Auth.js endpoint (required in production).
+      const csrfRes = await fetch("/api/auth/csrf")
+      const { csrfToken } = await csrfRes.json()
+
       // Use fetch directly to avoid ClientFetchError from signIn() when
       // CSRF endpoint returns empty body in development (skipCSRFCheck).
       const res = await fetch("/api/auth/callback/credentials", {
@@ -37,6 +41,7 @@ export default function LoginPage() {
           password,
           redirect: "false",
           callbackUrl: "/dashboard",
+          csrfToken,
         }),
         redirect: "manual",
       })

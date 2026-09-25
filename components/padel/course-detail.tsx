@@ -4,9 +4,20 @@ import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { CopyIcon, UsersIcon, BookOpenIcon, Trash2Icon } from "lucide-react"
+import { CopyIcon, UsersIcon, BookOpenIcon, Trash2Icon, ArchiveIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import {
   Card,
   CardContent,
@@ -17,6 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { EmptyState } from "@/components/padel/empty-state"
 import { AssignRubricModal } from "@/components/padel/assign-rubric-modal"
 import { AddStudentModal } from "@/components/padel/add-student-modal"
+import { EditCourseModal } from "@/components/padel/edit-course-modal"
 
 export type CourseDetailData = {
   course: {
@@ -86,6 +98,21 @@ export function CourseDetail({ course }: { course: CourseDetailData }) {
     }
   }
 
+  const handleArchive = async () => {
+    try {
+      const res = await fetch(`/api/courses/${course.course.id}`, { method: "DELETE" })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error ?? "No se pudo archivar el curso")
+        return
+      }
+      toast.success("Curso archivado")
+      router.push("/cursos")
+    } catch {
+      toast.error("Error de conexión")
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -109,6 +136,27 @@ export function CourseDetail({ course }: { course: CourseDetailData }) {
           <Button asChild size="sm">
             <Link href={`/evaluar?courseId=${course.course.id}`}>Evaluar</Link>
           </Button>
+          <EditCourseModal courseId={course.course.id} course={course.course} />
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="text-muted-foreground">
+                <ArchiveIcon className="size-4" />
+                Archivar
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Archivar este curso?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  El curso se archivará y no será visible en la lista activa. Los alumnos inscritos y las evaluaciones se conservan.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleArchive}>Archivar</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 

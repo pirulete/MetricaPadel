@@ -1,7 +1,9 @@
 "use client"
 
 import * as React from "react"
+import { signOut } from "next-auth/react"
 import { toast } from "sonner"
+import { LogOutIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -188,6 +190,23 @@ export function ProfileForm({ user }: ProfileFormProps) {
             </Button>
           </CardFooter>
         </form>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Sesión</CardTitle>
+          <CardDescription>Cierra tu sesión actual.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => signOut({ callbackUrl: "/login" })}
+          >
+            <LogOutIcon className="size-4" />
+            Cerrar sesión
+          </Button>
+        </CardContent>
       </Card>
     </div>
   )

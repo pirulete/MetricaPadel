@@ -37,6 +37,7 @@ async function validateCredentials(email: string, password: string) {
     });
 
     if (!user) {
+      console.log("[auth] Usuario no encontrado en DB:", normalizedEmail);
       return null;
     }
 
@@ -44,6 +45,7 @@ async function validateCredentials(email: string, password: string) {
     // LOCKED no debe poder autenticarse por credenciales (el route /api/auth/signin
     // lo bloqueaba antes; ahora también se bloquea aquí).
     if (user.status === 'LOCKED') {
+      console.log("[auth] Cuenta LOCKED:", normalizedEmail);
       return null;
     }
 

@@ -138,6 +138,18 @@ Principio: **NUNCA permitir LOCKED** en rutas privadas. TEMPORARY solo si explí
 - No editar `_journal.json` manualmente (salvo reparaciones de emergencia documentadas).
 - Ejecutar migraciones: `pnpm run db:migrate` (requiere `DATABASE_URL`).
 
+## Neon Preview Branch
+
+Aislamiento de DB para preview deploys vía Neon database branching:
+
+- **Branch fijo `preview`** creado desde `main` (una vez). Connection string estable.
+- **`/supercommitpre` paso 2:** ejecuta `neon-preview-branch --ensure --migrate` (o fallback local si no hay `NEON_API_KEY`).
+- **Vercel Preview** usa `DATABASE_URL` del scope Preview (configurar una vez en Vercel Dashboard).
+- **Script CLI:** `npx tsx scripts/neon-preview-branch.ts [--ensure|--reset|--cleanup] [--migrate]`
+- **Env vars (local):** `NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_PARENT_BRANCH` (default `main`), `NEON_PREVIEW_BRANCH` (default `preview`)
+- **Env vars (Vercel):** `DATABASE_URL` por scope — Production = main branch, Preview = preview branch
+- **Sin cambios** en `lib/db/index.ts`, `drizzle.config.ts`, `scripts/migrate.ts`
+
 ## Convenciones de Seguridad
 
 - `auth.ts` — config Auth.js. `NEXTAUTH_SECRET` requerida en producción (fallback automático en dev). Sesión JWT long-lived (30 días) con la sesión DB como gate real: el callback `jwt` valida `sessions.token` y aplica sliding window con TTL configurable vía tabla `session_config` (fallback env `SESSION_ACCESS_TOKEN_TTL`, default 15 min).

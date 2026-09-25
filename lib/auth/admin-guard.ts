@@ -38,6 +38,9 @@ export function guardUser(session: any): NextResponse | null {
   if (session.user.status === 'LOCKED') {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 })
   }
+  if (session.user.status === 'TEMPORARY') {
+    return NextResponse.json({ error: "Email no verificado", code: "TEMPORARY" }, { status: 403 })
+  }
   return null
 }
 

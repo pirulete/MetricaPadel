@@ -146,7 +146,7 @@ Aislamiento de DB para preview deploys vía Neon database branching:
 - **`/supercommitpre` paso 2:** ejecuta `neon-preview-branch --ensure --migrate` (o fallback local si no hay `NEON_API_KEY`).
 - **Vercel Preview** usa `DATABASE_URL` del scope Preview (configurar una vez en Vercel Dashboard).
 - **Script CLI:** `npx tsx scripts/neon-preview-branch.ts [--ensure|--reset|--cleanup] [--migrate]`
-- **Env vars (local):** `NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_PARENT_BRANCH` (default `main`), `NEON_PREVIEW_BRANCH` (default `preview`)
+- **Env vars (local):** `NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_PARENT_BRANCH` (default `production`), `NEON_PREVIEW_BRANCH` (default `preview`)
 - **Env vars (Vercel):** `DATABASE_URL` por scope — Production = main branch, Preview = preview branch
 - **Sin cambios** en `lib/db/index.ts`, `drizzle.config.ts`, `scripts/migrate.ts`
 

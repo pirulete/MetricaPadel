@@ -30,20 +30,31 @@ if [ "$MERGE_EXIT" -ne 0 ]; then
 fi
 ```
 
-## 2. Ejecutar migraciones pendientes contra DB preview
+## 2. Asegurar branch de preview en Neon + migrar
 
 ```bash
-echo "🗄️  Ejecutando migraciones pendientes contra DB..."
-if [ -n "$DATABASE_URL" ]; then
-  pnpm run db:migrate 2>&1 | tail -5
-  MIGRATE_EXIT=$?
-  if [ "$MIGRATE_EXIT" -ne 0 ]; then
-    echo "❌  Error al ejecutar migraciones. Abortando."
+echo "🗄️  Asegurando branch de preview en Neon..."
+if [ -n "$NEON_API_KEY" ] && [ -n "$NEON_PROJECT_ID" ]; then
+  npx tsx scripts/neon-preview-branch.ts --ensure --migrate 2>&1 | tail -10
+  NEON_EXIT=$?
+  if [ "$NEON_EXIT" -ne 0 ]; then
+    echo "❌  Error en Neon preview branch. Abortando."
     exit 1
   fi
-  echo "✅  Migraciones aplicadas correctamente"
+  echo "✅  Branch preview listo + migraciones aplicadas"
 else
-  echo "ℹ️  DATABASE_URL no definida — no se ejecutaron migraciones"
+  echo "ℹ️  NEON_API_KEY o NEON_PROJECT_ID no definidos — ejecutando db:migrate local"
+  if [ -n "$DATABASE_URL" ]; then
+    pnpm run db:migrate 2>&1 | tail -5
+    MIGRATE_EXIT=$?
+    if [ "$MIGRATE_EXIT" -ne 0 ]; then
+      echo "❌  Error al ejecutar migraciones. Abortando."
+      exit 1
+    fi
+    echo "✅  Migraciones aplicadas correctamente"
+  else
+    echo "ℹ️  DATABASE_URL no definida — no se ejecutaron migraciones"
+  fi
 fi
 ```
 

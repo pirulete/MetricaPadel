@@ -97,33 +97,52 @@ describe("ensurePreviewBranch", () => {
 
   it("reuses existing branch", async () => {
     const existingBranch = makeBranch("preview");
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ branches: [existingBranch] }),
-    });
+    global.fetch = jest.fn()
+      // listBranches
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ branches: [existingBranch] }),
+      })
+      // listEndpoints
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ endpoints: [{ branch_id: existingBranch.id, host: "ep-preview.neon.tech", id: "ep-1" }] }),
+      });
 
     const result = await ensurePreviewBranch("test-key", "test-project");
     expect(result.created).toBe(false);
     expect(result.branch.name).toBe("preview");
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
   });
 
   it("creates branch if not found", async () => {
     const createdBranch = makeBranch("preview", "br-new");
     global.fetch = jest.fn()
+      // listBranches (empty)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ branches: [] }),
       })
+      // listBranches for parent (createBranch calls getBranchByName)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ branches: [makeBranch("production", "br-prod")] }),
+      })
+      // createBranch
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ branch: createdBranch }),
+      })
+      // createEndpoint
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ endpoint: { host: "ep-preview.neon.tech" } }),
       });
 
     const result = await ensurePreviewBranch("test-key", "test-project");
     expect(result.created).toBe(true);
     expect(result.branch.id).toBe("br-new");
-    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(global.fetch).toHaveBeenCalledTimes(4);
   });
 
   it("throws on API error", async () => {

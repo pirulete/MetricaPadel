@@ -15,7 +15,8 @@
  * Requires: NEON_API_KEY, NEON_PROJECT_ID in .env.local
  */
 
-import "dotenv/config";
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
 import {
   ensurePreviewBranch,
   resetBranch,
@@ -28,7 +29,7 @@ import {
 
 const NEON_API_KEY = process.env.NEON_API_KEY;
 const NEON_PROJECT_ID = process.env.NEON_PROJECT_ID;
-const NEON_PARENT_BRANCH = process.env.NEON_PARENT_BRANCH || "main";
+const NEON_PARENT_BRANCH = process.env.NEON_PARENT_BRANCH || "production";
 const NEON_PREVIEW_BRANCH = process.env.NEON_PREVIEW_BRANCH || "preview";
 
 function parseArgs(args: string[]) {

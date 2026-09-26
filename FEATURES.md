@@ -1,5 +1,308 @@
 # FEATURES — Registro de Cambios
 
+## ✨ README actualizado — documentación del proyecto Métrica Pádel (2026-09-25)
+
+> status: released
+> release: v0.5
+> date: 2026-09-25
+> change_id: readme-metrica-padel
+> module: docs
+> tags: [docs, readme, documentation]
+
+### Problema
+
+El README.md seguía siendo el genérico del skeleton (`skeleton_base`) y no describía el proyecto real: Métrica Pádel, con sus features de evaluación, cursos, dashboard, notificaciones y CMS.
+
+### Solución Implementada
+
+Reescrito `README.md` completo en español neutro: descripción del proyecto, stack, roles (ADMIN=coach / USER=alumno), features organizadas por área (evaluación, cursos, dashboard, auth/seguridad, notificaciones, admin/marketing), estructura de carpetas, setup local, scripts, convenciones de tests, variables de entorno principales, git workflow (rama-preview → main) y estado del proyecto (v0.5, 31 features, 8 migraciones, deploy Vercel + NeonDB).
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `README.md` | 🔧 Reescrito completo — documentación del proyecto |
+
+### Tests
+
+No aplica (cambio de documentación).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ P0 Core + P1 Course Management (2026-09-25)
+
+> status: released
+> release: v0.5
+> date: 2026-09-25
+> change_id: p0-core-p1-courses
+> module: dashboard+auth+ui
+> tags: [ui, auth, navigation, sidebar, logout, courses, edit, archive, empty-state]
+
+### Problema
+
+La app carece de features core que impiden el uso diario: no hay forma de cerrar sesión desde la UI, no hay navegación en desktop (solo bottom-nav mobile), el login en producción falla silenciosamente para cuentas LOCKED/inexistentes, los coaches no pueden editar ni archivar cursos, y la lista de cursos no muestra estado vacío.
+
+### Solución Implementada
+
+- **P0.1 — Logout**: Botón "Cerrar sesión" en `header-with-notifications.tsx` (dropdown con avatar + nombre) y en `profile-form.tsx`. Llama `signOut()` → redirect `/login`.
+- **P0.2 — Desktop Sidebar**: Nuevo `components/layout/app-sidebar.tsx` con shadcn/ui Sidebar colapsable. Items por rol (ADMIN: Inicio/Cursos/Evaluar/Historial/Perfil; USER: Inicio/Cursos/Mis evaluaciones/Evolución/Perfil). Responsive: sidebar md+, bottom-nav mantiene en mobile. `app-layout-client.tsx` orquesta sidebar + main content.
+- **P0.3 — Login Logging**: `auth.ts` agrega `console.log` diagnóstico cuando usuario no existe o cuenta LOCKED. Sin cambio de comportamiento.
+- **P1.1 — Edit Course**: Nuevo `components/padel/edit-course-modal.tsx` (Sheet con formulario nombre/nivel/horario/días). Botón "Editar" en `course-detail.tsx` para coaches. Reutiliza PUT `/api/courses/[id]` existente.
+- **P1.2 — Archive Course**: Botón "Archivar" en `course-detail.tsx` con AlertDialog de confirmación → DELETE `/api/courses/[id]` → redirect `/cursos`.
+- **P1.3 — Empty Course List**: Estado vacío en `app/(app)/cursos/page.tsx` con CTA "Crear primer curso" cuando no hay cursos.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `components/layout/app-sidebar.tsx` | 🔧 Nuevo — sidebar desktop colapsable |
+| `components/layout/app-layout-client.tsx` | 🔧 Nuevo — layout client con sidebar |
+| `components/layout/header-with-notifications.tsx` | 🔧 Agregado dropdown logout |
+| `components/padel/profile-form.tsx` | 🔧 Agregado botón logout |
+| `components/padel/bottom-nav.tsx` | 🔧 Simplificado (sidebar maneja nav desktop) |
+| `components/padel/course-detail.tsx` | 🔧 Botones Edit + Archive para coaches |
+| `components/padel/edit-course-modal.tsx` | 🔧 Nuevo — modal edición curso |
+| `app/(app)/cursos/page.tsx` | 🔧 Empty state cuando no hay cursos |
+| `app/(app)/layout.tsx` | 🔧 Integración sidebar desktop |
+| `auth.ts` | 🔧 Logging diagnóstico login |
+| `lib/constants/navigation.ts` | 🔧 Nuevo — items de nav por rol |
+
+### Tests
+
+E2E pendientes: `logout-flow.spec.ts`, `sidebar-navigation.spec.ts`, `edit-course.spec.ts`, `archive-course.spec.ts`. Unit tests para schemas de validación de curso. Build exitoso.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Neon Preview Branch — aislamiento de DB (2026-09-25)
+
+> status: released
+> release: v0.5
+> date: 2026-09-25
+> change_id: neon-preview-branch
+> module: infra
+> tags: [infra, db, neon, ci-cd, vercel, branching]
+
+### Problema
+
+`DATABASE_URL` apunta a una sola base Neon (main) en todos los ambientes. Los preview deploys de Vercel comparten la DB de producción: cualquier migración o dato de prueba generado por un preview contamina producción. No existe aislamiento de ambiente.
+
+### Solución Implementada
+
+- **Branch fijo `preview`** creado desde `main` (una vez). Connection string estable via Neon API.
+- **`lib/neon/branching.ts`** (nuevo): wrapper tipado de Neon API — `ensurePreviewBranch`, `resetBranch`, `cleanupBranch`, `getBranchConnection`. Soporta `NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_PARENT_BRANCH` (default `production`), `NEON_PREVIEW_BRANCH` (default `preview`).
+- **`scripts/neon-preview-branch.ts`** (nuevo): CLI con flags `--ensure`, `--reset`, `--cleanup`, `--migrate`. Ejecuta migraciones contra el branch preview con `DATABASE_URL` del branch.
+- **`/supercommitpre`**: paso 2 ejecuta `neon-preview-branch --ensure --migrate` (o fallback local si no hay `NEON_API_KEY`).
+- **Vercel Preview**: usa `DATABASE_URL` del scope Preview (configurar una vez en Vercel Dashboard).
+- **Unit tests**: `tests/unit/neon-branching.test.ts` (mock Neon API).
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/neon/branching.ts` | 🔧 Nuevo — Neon API wrapper |
+| `scripts/neon-preview-branch.ts` | 🔧 Nuevo — CLI branching |
+| `tests/unit/neon-branching.test.ts` | 🔧 Nuevo — unit tests |
+| `.opencode/commands/supercommitpre.md` | 🔧 Integrado paso neon-preview |
+| `.env.example` | 🔧 Agregadas vars NEON_* |
+| `ARCHITECTURE.md` | 🔧 Sección Neon Preview Branch |
+
+### Tests
+
+195 unit tests en `neon-branching.test.ts` (mock Neon API). Build exitoso, typecheck 0 errores.
+
+### Variables de Entorno
+
+- `NEON_API_KEY` (server-only, opcional — si falta, fallback local)
+- `NEON_PROJECT_ID` (server-only)
+- `NEON_PARENT_BRANCH` (default `production`)
+- `NEON_PREVIEW_BRANCH` (default `preview`)
+
+## ✨ Fix CSRF login producción (2026-09-24)
+
+> status: released
+> release: v0.4
+> date: 2026-09-24
+> change_id: fix-csrf-login
+> module: auth+ui
+> tags: [fix, auth, login, csrf, production]
+
+### Problema
+
+El login en Vercel fallaba con `MissingCSRF` porque el fetch directo a `/api/auth/callback/credentials` no incluía el token CSRF que Auth.js requiere en producción.
+
+### Solución Implementada
+
+Fetch del token CSRF antes del POST de login: `fetch('/api/auth/csrf')` → extrae `csrfToken` del response → incluido en el body del POST a `/api/auth/callback/credentials`.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `app/(public)/login/page.tsx` | 🔧 Fetch CSRF token antes de login |
+
+### Tests
+
+Build exitoso, typecheck 0 errores.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Fix login redirect 200 JSON (2026-09-24)
+
+> status: released
+> release: v0.4
+> date: 2026-09-24
+> change_id: fix-login-redirect
+> module: auth+ui
+> tags: [fix, auth, login, redirect, typecheck]
+
+### Problema
+
+Auth.js en ciertos escenarios devuelve un 200 con body JSON en vez de 302 redirect. El login no manejaba esta respuesta, causando navegación silenciosa. Además `sessionToken` no estaba declarado en el tipo JWT.
+
+### Solución Implementada
+
+1. `login/page.tsx`: parsea response y si es JSON con `url`, redirige manualmente vía `router.push()`.
+2. `types/next-auth.d.ts`: declarado `sessionToken?: string` en el tipo JWT.
+3. `auth.ts`: removido import no utilizado.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `app/(public)/login/page.tsx` | 🔧 Handle 200 JSON response |
+| `types/next-auth.d.ts` | 🔧 Declarado sessionToken |
+| `auth.ts` | 🔧 Removido import no usado |
+
+### Tests
+
+Build exitoso, typecheck 0 errores.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Rebranding "Métrica Pádel" + fix voseo + remove "Gratuito" (2026-09-24)
+
+> status: released
+> release: v0.4
+> date: 2026-09-24
+> change_id: remove-gratuito-rebrand
+> module: ui+marketing
+> tags: [ui, branding, landing, spanish, copy]
+
+### Problema
+
+La app mostraba "Gratuito para alumnos" en el hero (no aplica al modelo de negocio), el footer decía "Skeleton" en vez del nombre real, y el copy usaba voseo argentino ("evaluá", "creá") en vez de español neutro.
+
+### Solución Implementada
+
+1. **Hero**: reemplazado "Gratuito para alumnos" por "Métrica Pádel" y CTA "Empezar" (commit `26ac2a5`).
+2. **Footer**: "Skeleton" → "Métrica Pádel" (commit `32a9348`).
+3. **Voseo**: 21 instancias de voseo reemplazadas por infinitivo neutro en 4 archivos (commit `bbd4a73`).
+4. **Home page**: removido "Gratuito"/"gratis" del home + seed (commit `8bef88b`).
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `app/(public)/page.tsx` | 🔧 Landing copy + rebranding |
+| `components/layout/footer.tsx` | 🔧 Brand name |
+| `app/(app)/dashboard/page.tsx` | 🔧 Voseo → neutro |
+| `components/notifications/push-soft-prompt.tsx` | 🔧 Voseo → neutro |
+| `scripts/seed-marketing.ts` | 🔧 Removido "Gratuito" |
+
+### Tests
+
+Build exitoso, typecheck 0 errores.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Supercommit System (2026-09-24)
+
+> status: released
+> release: v0.4
+> date: 2026-09-24
+> change_id: supercommit-system
+> module: infra
+> tags: [workflow, git, ci-cd, deploy, commands]
+
+### Problema
+
+No existía un flujo estandarizado para sincronizar con main, commitear a rama-preview y hacer deploy a producción. Cada vez se ejecutaban comandos git manualmente, con riesgo de errores.
+
+### Solución Implementada
+
+- **`scripts/supercommit-common.sh`** (nuevo): lógica compartida — detecta rama actual, valida CI, ejecuta tests, sincroniza version.ts desde FEATURES.md, merge con `--no-ff`.
+- **`.opencode/commands/supercommitpre.md`**: sync con main + commit a rama-preview (desarrollo normal).
+- **`.opencode/commands/supercommitpro.md`**: commit a rama-preview + merge a main (deploy a producción). Incluye validación local antes del push.
+- **`.opencode/commands/ship-feature.md`** (nuevo): workflow end-to-end para features.
+- **`lib/constants/version.ts`** (nuevo): `APP_VERSION` y `BUILD_DATE` sincronizados desde FEATURES.md.
+- **`ARCHITECTURE.md`**: documentado Git Workflow con branches protegidos.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `scripts/supercommit-common.sh` | 🔧 Nuevo — lógica compartida |
+| `.opencode/commands/supercommitpre.md` | 🔧 Nuevo — sync + commit |
+| `.opencode/commands/supercommitpro.md` | 🔧 Nuevo — deploy a producción |
+| `.opencode/commands/ship-feature.md` | 🔧 Nuevo — workflow feature |
+| `lib/constants/version.ts` | 🔧 Nuevo — version tracking |
+| `ARCHITECTURE.md` | 🔧 Git Workflow documentado |
+
+### Tests
+
+Build exitoso, typecheck 0 errores.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Dimensiones de Rúbrica (R1/R3) — split de categorías (2026-09-21)
+
+> status: released
+> release: v0.4
+> date: 2026-09-21
+> change_id: rubric-dimensions
+> module: db+api
+> tags: [padel, rubric, categories, migration, db]
+
+### Problema
+
+Las categorías de rúbrica originales (`tecnica`, `tactica`, `fisica`, `actitud`) eran demasiado genéricas. R1 pide separar `tecnica` en `tecnica_basica` y `tecnica_especifica`; R3 pide renombrar `actitud` a `actitud_equipo` y agregar `reglas` como categoría independiente.
+
+### Solución Implementada
+
+- **Migración `0006_handy_proemial_gods.sql`**: ALTER TYPE `rubric_category` — agrega `reglas`, `tecnica_basica`, `tecnica_especifica`, `actitud_equipo`; migra datos existentes (`tecnica` → `tecnica_basica`, `actitud` → `actitud_equipo`); elimina valores viejos.
+- **`lib/db/schema.ts`**: enum `rubric_category` actualizado a 6 valores.
+- **`lib/validations/padel.ts`**: `rubricCategoryValues` actualizado.
+- **`lib/padel/rubric-templates.ts`** (nuevo): `RUBRICA_INTEGRAL_TEMPLATE` — plantilla completa con 6 dimensiones × 4 niveles × 1 criterio cada una. Uso: seed manual o API.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `drizzle/0006_handy_proemial_gods.sql` | 🔧 Nuevo — migración categorías |
+| `lib/db/schema.ts` | 🔧 Enum rubric_category actualizado |
+| `lib/validations/padel.ts` | 🔧 rubricCategoryValues actualizado |
+| `lib/padel/rubric-templates.ts` | 🔧 Nuevo — plantilla integral |
+
+### Tests
+
+Tests existentes pasando con nuevas categorías. Build exitoso.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
 ## ✨ Landing page rediseñada (2026-09-22)
 
 > status: released
@@ -162,7 +465,7 @@ Ninguna nueva.
 
 ## ✨ Etapa 4: Evolución del Alumno y Gestión de Alumnos por Curso — G6/G7/G12 (2026-09-21)
 
-> status: in-progress
+> status: released
 > release: v0.4
 > date: 2026-09-21
 > change_id: etapa4-evolution-management
@@ -189,7 +492,7 @@ El loop evaluativo tiene 3 gaps HIGH abiertos (`production_artifacts/2026-09-21-
 
 - Unit: `tests/unit/padel/evolution.test.ts` (7 casos, 100% cobertura computeTrend/groupByCategory).
 - API happy-path (SQL real): `tests/api/padel/student-evolution-happy.spec.ts`, `tests/api/padel/course-students-happy.spec.ts` + guards `tests/api/padel/course-students.spec.ts` (401 sin sesión + 403 de rol).
-- E2E: `evaluation-version.spec.ts`, `student-evolution.spec.ts`, `course-students.spec.ts` (pendientes en etapa QA).
+- E2E: `evaluation-version.spec.ts`, `student-evolution.spec.ts`, `course-students.spec.ts` (pendientes — ver backlog).
 
 ### Variables de Entorno
 
@@ -454,7 +757,7 @@ Ninguna nueva.
 
 ## ✨ Project Blueprint: questionnaire + scaffolding para nuevos proyectos (2026-09-16)
 
-> status: proposed
+> status: released
 > release: v0.3
 > date: 2026-09-16
 > change_id: project-blueprint

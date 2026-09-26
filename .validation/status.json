@@ -1,16 +1,16 @@
 {
   "status": "pass",
-  "last_validated": "2026-09-21T13:48:32.279Z",
+  "last_validated": "2026-09-24T23:39:59.356Z",
   "gates_passed": 21,
   "gates_failed": 0,
   "gates_warning": 2,
   "failed_gates": [],
   "warning_gates": [
-    "features_check",
+    "lint",
     "loop_metrics",
     "file_size"
   ],
-  "risk_level": "LOW",
+  "risk_level": "HIGH",
   "gates_run": [
     "typecheck",
     "lint",
@@ -37,5 +37,5 @@
     "loop_metrics"
   ],
   "test_coverage_delta": 0,
-  "message": "⚠️ All 21 gates passed, 2 warning(s): [features_check] FEATURES.md, [loop_metrics] Loop metrics, [file_size] File size"
+  "message": "⚠️ All 21 gates passed, 2 warning(s): [lint] Lint, [loop_metrics] Loop metrics, [file_size] File size"
 }

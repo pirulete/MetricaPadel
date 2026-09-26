@@ -1,8 +1,6 @@
-# skeleton_base — Skeleton de proyecto Next.js whitelabel
+# Métrica Pádel — Plataforma de Evaluación Deportiva
 
-Base de proyecto **Next.js 16** reutilizable para partir aplicaciones nuevas rápido, con parte pública + área privada + back-office, autenticación completa y un agent team OpenCode listo para desarrollar features end-to-end.
-
-Para partir un proyecto nuevo en 5 minutos, ver **[QUICKSTART.md](./QUICKSTART.md)**.
+Aplicación web para coaches y jugadores de pádel. Permite crear rúbricas, evaluar jugadores con scoring por criterios, gestionar cursos, y que los alumnos vean su evolución en el tiempo.
 
 ## Stack
 
@@ -13,6 +11,59 @@ Para partir un proyecto nuevo en 5 minutos, ver **[QUICKSTART.md](./QUICKSTART.m
 - **Zod** para validación
 - **Jest** (unit) + **Playwright** (API/E2E)
 - **ESLint** + **gitleaks** + **semgrep** + **Sentry** (opcional)
+
+## Roles
+
+| Rol | Alcance | Descripción |
+|-----|---------|-------------|
+| `ADMIN` | Coach | Crea rúbricas, gestiona cursos, evalúa jugadores, publica evaluaciones |
+| `USER` | Jugador | Ve evaluaciones publicadas, se une a cursos, sigue su evolución |
+
+## Features
+
+### Evaluación (core)
+
+- **Rúbricas**: CRUD completo con 6 categorías (reglas, técnica básica, técnica específica, táctica, física, actitud equipo) y 4 niveles (Excelente/Bueno/Aceptable/En desarrollo)
+- **Evaluaciones**: scoring en vivo por criterio, publicación con validación de cobertura dimensional (soft-block), versionado automático por (alumno, rúbrica)
+- **Evolución del alumno**: tendencia up/down/stable por categoría, comparación entre versiones, página dedicada `/evolucion`
+- **Dashboard coach**: métricas COUNT/AVG de evaluaciones y alumnos por curso
+
+### Cursos
+
+- Crear/editar/archivar cursos con código de invitación `PAD-XXXX`
+- Gestión de alumnos: agregar/remover manualmente, unirse por código
+- Rúbricas asignadas por curso
+- Historial de evaluaciones con filtros por curso/alumno/estado
+
+### Autenticación y Seguridad
+
+- Registro público con email verificación (OTP 6 dígitos)
+- Login con JWT + sliding session configurable (TTL en DB)
+- Estados de usuario: TEMPORARY (sin verificar), ACTIVE, LOCKED
+- Guards server-side (`guardUser`/`guardAdmin`) + auditoría en mutaciones
+- Rate limit en endpoints públicos
+- CSRF token fetch para producción
+
+### Notificaciones
+
+- Push notifications (Web Push + VAPID) con service worker
+- Inbox de notificaciones con paginación por cursor
+- Preferencias por canal (inbox/push) × categoría
+- Prompt no intrusivo para activar push
+- Admin settings para habilitar/deshabilitar canales
+
+### Admin / Marketing
+
+- Gestión de usuarios: CRUD, promoción USER→ADMIN, bloqueo/desbloqueo
+- CMS de marketing: páginas, blog, productos, categorías, configuración
+- 10 block types para páginas de marketing (hero, features, CTA, etc.)
+
+### Infraestructura
+
+- Neon Preview Branch para aislamiento de DB en preview deploys
+- Supercommit system (`/supercommitpre` para desarrollo, `/supercommitpro` para deploy)
+- Harness de validación con 14+ gates (typecheck, lint, tests, build, secrets, SAST, etc.)
+- Agent team OpenCode con 12 agentes especializados
 
 ## Requisitos
 
@@ -27,7 +78,7 @@ corepack enable
 corepack prepare pnpm@9.15.0 --activate
 pnpm install
 cp .env.example .env.local   # llenar DATABASE_URL y NEXTAUTH_SECRET
-pnpm run db:migrate          # crea las tablas base
+pnpm run db:migrate          # crea las tablas
 pnpm run dev                 # http://localhost:3000
 ```
 
@@ -40,7 +91,7 @@ pnpm run dev                 # http://localhost:3000
 | `pnpm run dev` | Dev server |
 | `pnpm run build` | `next build` + migraciones |
 | `pnpm run start` | Servidor de producción |
-| `pnpm run lint` / `lint:fix` | ESLint (fix corrige auto-fixables) |
+| `pnpm run lint` / `lint:fix` | ESLint |
 | `pnpm run test:unit` | Jest — `tests/unit/*.test.ts` |
 | `pnpm run test:e2e` | Playwright — `tests/e2e/` |
 | `npx playwright test tests/api/` | Playwright — `tests/api/*.spec.ts` |
@@ -50,83 +101,88 @@ pnpm run dev                 # http://localhost:3000
 | `pnpm run security:secrets` | gitleaks (secrets) |
 | `pnpm run security:sast` | semgrep (SAST) |
 | `pnpm run security:deps` | `pnpm audit --audit-level=high` |
-| `pnpm run security:all` | gitleaks + semgrep |
 | `node scripts/validate-harness.js --all` | Todos los gates de validación |
-| `node scripts/sync-harness.mjs --src ../StreetMove/StreetMoveWebsite --dry-run` | Ver cambios del harness fuente sin tocar nada |
-| `node scripts/sync-harness.mjs --src ../StreetMove/StreetMoveWebsite --apply` | Sincronizar COPY + reporte REVIEW desde el fuente |
-| `pnpm run perf:all` | Lighthouse + PageSpeed (requiere URL configurada) |
 
-## Estructura de rutas
+## Estructura de Carpetas
+
+```
+app/
+  (public)/          # páginas públicas (landing, login, register, blog, shop, /[slug])
+  (app)/             # área privada autenticada
+    dashboard/       # dashboard por rol (coach/jugador)
+    cursos/          # lista + detalle de cursos
+    evaluar/         # canvas de scoring (coach)
+    evaluaciones/    # lista de evaluaciones (coach)
+    evolucion/       # evolución del alumno
+    rubricas/        # biblioteca + editor de rúbricas
+    historial/       # historial con filtros
+    settings/        # perfil + cambio de contraseña
+    notifications/   # inbox de notificaciones
+  admin/             # back-office
+    users/           # gestión de usuarios
+    marketing/       # CMS (pages, blog, products, categories, settings)
+  api/               # route handlers
+    auth/            # autenticación
+    user/            # endpoints del usuario (push, notifications, profile)
+    admin/           # endpoints admin (users, marketing, notifications)
+    rubrics/         # CRUD rúbricas
+    evaluations/     # CRUD evaluaciones + publish
+    courses/         # CRUD cursos + join + rubrics + students
+    dashboard/       # métricas por rol
+    student/         # endpoints del alumno (evaluations, evolution, courses)
+    history/         # historial con filtros
+components/
+  ui/                # primitivas shadcn/ui
+  padel/             # componentes de padel (30+)
+  admin/             # componentes admin
+  notifications/     # push/inbox UI
+  layout/            # header, footer, sidebar
+lib/
+  db/                # schema Drizzle + queries
+  padel/             # lógica de negocio (score, evolution, course-code, etc.)
+  auth/              # guards, validaciones, schemas
+  notifications/     # engine, triggers, priority
+  push/              # sender, preferences, push-log
+  audit/             # helpers de auditoría (20+ eventos)
+  api-docs/          # spec OpenAPI de endpoints
+hooks/               # use-push-subscription, use-notifications
+tests/
+  unit/              # Jest
+  api/               # Playwright API tests
+  e2e/               # Playwright E2E tests
+drizzle/             # migraciones Drizzle (8 migraciones)
+production_artifacts/# artifacts de workflows
+```
+
+## Estructura de Rutas
 
 | Ruta | Sección | Guard |
 |------|---------|-------|
-| `/` · `/login` · `/register` | Pública — `app/(public)` | ninguno |
-| `/dashboard` | Privada — `app/(app)` | `validateUser` |
-| `/admin` | Back-office — `app/admin` | `validateAdmin` (rol ADMIN + ACTIVE) |
-| `/api/auth/*` | Endpoints de autenticación | — |
-| `/api/user/*` | Endpoints del usuario autenticado | `guardUser` |
+| `/` · `/login` · `/register` | Pública | ninguno |
+| `/dashboard` | Privada | `validateUser` |
+| `/cursos` · `/evaluar` · `/evaluaciones` · `/evolucion` | Privada | `validateUser` |
+| `/rubricas` · `/historial` · `/settings` | Privada | `validateUser` |
+| `/admin` · `/admin/users` | Back-office | `validateAdmin` |
+| `/api/auth/*` | Autenticación | — |
+| `/api/user/*` | Usuario autenticado | `guardUser` |
 | `/api/admin/*` | Endpoints admin | `guardAdmin` + auditoría |
-| `/api/health` | Health check | — |
 
-## Autenticación
+## Variables de Entorno
 
-Flujo completo incluido en el skeleton:
+Las requeridas están documentadas en `.env.example`. Las principales:
 
-1. **Registro** → `POST /api/auth/register` — crea usuario con estado `TEMPORARY`
-2. **Verificación de email** → `POST /api/auth/verify-email` (código de 6 dígitos) — pasa a `ACTIVE`
-3. **Login** → `POST /api/auth/signin` — JWT + cookie HTTP-only, sliding session de 15 min
-4. **Logout** → `POST /api/auth/logout` — invalida solo la sesión activa
-5. **Recuperación** → `forgot-password`, `verify-reset-code`, `reset-password`, `resend-code`
-6. **Refresco** → `POST /api/auth/refresh-session`
+| Variable | Requerida | Descripción |
+|----------|-----------|-------------|
+| `DATABASE_URL` | Sí | URL de conexión NeonDB |
+| `NEXTAUTH_SECRET` | Sí (producción) | Secret para JWT (fallback en dev) |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | No | Web Push VAPID public key |
+| `VAPID_PRIVATE_KEY` | No | Web Push VAPID private key |
+| `VAPID_SUBJECT` | No | Web Push subject (mailto:) |
+| `SESSION_ACCESS_TOKEN_TTL` | No | TTL sesión en min (default 15) |
+| `SENTRY_AUTH_TOKEN` | No | Sentry (si falta, se desactiva) |
+| `NEON_API_KEY` | No | Neon branching (si falta, fallback local) |
 
-### Estados de usuario
-
-| Estado | Significado |
-|--------|-------------|
-| `TEMPORARY` | Registrado, email sin verificar |
-| `ACTIVE` | Email verificado, puede operar |
-| `LOCKED` | Bloqueado (5 intentos fallidos o admin) |
-
-Principio: **nunca permitir LOCKED** en rutas privadas. TEMPORARY solo si se declara explícitamente.
-
-### Guards
-
-En `lib/auth/admin-guard.ts`:
-- `validateUser()` — redirige a `/login` si no hay sesión (server component/layout)
-- `validateAdmin()` — exige rol `ADMIN` + status `ACTIVE` (server component/layout)
-- `guardUser(session)` — retorna `NextResponse` 401/403 (route handler)
-- `guardAdmin(session)` — retorna `NextResponse` 401/403 (route handler)
-
-El email es inmutable desde profile. Toda mutación sensible debe registrarse en `audit_logs` (ver `lib/audit/helpers.ts`).
-
-## Modelo de datos
-
-Tablas base en `lib/db/schema.ts`:
-
-| Tabla | Propósito |
-|-------|-----------|
-| `users` | id, email, firstName, lastName, phone, passwordHash, status, role (USER/ADMIN), failedAttempts, emailVerifiedAt |
-| `email_verifications` | Códigos OTP de 6 dígitos |
-| `sessions` | Sesiones activas (token, expiresAt, lastActivityAt) |
-| `audit_logs` | Auditoría de mutaciones sensibles |
-
-### Agregar tablas del dominio
-
-```bash
-# 1. Editar lib/db/schema.ts (ej: agregar tabla 'products')
-# 2. Generar migración
-pnpm run db:generate
-# 3. Aplicar
-pnpm run db:migrate
-# 4. Documentar queries en lib/db/queries/
-```
-
-Reglas de migraciones (ver `ARCHITECTURE.md`):
-- Siempre usar `db:generate` tras modificar `schema.ts` — nunca crear SQL a mano.
-- No editar `drizzle/meta/_journal.json` manualmente.
-- Para custom SQL: `db:generate` → agregar SQL al archivo generado → re-ejecutar `db:generate`.
-
-## Convenciones de tests (obligatorias)
+## Convenciones de Tests
 
 | Tipo | Ubicación | Framework | Comando |
 |------|-----------|-----------|---------|
@@ -135,51 +191,45 @@ Reglas de migraciones (ver `ARCHITECTURE.md`):
 | API happy-path | `tests/api/*-happy.spec.ts` | Playwright | idem |
 | E2E | `tests/e2e/` | Playwright | `pnpm run test:e2e` |
 
-- Todo cambio de código debe incluir unit tests y API tests correspondientes.
-- Todo endpoint nuevo debe tener **al menos 1 happy-path** que ejecute SQL real contra la DB, además de los tests de guard (401/403).
-- Toda feature que modifique UI debe incluir **al menos 1 E2E** del flujo feliz navegable.
-- Todo endpoint nuevo debe documentarse en `lib/api-docs/spec.ts`.
+Reglas:
+- Todo cambio de código incluye unit tests y API tests.
+- Todo endpoint nuevo tiene al menos 1 happy-path con SQL real contra la DB.
+- Toda feature que modifique UI incluye al menos 1 E2E del flujo feliz.
+- Todo endpoint nuevo se documenta en `lib/api-docs/spec.ts`.
 
-## Gates de validación
+## Git Workflow
 
-```bash
-node scripts/validate-harness.js --all
+```
+rama-preview ← todos los workflows commitean aquí
+     │
+     ▼  (cuando el usuario decide deploy)
+    main ← /supercommitpro ejecuta merge --no-ff + validación + push
 ```
 
-Ejecuta: typecheck, lint, unit tests, API tests, E2E, build, secrets (gitleaks), SAST (semgrep), api integration, code review, audit deps, env vars. Resultado en `.validation/status.json`.
+| Comando | Acción |
+|---------|--------|
+| `/supercommitpre` | Sync con main + commit a rama-preview |
+| `/supercommitpro` | Commit a rama-preview + merge a main (deploy) |
 
-- Si `status = "fail"` → **no se puede iniciar ningún workflow** OpenCode hasta resolver.
-- `/validate` (comando OpenCode) es la única forma de resetear el estado a `pass`.
+Ningún workflow (excepto `/supercommitpro`) ejecuta `git checkout main`, `git merge`, ni `git push origin main`.
 
 ## Agent Team OpenCode
 
-El repo incluye un equipo de agentes para trabajar con OpenCode. La fuente de verdad es `AGENTS.md`.
+El repo incluye un equipo de agentes para trabajar con OpenCode. Ver `AGENTS.md` para roles completos.
 
 | Comando | Descripción |
 |---------|-------------|
 | `/ship-feature <idea>` | Feature end-to-end: spec → diseño → implementación → QA → release |
 | `/design <idea>` | UX/UI design: alternativas con tradeoffs + mockup navegable |
 | `/fix-problems <alcance>` | Triage de errores del panel Problems con fix mínimo |
-| `/fix-failing-test <test>` | Corrige un test roto con cambio mínimo |
 | `/ponytail-review <path>` | Revisa código existente por sobreingeniería |
 | `/validate` | Ejecuta los gates de validación completos |
 
-Cada workflow genera sus artifacts en `production_artifacts/YYYY-MM-DD-short-slug/`.
-
 **Agentes**: `@pm`, `@architect`, `@db-engineer`, `@auth-security`, `@app-engineer`, `@admin-engineer`, `@qa-release`, `@qa-fix`, `@architect-fix`, `@ponytail-reviewer`, `@ui-designer`, `@qa-validator`.
-
-> Requiere los MCP servers configurados en `opencode.json` (engram, codebase-memory-mcp, headroom).
-
-## Seguridad
-
-- Todo endpoint **público** requiere rate limit (`lib/rate-limit.ts`) + Cache-Control + security headers.
-- Todo endpoint **admin** requiere guard server-side (`guardAdmin`) + auditoría en mutaciones.
-- `NEXTAUTH_SECRET` es **requerida en producción** (en dev hay fallback automático).
-- Revisión de seguridad: `pnpm run security:all` (gitleaks + semgrep).
-- Revisa contra OWASP Top 10 cada cambio que toque sesión, RBAC, reset o auditoría.
 
 ## Referencias
 
-- `AGENTS.md` — roles de agentes, workflows, quality gates, iteration limits
+- `AGENTS.md` — roles de agentes, workflows, quality gates
 - `ARCHITECTURE.md` — convenciones técnicas, migraciones, seguridad
+- `FEATURES.md` — registro de 31 features implementadas con metadata de tracking
 - `QUICKSTART.md` — cómo partir un proyecto nuevo desde este skeleton

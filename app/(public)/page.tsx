@@ -1,3 +1,4 @@
+import Image from "next/image"
 import Link from "next/link"
 
 import { getCachedPage } from "@/lib/marketing/cache"
@@ -81,31 +82,48 @@ function StaticFallback() {
   return (
     <main className="flex flex-col">
       {/* Hero */}
-      <section className="relative flex flex-col items-center justify-center gap-6 px-6 py-24 text-center md:py-32">
-        <span className="inline-block rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-accent-foreground">
-          Para coaches y academias
-        </span>
-        <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-          Evalúa el juego de tus alumnos con{" "}
-          <span className="text-primary">datos reales</span>
-        </h1>
-        <p className="max-w-xl text-lg text-muted-foreground">
-          Rúbricas de evaluación, evolución del jugador y gestión de cursos.
-          Todo lo que necesitás para medir y mejorar el rendimiento en pádel.
-        </p>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Link
-            href="/register"
-            className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
-          >
-            Empezar
-          </Link>
-          <Link
-            href="/login"
-            className="inline-flex h-11 items-center justify-center rounded-md border border-border px-8 text-sm font-medium transition-colors hover:bg-secondary"
-          >
-            Ya tengo cuenta
-          </Link>
+      <section className="relative mx-auto w-full max-w-6xl px-6 py-24 md:py-32">
+        <div className="grid items-center gap-12 md:grid-cols-2">
+          <div className="flex flex-col items-center gap-6 text-center md:items-start md:text-left">
+            <span className="inline-block rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-accent-foreground">
+              Para coaches y academias
+            </span>
+            <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
+              Evalúa el juego de tus alumnos con{" "}
+              <span className="text-primary">datos reales</span>
+            </h1>
+            <p className="max-w-xl text-lg text-muted-foreground">
+              Rúbricas de evaluación, evolución del jugador y gestión de cursos.
+              Todo lo que necesitás para medir y mejorar el rendimiento en pádel.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/register"
+                className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+              >
+                Empezar
+              </Link>
+              <Link
+                href="/login"
+                className="inline-flex h-11 items-center justify-center rounded-md border border-border px-8 text-sm font-medium transition-colors hover:bg-secondary"
+              >
+                Ya tengo cuenta
+              </Link>
+            </div>
+          </div>
+          <div className="order-first flex justify-center md:order-none">
+            <Image
+              src="/images/padel-hero-800.webp"
+              alt="Jugadores de pádel durante una evaluación en cancha"
+              width={800}
+              height={436}
+              priority
+              sizes="(max-width: 768px) 50vw, 400px"
+              placeholder="blur"
+              blurDataURL="data:image/webp;base64,UklGRjwAAABXRUJQVlA4IDAAAADwAQCdASoQAAkABUB8JYwCw7ERHszmhAAA/u1as9VQrLKhKtm7ibG/P34qKPU4AAA="
+              className="w-full max-w-xs rounded-3xl object-cover shadow-xl ring-4 ring-primary/20 sm:max-w-sm md:max-w-md"
+            />
+          </div>
         </div>
       </section>
 

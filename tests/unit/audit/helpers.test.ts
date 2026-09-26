@@ -21,6 +21,11 @@ import {
   auditNotificationHidden,
   auditNotificationDeleted,
   auditBroadcastDeleted,
+  auditAcademyCreated,
+  auditAcademyUpdated,
+  auditAcademyArchived,
+  auditMemberInvited,
+  auditMemberRemoved,
 } from "@/lib/audit/helpers";
 
 const mockCreateAuditLog = createAuditLog as jest.Mock;
@@ -240,6 +245,104 @@ describe("auditBroadcastDeleted", () => {
       expect.objectContaining({
         userId: "admin-1",
         oldValues: { title: "Old broadcast" },
+      }),
+    );
+  });
+});
+
+describe("auditAcademyCreated", () => {
+  it("registra ACADEMY_CREATED con name/slug/ownerId y metadata academy", async () => {
+    await auditAcademyCreated("ac-1", { name: "Academia Test", slug: "academia-test", ownerId: "u1" }, context);
+
+    expect(mockCreateAuditLog).toHaveBeenCalledWith(
+      "ACADEMY_CREATED",
+      "academies",
+      "ac-1",
+      expect.objectContaining({
+        userId: "u1",
+        newValues: { name: "Academia Test", slug: "academia-test", ownerId: "u1" },
+        metadata: expect.objectContaining({ academy: true, action: "academy_created" }),
+      }),
+    );
+  });
+
+  it("usa ownerId como userId si context.userId falta", async () => {
+    await auditAcademyCreated("ac-1", { name: "A", slug: "a", ownerId: "owner-1" }, {});
+
+    expect(mockCreateAuditLog).toHaveBeenCalledWith(
+      "ACADEMY_CREATED",
+      "academies",
+      "ac-1",
+      expect.objectContaining({ userId: "owner-1" }),
+    );
+  });
+});
+
+describe("auditAcademyUpdated", () => {
+  it("registra ACADEMY_UPDATED con old/new values", async () => {
+    await auditAcademyUpdated("ac-1", { name: "Old" }, { name: "New" }, context);
+
+    expect(mockCreateAuditLog).toHaveBeenCalledWith(
+      "ACADEMY_UPDATED",
+      "academies",
+      "ac-1",
+      expect.objectContaining({
+        userId: "u1",
+        oldValues: { name: "Old" },
+        newValues: { name: "New" },
+        metadata: expect.objectContaining({ academy: true, action: "academy_updated" }),
+      }),
+    );
+  });
+});
+
+describe("auditAcademyArchived", () => {
+  it("registra ACADEMY_ARCHIVED con newValues.status=archived", async () => {
+    await auditAcademyArchived("ac-1", { status: "active" }, context);
+
+    expect(mockCreateAuditLog).toHaveBeenCalledWith(
+      "ACADEMY_ARCHIVED",
+      "academies",
+      "ac-1",
+      expect.objectContaining({
+        userId: "u1",
+        oldValues: { status: "active" },
+        newValues: { status: "archived" },
+        metadata: expect.objectContaining({ academy: true, action: "academy_archived" }),
+      }),
+    );
+  });
+});
+
+describe("auditMemberInvited", () => {
+  it("registra MEMBER_INVITED con academyId/userId/role/invitedBy", async () => {
+    await auditMemberInvited("ac-1", "m-1", { userId: "u2", role: "COACH", invitedBy: "u1" }, context);
+
+    expect(mockCreateAuditLog).toHaveBeenCalledWith(
+      "MEMBER_INVITED",
+      "academy_memberships",
+      "m-1",
+      expect.objectContaining({
+        userId: "u1",
+        newValues: { academyId: "ac-1", userId: "u2", role: "COACH", invitedBy: "u1" },
+        metadata: expect.objectContaining({ academy: true, action: "member_invited" }),
+      }),
+    );
+  });
+});
+
+describe("auditMemberRemoved", () => {
+  it("registra MEMBER_REMOVED con academyId en oldValues", async () => {
+    await auditMemberRemoved("ac-1", "m-1", { userId: "u2", role: "COACH" }, context);
+
+    expect(mockCreateAuditLog).toHaveBeenCalledWith(
+      "MEMBER_REMOVED",
+      "academy_memberships",
+      "m-1",
+      expect.objectContaining({
+        userId: "u1",
+        oldValues: { academyId: "ac-1", userId: "u2", role: "COACH" },
+        metadata: expect.objectContaining({ academy: true, action: "member_removed" }),
       }),
     );
   });

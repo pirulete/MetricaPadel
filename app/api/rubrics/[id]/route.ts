@@ -10,8 +10,9 @@ export const runtime = "nodejs";
 
 /**
  * GET /api/rubrics/[id]
- * Detalle completo (rubric + levels + criteria + descriptors). Ownership:
- * 404 si no pertenece al coach (anti-IDOR).
+ * Detalle completo (rubric + levels + criteria + descriptors). Acceso:
+ * personal → owner; institucional → miembro activo (COACH+) de la academia.
+ * 404 si no existe o sin acceso (anti-IDOR).
  */
 export async function GET(
   _request: NextRequest,
@@ -42,7 +43,8 @@ export async function GET(
 /**
  * PUT /api/rubrics/[id]
  * Actualiza title/category y, si viene criteria, reemplaza el set completo
- * (delete + reinsert en transacción). Audita UPDATE.
+ * (delete + reinsert en transacción). Guard extendido: institucional solo
+ * OWNER/ADMIN de la academia (COACH → 403). Audita UPDATE.
  */
 export async function PUT(
   request: NextRequest,
@@ -57,20 +59,23 @@ export async function PUT(
     const body = await request.json();
     const validated = rubricUpdateSchema.parse(body);
 
-    const rubric = await updateRubric(session!.user.id as string, id, validated);
-    if (!rubric) {
+    const result = await updateRubric(session!.user.id as string, id, validated);
+    if (!result.ok) {
+      if (result.reason === "forbidden") {
+        return NextResponse.json({ error: "No autorizado para editar esta rúbrica" }, { status: 403 });
+      }
       return NextResponse.json({ error: "Rúbrica no encontrada" }, { status: 404 });
     }
 
     await auditUpdate(
       "rubric",
       id,
-      { title: rubric.title, category: rubric.category },
+      { title: result.rubric.title, category: result.rubric.category },
       validated as unknown as Record<string, any>,
       { userId: session!.user.id, ...extractRequestContext(request) }
     );
 
-    return NextResponse.json({ rubric }, { status: 200 });
+    return NextResponse.json({ rubric: result.rubric }, { status: 200 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Datos inválidos", details: error.errors }, { status: 400 });
@@ -83,7 +88,8 @@ export async function PUT(
 /**
  * DELETE /api/rubrics/[id]
  * Archiva rúbrica (soft, status=archived). Nunca hard delete: las evaluaciones
- * la referencian. Audita DELETE.
+ * la referencian. Guard extendido: institucional solo OWNER/ADMIN (COACH → 403).
+ * Audita DELETE.
  */
 export async function DELETE(
   request: NextRequest,
@@ -96,19 +102,22 @@ export async function DELETE(
 
     const { id } = padelIdParamsSchema.parse(await params);
 
-    const rubric = await archiveRubric(session!.user.id as string, id);
-    if (!rubric) {
+    const result = await archiveRubric(session!.user.id as string, id);
+    if (!result.ok) {
+      if (result.reason === "forbidden") {
+        return NextResponse.json({ error: "No autorizado para archivar esta rúbrica" }, { status: 403 });
+      }
       return NextResponse.json({ error: "Rúbrica no encontrada" }, { status: 404 });
     }
 
     await auditDelete(
       "rubric",
       id,
-      { title: rubric.title, status: rubric.status },
+      { title: result.rubric.title, status: result.rubric.status },
       { userId: session!.user.id, ...extractRequestContext(request) }
     );
 
-    return NextResponse.json({ rubric: { id: rubric.id, status: rubric.status } }, { status: 200 });
+    return NextResponse.json({ rubric: { id: result.rubric.id, status: result.rubric.status } }, { status: 200 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Datos inválidos", details: error.errors }, { status: 400 });

@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { rubrics, users } from "@/lib/db/schema";
 import { getEvaluationById, saveEvaluationScores } from "@/lib/db/queries/padel";
+import { resolveAcademyForEvaluation } from "@/lib/db/queries/padel/academies";
 import { evaluationSaveSchema, padelIdParamsSchema } from "@/lib/validations/padel";
 
 export const runtime = "nodejs";
@@ -39,12 +40,18 @@ export async function GET(
       }),
       db.query.rubrics.findFirst({
         where: eq(rubrics.id, result.evaluation.rubricId),
-        columns: { id: true, title: true, category: true, status: true },
+        columns: { id: true, title: true, category: true, status: true, academyId: true },
       }),
     ]);
 
+    // Academia para branding del PDF (null si la rúbrica no es institucional
+    // y el teacher no tiene membresía activa). Mismo patrón que el endpoint alumno.
+    const academy = rubric
+      ? await resolveAcademyForEvaluation(rubric, result.evaluation.teacherId)
+      : null;
+
     return NextResponse.json(
-      { evaluation: result.evaluation, student, rubric, scores: result.scores },
+      { evaluation: result.evaluation, student, rubric, scores: result.scores, academy },
       { status: 200 }
     );
   } catch (error) {

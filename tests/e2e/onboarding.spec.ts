@@ -11,7 +11,8 @@ test.describe("Padel Onboarding — Register (SCR-02)", () => {
     const res = await page.goto("/register");
     expect(res?.status()).toBe(200);
 
-    await expect(page.getByRole("heading", { name: "Crear cuenta" })).toBeVisible();
+    // CardTitle de shadcn renderiza como div (no heading role)
+    await expect(page.locator('[data-slot="card-title"]', { hasText: "Crear cuenta" })).toBeVisible();
     // Selector coach/player (UX pura, D6)
     await expect(page.getByRole("button", { name: "Soy jugador" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Soy coach" })).toBeVisible();

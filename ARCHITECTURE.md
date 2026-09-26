@@ -130,6 +130,18 @@ Principio: **NUNCA permitir LOCKED** en rutas privadas. TEMPORARY solo si explí
 - **UI**: `app/(app)/evolucion` + `components/padel/evolution-view.tsx` (G7); badge "Versión N" en `scoring-canvas` y `evaluation-card` (G6); tab Alumnos en `course-detail.tsx` con modal de búsqueda + remover (G12); link `/evolucion` en `bottom-nav` y lista del alumno.
 - **Migración**: `0007_nostalgic_dagger.sql` (columna + índice + backfill custom).
 
+## Padel Evaluativo — Academia & Branding Institucional (v0.6)
+
+- **Roles**: mismos USER/ADMIN (ADMIN=coach, USER=player). El rol por academia vive en `academy_memberships` (`OWNER`/`ADMIN`/`COACH`) — `user_role` global intacto. Multi-academia: UNIQUE (academyId, userId).
+- **Tablas DB nuevas** (2): `academies` (ownerId FK users no cascade, slug UNIQUE, logoUrl data-URL/URL, primaryColor HEX default `#3b82f6`, status active/archived), `academy_memberships` (UNIQUE academyId+userId, role OWNER/ADMIN/COACH, invitedBy, status pending/active/removed). Cambio aditivo en `rubrics`: `academyId` nullable FK set null + `scope` enum (personal/institutional).
+- **Enums DB nuevos** (3): `academy_membership_role`, `academy_status`, `rubric_scope`.
+- **Guards DB-backed** (`lib/auth/academy-guard.ts`): `guardAcademyOwner` (solo OWNER), `guardAcademyAdmin` (OWNER/ADMIN), `guardAcademyCoach` (OWNER/ADMIN/COACH activos) + `getAcademyMembership`. Consultan la membresía activa + status de la academia en cada request (nunca confían en claims del JWT). Anti-IDOR: membresía inexistente o academia archivada → 404 (no 403).
+- **Endpoints** (11 route handlers / ~18 endpoints): `app/api/academies` (GET guardUser + POST guardAdmin con OWNER insert), `app/api/academies/[id]` (GET guardAcademyCoach + PUT guardAcademyAdmin + DELETE guardAcademyOwner soft archive), `app/api/academies/[id]/logo` (POST multipart, validateLogoUpload), `app/api/academies/[id]/members/invite` (POST, usuario TEMPORARY patrón G4 + triggerAcademyInvite), `app/api/academies/[id]/members/[userId]/accept` (POST guardUser self), `app/api/academies/[id]/members` (GET guardAcademyCoach), `app/api/academies/[id]/members/[userId]` (DELETE guardAcademyAdmin, 400 último OWNER), `app/api/academies/[id]/rubrics` (GET guardAcademyCoach + POST guardAcademyAdmin scope institutional), `app/api/evaluations/[id]/pdf` (GET guardUser + ACTIVE, teacher/student, 400 draft). `app/api/rubrics/[id]` MOD: institucional → OWNER/ADMIN (COACH 403).
+- **Queries**: `lib/db/queries/padel/academies.ts` — CRUD academias + membresías + rúbricas institucionales + `resolveAcademyForEvaluation` (prioridad rubric.academyId → primera membresía activa del teacher). `rubrics.ts` MOD: `updateRubric`/`archiveRubric` → `RubricMutationResult` (403/404), `getRubricById` access-aware (personal → owner; institucional → miembro activo COACH+).
+- **Lógica pura**: `lib/padel/logo.ts` (validateLogoUpload + sanitizeSvg), `lib/padel/radar.ts` (computeRadarPoints/Polygon/GridRing), `lib/padel/pdf.tsx` (generateEvaluationPdf con react-pdf, server-only).
+- **UI**: `app/(app)/academias` (lista + detalle con tabs Branding/Miembros/Rúbricas), 7 componentes en `components/padel/` (academy-card/form/detail, logo-upload, members-list, invite-member-modal, academy-rubrics-tab), botón "Exportar PDF" en `rubric-viewer.tsx` (solo si la evaluación tiene academia), link `/academias` en bottom-nav.
+- **Migración**: `0008_*` (enums + 2 tablas + rubrics.academyId/scope + índices).
+
 ## Convenciones de Migraciones
 
 - **Siempre usar `pnpm run db:generate` tras modificar `lib/db/schema.ts`** — nunca crear SQL a mano.

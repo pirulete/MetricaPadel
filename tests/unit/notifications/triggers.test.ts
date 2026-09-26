@@ -7,7 +7,7 @@ jest.mock("@/lib/notifications/engine", () => ({
   createNotification: jest.fn(),
 }));
 
-import { triggerEvaluationPublished } from "@/lib/notifications/triggers";
+import { triggerEvaluationPublished, triggerAcademyInvite } from "@/lib/notifications/triggers";
 import { createNotification } from "@/lib/notifications/engine";
 import type { notifications } from "@/lib/db/schema";
 
@@ -57,6 +57,35 @@ describe("triggerEvaluationPublished", () => {
     mocked.mockResolvedValue(null);
 
     const result = await triggerEvaluationPublished("student-1", "evaluation-1");
+
+    expect(result).toBeNull();
+    expect(mocked).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("triggerAcademyInvite", () => {
+  it("crea notificación con payload correcto y groupId = membershipId", async () => {
+    mocked.mockResolvedValue(fakeNotification);
+
+    await triggerAcademyInvite("u2", "Academia Test", "membership-1");
+
+    expect(mocked).toHaveBeenCalledWith({
+      userId: "u2",
+      type: "info",
+      priority: "P2",
+      title: "Invitación a Academia Test",
+      body: "Fuiste invitado a la academia Academia Test",
+      ctaUrl: "/academias",
+      ctaLabel: "Ver academia",
+      groupId: "membership-1",
+      category: "system",
+    });
+  });
+
+  it("retorna null si el engine aplica dedup (re-invitación)", async () => {
+    mocked.mockResolvedValue(null);
+
+    const result = await triggerAcademyInvite("u2", "Academia Test", "membership-1");
 
     expect(result).toBeNull();
     expect(mocked).toHaveBeenCalledTimes(1);

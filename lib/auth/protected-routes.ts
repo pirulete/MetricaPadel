@@ -10,6 +10,16 @@
  * Guards disponibles:
  *   - guardUser(session)    → 401 si no autenticado
  *   - guardAdmin(session)   → 401/403 si no ADMIN+ACTIVE
+ *   - guardAcademyOwner(session, academyId)   → DB-backed, solo OWNER (SPEC-EPIC-01)
+ *   - guardAcademyAdmin(session, academyId)   → DB-backed, OWNER o ADMIN
+ *   - guardAcademyCoach(session, academyId)   → DB-backed, OWNER/ADMIN/COACH activos
+ *
+ * Guards de academia (lib/auth/academy-guard.ts):
+ *   - Son async: `Promise<NextResponse | null>` (null = OK).
+ *   - Consultan academy_memberships (rol por academia) + status de academies en
+ *     cada request — nunca confían en claims del JWT para el rol de academia.
+ *   - Anti-IDOR: membresía inexistente o academia archivada → 404 (no 403).
+ *   - user_role global (USER/ADMIN) intacto; NUNCA LOCKED; TEMPORARY → 403.
  */
 
 export const routeProtection = {
@@ -385,6 +395,84 @@ export const routeProtection = {
     allowedStatuses: ['ACTIVE'],
     roles: ['ADMIN'],
     description: 'Historial de evaluaciones del coach (teacherId=me; filtros courseId/studentId/status; anti-IDOR)',
+  },
+
+  // ─── ACADEMIA (SPEC-EPIC-01, Fase B) — RBAC por academia ───────
+  // Guards DB-backed: guardAcademyOwner / guardAcademyAdmin / guardAcademyCoach.
+  // Anti-IDOR: membresía inexistente o academia archivada → 404 (no 403).
+  'GET /api/academies': {
+    guard: 'guardUser',
+    allowedStatuses: ['ACTIVE'],
+    description: 'Lista academias del usuario (membresías activas)',
+  },
+  'POST /api/academies': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Crea academia (ownerId=me; inserta OWNER en academy_memberships; 409 slug duplicado)',
+    audit: 'auditAcademyCreated(academies)',
+  },
+  'GET /api/academies/[id]': {
+    guard: 'guardAcademyCoach',
+    allowedStatuses: ['ACTIVE'],
+    description: 'Detalle de academia + myRole (membresía activa; 404 si ajeno/archivada)',
+  },
+  'PUT /api/academies/[id]': {
+    guard: 'guardAcademyAdmin',
+    allowedStatuses: ['ACTIVE'],
+    description: 'Actualiza branding (name/slug/primaryColor) — OWNER/ADMIN; 409 slug duplicado',
+    audit: 'auditAcademyUpdated(academies)',
+  },
+  'DELETE /api/academies/[id]': {
+    guard: 'guardAcademyOwner',
+    allowedStatuses: ['ACTIVE'],
+    description: 'Archiva academia (soft, status=archived) — solo OWNER',
+    audit: 'auditAcademyArchived(academies)',
+  },
+  'POST /api/academies/[id]/logo': {
+    guard: 'guardAcademyAdmin',
+    allowedStatuses: ['ACTIVE'],
+    description: 'Upload de logo (multipart, PNG/SVG ≤2MB, dims ≤1024, SVG sanitizado) — OWNER/ADMIN',
+    audit: 'auditAcademyUpdated(academies, logo)',
+  },
+  'POST /api/academies/[id]/members/invite': {
+    guard: 'guardAcademyAdmin',
+    allowedStatuses: ['ACTIVE'],
+    description: 'Invita miembro por email (OWNER/ADMIN; crea usuario TEMPORARY si no existe; 409 ya miembro)',
+    audit: 'auditMemberInvited(academy_memberships)',
+  },
+  'POST /api/academies/[id]/members/[userId]/accept': {
+    guard: 'guardUser',
+    allowedStatuses: ['ACTIVE'],
+    description: 'Acepta invitación (solo self: userId=sesión; marca active; 404 si no existe/removida)',
+    audit: 'auditUpdate(academy_memberships)',
+  },
+  'GET /api/academies/[id]/members': {
+    guard: 'guardAcademyCoach',
+    allowedStatuses: ['ACTIVE'],
+    description: 'Lista miembros con info de usuario (membresía activa)',
+  },
+  'DELETE /api/academies/[id]/members/[userId]': {
+    guard: 'guardAcademyAdmin',
+    allowedStatuses: ['ACTIVE'],
+    description: 'Remueve miembro (soft, status=removed) — OWNER/ADMIN; 400 si último OWNER',
+    audit: 'auditMemberRemoved(academy_memberships)',
+  },
+  'GET /api/academies/[id]/rubrics': {
+    guard: 'guardAcademyCoach',
+    allowedStatuses: ['ACTIVE'],
+    description: 'Lista rúbricas institucionales de la academia (scope=institutional)',
+  },
+  'POST /api/academies/[id]/rubrics': {
+    guard: 'guardAcademyAdmin',
+    allowedStatuses: ['ACTIVE'],
+    description: 'Crea rúbrica institucional (scope forzado institutional, academyId=ruta) — OWNER/ADMIN',
+    audit: 'auditCreate(rubric, institutional)',
+  },
+  'GET /api/evaluations/[id]/pdf': {
+    guard: 'guardUser',
+    allowedStatuses: ['ACTIVE'],
+    description: 'Exporta PDF con branding de academia (teacher o student de la evaluación; 400 si draft; 404 si ajeno)',
   },
 } as const
 

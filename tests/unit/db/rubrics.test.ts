@@ -174,14 +174,14 @@ describe("listRubrics", () => {
 });
 
 describe("updateRubric", () => {
-  it("retorna null si la rúbrica no pertenece al owner", async () => {
-    txQueue.push([]); // select limit(1) → vacío
-    expect(await updateRubric("coach1", "r1", { title: "Nuevo" })).toBeNull();
+  it("retorna not_found si la rúbrica no existe o no pertenece al owner", async () => {
+    (db.query.rubrics.findFirst as jest.Mock).mockResolvedValue(undefined);
+    expect(await updateRubric("coach1", "r1", { title: "Nuevo" })).toEqual({ ok: false, reason: "not_found" });
   });
 
   it("actualiza title/category y reemplaza criteria/descriptors", async () => {
+    (db.query.rubrics.findFirst as jest.Mock).mockResolvedValue(rubric);
     txQueue.push(
-      [{ id: "r1" }], // select limit(1) → existe
       [{ ...rubric, title: "Nuevo", updatedAt: new Date() }], // update returning
       [], // delete criteria (cascade descriptors)
       levels, // select levels para reinsert
@@ -193,19 +193,22 @@ describe("updateRubric", () => {
       criteria: [{ name: "Precisión", descriptors: ["a", "b", "c", "d"] }],
     });
 
-    expect(result?.title).toBe("Nuevo");
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.rubric.title).toBe("Nuevo");
   });
 });
 
 describe("archiveRubric", () => {
   it("archiva (soft) la rúbrica del owner", async () => {
+    (db.query.rubrics.findFirst as jest.Mock).mockResolvedValue(rubric);
     dbQueue.push([{ ...rubric, status: "archived" }]);
     const result = await archiveRubric("coach1", "r1");
-    expect(result?.status).toBe("archived");
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.rubric.status).toBe("archived");
   });
 
-  it("retorna null si no pertenece al owner", async () => {
-    dbQueue.push([]);
-    expect(await archiveRubric("coach1", "r1")).toBeNull();
+  it("retorna not_found si no pertenece al owner", async () => {
+    (db.query.rubrics.findFirst as jest.Mock).mockResolvedValue(undefined);
+    expect(await archiveRubric("coach1", "r1")).toEqual({ ok: false, reason: "not_found" });
   });
 });

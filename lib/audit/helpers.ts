@@ -442,3 +442,98 @@ export async function auditBroadcastDeleted(
     metadata: context.metadata,
   })
 }
+
+// ─── Academia (SPEC-EPIC-01, Fase B) ─────────────────────────────────────────
+
+/**
+ * Audit: academia creada (ACADEMY_CREATED).
+ * entityId = academyId, newValues = {name, slug, ownerId}, metadata = {academy: true}
+ */
+export async function auditAcademyCreated(
+  academyId: string,
+  data: { name: string; slug: string; ownerId: string },
+  context: AuditContext
+) {
+  return await createAuditLog('ACADEMY_CREATED', 'academies', academyId, {
+    userId: context.userId ?? data.ownerId,
+    newValues: { name: data.name, slug: data.slug, ownerId: data.ownerId },
+    ipAddress: context.ipAddress,
+    userAgent: context.userAgent,
+    metadata: { academy: true, action: 'academy_created', ...context.metadata },
+  })
+}
+
+/**
+ * Audit: academia actualizada (ACADEMY_UPDATED) — branding (name/slug/logoUrl/primaryColor).
+ */
+export async function auditAcademyUpdated(
+  academyId: string,
+  oldValues: Record<string, any>,
+  newValues: Record<string, any>,
+  context: AuditContext
+) {
+  return await createAuditLog('ACADEMY_UPDATED', 'academies', academyId, {
+    userId: context.userId,
+    oldValues,
+    newValues,
+    ipAddress: context.ipAddress,
+    userAgent: context.userAgent,
+    metadata: { academy: true, action: 'academy_updated', ...context.metadata },
+  })
+}
+
+/**
+ * Audit: academia archivada (ACADEMY_ARCHIVED) — soft, status=archived.
+ */
+export async function auditAcademyArchived(
+  academyId: string,
+  oldValues: Record<string, any>,
+  context: AuditContext
+) {
+  return await createAuditLog('ACADEMY_ARCHIVED', 'academies', academyId, {
+    userId: context.userId,
+    oldValues,
+    newValues: { status: 'archived' },
+    ipAddress: context.ipAddress,
+    userAgent: context.userAgent,
+    metadata: { academy: true, action: 'academy_archived', ...context.metadata },
+  })
+}
+
+/**
+ * Audit: miembro invitado a academia (MEMBER_INVITED).
+ * entityId = membershipId, newValues = {academyId, userId, role, invitedBy}
+ */
+export async function auditMemberInvited(
+  academyId: string,
+  memberId: string,
+  data: { userId: string; role: string; invitedBy: string },
+  context: AuditContext
+) {
+  return await createAuditLog('MEMBER_INVITED', 'academy_memberships', memberId, {
+    userId: context.userId ?? data.invitedBy,
+    newValues: { academyId, userId: data.userId, role: data.role, invitedBy: data.invitedBy },
+    ipAddress: context.ipAddress,
+    userAgent: context.userAgent,
+    metadata: { academy: true, action: 'member_invited', ...context.metadata },
+  })
+}
+
+/**
+ * Audit: miembro removido de academia (MEMBER_REMOVED).
+ * entityId = membershipId, oldValues = {academyId, userId, role}
+ */
+export async function auditMemberRemoved(
+  academyId: string,
+  memberId: string,
+  oldValues: Record<string, any>,
+  context: AuditContext
+) {
+  return await createAuditLog('MEMBER_REMOVED', 'academy_memberships', memberId, {
+    userId: context.userId,
+    oldValues: { academyId, ...oldValues },
+    ipAddress: context.ipAddress,
+    userAgent: context.userAgent,
+    metadata: { academy: true, action: 'member_removed', ...context.metadata },
+  })
+}

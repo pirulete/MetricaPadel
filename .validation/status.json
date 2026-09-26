@@ -1,12 +1,13 @@
 {
   "status": "pass",
-  "last_validated": "2026-09-24T23:39:59.356Z",
-  "gates_passed": 21,
+  "last_validated": "2026-09-26T20:24:19.575Z",
+  "gates_passed": 20,
   "gates_failed": 0,
-  "gates_warning": 2,
+  "gates_warning": 3,
   "failed_gates": [],
   "warning_gates": [
     "lint",
+    "env_vars",
     "loop_metrics",
     "file_size"
   ],
@@ -36,6 +37,6 @@
     "coverage_check",
     "loop_metrics"
   ],
-  "test_coverage_delta": 0,
-  "message": "⚠️ All 21 gates passed, 2 warning(s): [lint] Lint, [loop_metrics] Loop metrics, [file_size] File size"
+  "test_coverage_delta": 82,
+  "message": "⚠️ All 20 gates passed, 3 warning(s): [lint] Lint, [env_vars] Env Vars, [loop_metrics] Loop metrics, [file_size] File size"
 }

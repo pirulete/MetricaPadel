@@ -412,21 +412,39 @@ export const courseStatusEnum = pgEnum('course_status', [
   'active', 'archived',
 ]);
 
+export const academyMembershipRoleEnum = pgEnum('academy_membership_role', [
+  'OWNER', 'ADMIN', 'COACH',
+]);
+
+export const academyStatusEnum = pgEnum('academy_status', [
+  'active', 'archived',
+]);
+
+export const rubricScopeEnum = pgEnum('rubric_scope', [
+  'personal', 'institutional',
+]);
+
 export type CourseLevel = (typeof courseLevelEnum.enumValues)[number];
 export type CourseStatus = (typeof courseStatusEnum.enumValues)[number];
+export type AcademyMembershipRole = (typeof academyMembershipRoleEnum.enumValues)[number];
+export type AcademyStatus = (typeof academyStatusEnum.enumValues)[number];
+export type RubricScope = (typeof rubricScopeEnum.enumValues)[number];
 
 // Rúbrica del coach (ADMIN). ownerId = coach. Archivar = soft (status=archived),
 // nunca hard delete: las evaluaciones referencian la rúbrica.
 export const rubrics = pgTable("rubrics", {
   id: uuid("id").primaryKey().defaultRandom(),
   ownerId: uuid("owner_id").notNull().references(() => users.id, { onDelete: "no action" }),
+  academyId: uuid("academy_id").references(() => academies.id, { onDelete: "set null" }),
   title: varchar("title", { length: 200 }).notNull(),
   category: rubricCategoryEnum("category").notNull(),
+  scope: rubricScopeEnum("scope").notNull().default('personal'),
   status: rubricStatusEnum("status").notNull().default('draft'),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => [
   index("rubrics_owner_idx").on(table.ownerId),
+  index("rubrics_academy_idx").on(table.academyId),
 ]);
 
 // Curso del coach (ADMIN). ownerId = coach. Archivar = soft (status=archived);
@@ -542,10 +560,47 @@ export const courseRubrics = pgTable("course_rubrics", {
   index("course_rubrics_course_idx").on(table.courseId),
 ]);
 
+// Academia: entidad multi-tenant que agrupa profesores, rúbricas institucionales y branding.
+// ownerId = usuario que crea la academia (se inserta como OWNER en academy_memberships).
+export const academies = pgTable("academies", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  ownerId: uuid("owner_id").notNull().references(() => users.id, { onDelete: "no action" }),
+  name: varchar("name", { length: 200 }).notNull(),
+  slug: varchar("slug", { length: 50 }).notNull().unique(),
+  logoUrl: varchar("logo_url", { length: 5000 }),
+  primaryColor: varchar("primary_color", { length: 7 }).notNull().default('#3b82f6'),
+  status: academyStatusEnum("status").notNull().default('active'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("academies_owner_idx").on(table.ownerId),
+]);
+
+// Membresía de usuario en academia. UNIQUE (academyId, userId) permite multi-academia.
+// Rol por academia: OWNER/ADMIN/COACH. user_role global (USER/ADMIN) intacto.
+export const academyMemberships = pgTable("academy_memberships", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  academyId: uuid("academy_id").notNull().references(() => academies.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "no action" }),
+  role: academyMembershipRoleEnum("role").notNull().default('COACH'),
+  invitedBy: uuid("invited_by").references(() => users.id, { onDelete: "no action" }),
+  status: varchar("status", { length: 20 }).notNull().default('active'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("academy_memberships_academy_user_idx").on(table.academyId, table.userId),
+  index("academy_memberships_academy_idx").on(table.academyId),
+  index("academy_memberships_user_idx").on(table.userId),
+]);
+
 export const rubricsRelations = relations(rubrics, ({ one, many }) => ({
   owner: one(users, {
     fields: [rubrics.ownerId],
     references: [users.id],
+  }),
+  academy: one(academies, {
+    fields: [rubrics.academyId],
+    references: [academies.id],
   }),
   levels: many(rubricLevels),
   criteria: many(rubricCriteria),
@@ -653,6 +708,31 @@ export const courseRubricsRelations = relations(courseRubrics, ({ one }) => ({
   }),
 }));
 
+export const academiesRelations = relations(academies, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [academies.ownerId],
+    references: [users.id],
+  }),
+  members: many(academyMemberships),
+  rubrics: many(rubrics),
+}));
+
+export const academyMembershipsRelations = relations(academyMemberships, ({ one }) => ({
+  academy: one(academies, {
+    fields: [academyMemberships.academyId],
+    references: [academies.id],
+  }),
+  user: one(users, {
+    fields: [academyMemberships.userId],
+    references: [users.id],
+  }),
+  invitedByUser: one(users, {
+    relationName: "invitedBy",
+    fields: [academyMemberships.invitedBy],
+    references: [users.id],
+  }),
+}));
+
 export type Rubric = typeof rubrics.$inferSelect;
 export type NewRubric = typeof rubrics.$inferInsert;
 export type RubricLevel = typeof rubricLevels.$inferSelect;
@@ -671,3 +751,7 @@ export type CourseEnrollment = typeof courseEnrollments.$inferSelect;
 export type NewCourseEnrollment = typeof courseEnrollments.$inferInsert;
 export type CourseRubric = typeof courseRubrics.$inferSelect;
 export type NewCourseRubric = typeof courseRubrics.$inferInsert;
+export type Academy = typeof academies.$inferSelect;
+export type NewAcademy = typeof academies.$inferInsert;
+export type AcademyMembership = typeof academyMemberships.$inferSelect;
+export type NewAcademyMembership = typeof academyMemberships.$inferInsert;

@@ -57,6 +57,13 @@
       "when": 1790016349161,
       "tag": "0007_nostalgic_dagger",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790449821452,
+      "tag": "0008_shallow_typhoid_mary",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { HomeIcon, BookOpenIcon, ClipboardListIcon, HistoryIcon, TrendingUpIcon, User, Building2Icon } from "lucide-react"
+import { HomeIcon, BookOpenIcon, ClipboardListIcon, HistoryIcon, TrendingUpIcon, User, Building2Icon, ShieldIcon } from "lucide-react"
 
 export const ADMIN_NAV_ITEMS = [
   { href: "/dashboard", label: "Inicio", icon: HomeIcon },
@@ -6,6 +6,7 @@ export const ADMIN_NAV_ITEMS = [
   { href: "/academias", label: "Academias", icon: Building2Icon },
   { href: "/evaluar", label: "Evaluar", icon: ClipboardListIcon },
   { href: "/historial", label: "Historial", icon: HistoryIcon },
+  { href: "/admin", label: "Admin", icon: ShieldIcon },
   { href: "/settings", label: "Perfil", icon: User },
 ]
 

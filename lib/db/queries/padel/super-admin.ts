@@ -1,11 +1,11 @@
 /**
  * Queries de Super Admin (plataforma): listar admins, demote transaccional,
- * audit logs paginados y academias globales. Todas requieren guardSuperAdmin
- * en el API (nunca se exponen a roles inferiores).
+ * audit logs paginados, academias globales y métricas de plataforma.
+ * Todas requieren guardSuperAdmin en el API (nunca se exponen a roles inferiores).
  */
 import { db } from "@/lib/db";
-import { and, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
-import { academies, auditLogs, users } from "@/lib/db/schema";
+import { and, count as drizzleCount, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
+import { academies, auditLogs, evaluations, courses, users } from "@/lib/db/schema";
 import { assertNotLastSuperAdmin } from "@/lib/padel/super-admin";
 
 export type DemoteResult =
@@ -180,4 +180,48 @@ export async function listAllAcademies() {
     .from(academies)
     .leftJoin(users, eq(users.id, academies.ownerId))
     .orderBy(desc(academies.createdAt));
+}
+
+/**
+ * Métricas globales de plataforma para el home del super admin.
+ * Retorna contadores: usuarios totales/activos/admins/super_admins,
+ * academias activas, evaluaciones publicadas, cursos activos.
+ */
+export async function getPlatformStats() {
+  const [userStats] = await db
+    .select({
+      total: sql<number>`count(*)::int`,
+      active: sql<number>`count(*) filter (where status = 'ACTIVE')::int`,
+      admins: sql<number>`count(*) filter (where role IN ('ADMIN','SUPER_ADMIN'))::int`,
+      superAdmins: sql<number>`count(*) filter (where role = 'SUPER_ADMIN')::int`,
+    })
+    .from(users);
+
+  const [academyStats] = await db
+    .select({
+      total: sql<number>`count(*)::int`,
+      active: sql<number>`count(*) filter (where status = 'active')::int`,
+    })
+    .from(academies);
+
+  const [evalStats] = await db
+    .select({
+      total: sql<number>`count(*)::int`,
+      published: sql<number>`count(*) filter (where status = 'published')::int`,
+    })
+    .from(evaluations);
+
+  const [courseStats] = await db
+    .select({
+      total: sql<number>`count(*)::int`,
+      active: sql<number>`count(*) filter (where status = 'active')::int`,
+    })
+    .from(courses);
+
+  return {
+    users: userStats,
+    academies: academyStats,
+    evaluations: evalStats,
+    courses: courseStats,
+  };
 }

@@ -102,21 +102,40 @@ async function runMigration() {
     // 2. Check if all critical tables exist
     console.log('[v0] Checking critical tables...')
     const { allExist, missing } = await checkCriticalTables()
-    if (allExist) {
-      console.log('[v0] ✓ All critical tables exist — skipping migration')
-      process.exit(0)
-    }
-    console.log(`[v0] ⚠ Missing tables: ${missing.join(', ')}`)
 
-    // 3. Read journal
+    // 3. Read journal to check for unapplied migrations
     const drizzleDir = path.join(process.cwd(), 'drizzle')
     const journalPath = path.join(drizzleDir, 'meta', '_journal.json')
     const journal = JSON.parse(fs.readFileSync(journalPath, 'utf-8'))
     const entries: JournalEntry[] = journal.entries
+    const lastJournalTag = entries[entries.length - 1]?.tag
 
     // 4. Get already-applied migrations
     const applied = await getAppliedMigrations()
     console.log(`[v0] ${applied.size} migrations already tracked in __drizzle_migrations`)
+
+    // 5. Check if the last migration in the journal has been applied
+    let lastAppliedTag = ''
+    for (const entry of entries) {
+      const sqlFile = path.join(drizzleDir, `${entry.tag}.sql`)
+      if (!fs.existsSync(sqlFile)) continue
+      const sqlContent = fs.readFileSync(sqlFile, 'utf-8')
+      const hash = computeHash(sqlContent)
+      if (applied.has(hash)) {
+        lastAppliedTag = entry.tag
+      }
+    }
+
+    if (allExist && lastAppliedTag === lastJournalTag) {
+      console.log('[v0] ✓ All critical tables exist and migrations up to date — skipping')
+      process.exit(0)
+    }
+
+    if (allExist) {
+      console.log(`[v0] ⚠ Tables exist but migrations pending (last applied: ${lastAppliedTag || 'none'}, journal: ${lastJournalTag})`)
+    } else {
+      console.log(`[v0] ⚠ Missing tables: ${missing.join(', ')}`)
+    }
 
     // 5. Execute each migration statement-by-statement
     let appliedCount = 0

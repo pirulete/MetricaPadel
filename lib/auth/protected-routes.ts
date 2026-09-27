@@ -9,7 +9,8 @@
  *
  * Guards disponibles:
  *   - guardUser(session)    → 401 si no autenticado
- *   - guardAdmin(session)   → 401/403 si no ADMIN+ACTIVE
+ *   - guardAdmin(session)   → 401/403 si no ADMIN/SUPER_ADMIN+ACTIVE (jerarquía)
+ *   - guardSuperAdmin(session) → 401/403 si no SUPER_ADMIN+ACTIVE (async, null = OK)
  *   - guardAcademyOwner(session, academyId)   → DB-backed, solo OWNER (SPEC-EPIC-01)
  *   - guardAcademyAdmin(session, academyId)   → DB-backed, OWNER o ADMIN
  *   - guardAcademyCoach(session, academyId)   → DB-backed, OWNER/ADMIN/COACH activos
@@ -56,11 +57,36 @@ export const routeProtection = {
     description: 'Detalle de jugador (solo role USER; 404 si no existe o no es USER)',
   },
   'POST /api/admin/users/[id]/promote': {
-    guard: 'guardAdmin',
+    guard: 'guardSuperAdmin',
     allowedStatuses: ['ACTIVE'],
-    roles: ['ADMIN'],
-    description: 'Promueve jugador a ADMIN (query filtra role USER: self-promote y ya-ADMIN → null → 404 idempotente; anti-IDOR)',
-    audit: 'auditUpdate(user, role USER→ADMIN)',
+    roles: ['SUPER_ADMIN'],
+    description: 'Promueve jugador a ADMIN (query filtra role USER: self-promote y ya-ADMIN → null → 404 idempotente; anti-IDOR). Breaking intencional: ADMIN ya no promueve (AC-01)',
+    audit: 'auditAdminPromoted (ADMIN_PROMOTED)',
+  },
+  'POST /api/admin/users/[id]/demote': {
+    guard: 'guardSuperAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['SUPER_ADMIN'],
+    description: 'Demota ADMIN → USER (400 si target USER, SUPER_ADMIN o self; 404 si inexistente; defensa último SUPER_ADMIN)',
+    audit: 'auditAdminDemoted (ADMIN_DEMOTED)',
+  },
+  'GET /api/admin/admins': {
+    guard: 'guardSuperAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['SUPER_ADMIN'],
+    description: 'Lista admins (role IN ADMIN/SUPER_ADMIN) con ?search= ILIKE por nombre/email',
+  },
+  'GET /api/admin/audit-logs': {
+    guard: 'guardSuperAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['SUPER_ADMIN'],
+    description: 'Audit logs paginados (?actionType=&userId=&page=&pageSize≤100). Lectura, sin auditoría',
+  },
+  'GET /api/admin/academies': {
+    guard: 'guardSuperAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['SUPER_ADMIN'],
+    description: 'Lista TODAS las academias con métricas (memberCount/rubricCount) — visibilidad global de plataforma',
   },
 
   // ─── ADMIN MARKETING (CMS) ─────────────────────────────────────

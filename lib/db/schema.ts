@@ -1,7 +1,7 @@
 import { pgTable, text, timestamp, uuid, varchar, json, jsonb, integer, numeric, boolean, pgEnum, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
-export const userRoleEnum = pgEnum('user_role', ['USER', 'ADMIN']);
+export const userRoleEnum = pgEnum('user_role', ['USER', 'ADMIN', 'SUPER_ADMIN']);
 
 export const marketingStatusEnum = pgEnum('marketing_status', ['draft', 'published']);
 

@@ -165,7 +165,9 @@ Aislamiento de DB para preview deploys vía Neon database branching:
 ## Convenciones de Seguridad
 
 - `auth.ts` — config Auth.js. `NEXTAUTH_SECRET` requerida en producción (fallback automático en dev). Sesión JWT long-lived (30 días) con la sesión DB como gate real: el callback `jwt` valida `sessions.token` y aplica sliding window con TTL configurable vía tabla `session_config` (fallback env `SESSION_ACCESS_TOKEN_TTL`, default 15 min).
-- Guards en `lib/auth/admin-guard.ts`: `validateUser`, `validateAdmin`, `guardUser`, `guardAdmin`.
+- Guards en `lib/auth/admin-guard.ts`: `validateUser`, `validateAdmin`, `guardUser`, `guardAdmin`, `validateSuperAdmin`, `guardSuperAdmin`.
+- Jerarquía de roles (v0.7): `ADMIN_ROLES = ['ADMIN','SUPER_ADMIN']` — `guardAdmin`/`validateAdmin` aceptan ambos; `guardSuperAdmin`/`validateSuperAdmin` solo `SUPER_ADMIN`+`ACTIVE` (async, `Promise<NextResponse | null>`). `canAssignRole` en `lib/auth/role-utils.ts`: solo SUPER_ADMIN asigna USER/ADMIN; SUPER_ADMIN nunca asignable vía API.
+- Lock de usuarios (`DELETE /api/admin/users/[id]`): rechaza `isAdminRole(target.role)` → 403 (ADMIN y SUPER_ADMIN no bloqueables).
 - Toda mutación sensible debe auditarse vía `lib/audit/helpers.ts` (audit_logs).
 - Todo endpoint público requiere rate limit (`lib/rate-limit.ts`) + Cache-Control + security headers.
 - Todo endpoint admin requiere guard server-side + auditoría en mutaciones.

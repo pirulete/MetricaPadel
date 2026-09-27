@@ -7,7 +7,7 @@ export interface UserProfile {
   lastName: string
   phone: string
   status: UserStatus
-  role: 'USER' | 'ADMIN'
+  role: 'USER' | 'ADMIN' | 'SUPER_ADMIN'
   emailVerifiedAt?: Date | null
   avatarUrl?: string | null
   createdAt?: Date | null

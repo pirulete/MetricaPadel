@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { guardAdmin } from "@/lib/auth/admin-guard";
-import { auditUpdate, extractRequestContext } from "@/lib/audit/helpers";
+import { guardSuperAdmin } from "@/lib/auth/admin-guard";
+import { auditAdminPromoted } from "@/lib/audit/super-admin";
+import { extractRequestContext } from "@/lib/audit/helpers";
 import { promoteUser } from "@/lib/db/queries/padel";
 import { padelIdParamsSchema } from "@/lib/validations/padel";
 
@@ -10,8 +11,9 @@ export const runtime = "nodejs";
 
 /**
  * POST /api/admin/users/[id]/promote
- * Promueve un usuario USER a ADMIN (G3). 404 si inexistente o ya ADMIN
- * (anti-IDOR: recurso no aplicable = 404). Audita UPDATE.
+ * Promueve un usuario USER a ADMIN (G3). Exclusivo de SUPER_ADMIN (AC-01):
+ * un ADMIN ya no puede promover. 404 si inexistente o ya ADMIN (anti-IDOR:
+ * recurso no aplicable = 404). Audita ADMIN_PROMOTED.
  */
 export async function POST(
   request: NextRequest,
@@ -19,7 +21,7 @@ export async function POST(
 ) {
   try {
     const session = await auth();
-    const guardError = guardAdmin(session);
+    const guardError = guardSuperAdmin(session);
     if (guardError) return guardError;
 
     const { id } = padelIdParamsSchema.parse(await params);
@@ -32,13 +34,7 @@ export async function POST(
       );
     }
 
-    await auditUpdate(
-      "user",
-      id,
-      { role: "USER" },
-      { role: "ADMIN" },
-      { userId: session!.user.id, ...extractRequestContext(request) }
-    );
+    await auditAdminPromoted(session!.user.id, id, extractRequestContext(request));
 
     return NextResponse.json({ user }, { status: 200 });
   } catch (error) {

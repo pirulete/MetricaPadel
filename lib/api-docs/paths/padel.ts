@@ -44,16 +44,16 @@ export const padelPaths = {
   },
   '/api/admin/users/{id}/promote': {
     post: {
-      tags: ['Padel Admin'],
+      tags: ['Super Admin'],
       summary: 'Promover usuario USER a ADMIN',
-      description: 'Cambia users.role USER→ADMIN (G3). 404 si inexistente o ya ADMIN (anti-IDOR). Audita UPDATE.',
+      description: 'Cambia users.role USER→ADMIN (G3). Exclusivo de SUPER_ADMIN (AC-01): un ADMIN ya no puede promover. 404 si inexistente o ya ADMIN (anti-IDOR). Audita ADMIN_PROMOTED.',
       security: [{ bearerAuth: [] }],
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
       responses: {
         '200': { description: 'Usuario promovido', content: { 'application/json': { schema: { type: 'object', properties: { user: { $ref: '#/components/schemas/AdminUserDto' } } } } } },
         '400': { description: 'id inválido' },
         '401': { description: 'No autenticado' },
-        '403': { description: 'Sin rol ADMIN' },
+        '403': { description: 'Sin rol SUPER_ADMIN' },
         '404': { description: 'Usuario no encontrado o ya ADMIN' },
       },
     },

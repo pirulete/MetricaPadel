@@ -7,3 +7,4 @@ export * from './enrollments';
 export * from './dashboard';
 export * from './history';
 export * from './academies';
+export * from './super-admin';

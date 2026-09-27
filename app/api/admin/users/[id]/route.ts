@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { guardAdmin } from "@/lib/auth/admin-guard";
+import { isAdminRole } from "@/lib/auth/role-utils";
 import { auditUpdate, extractRequestContext } from "@/lib/audit/helpers";
 import { getPlayerById, lockPlayer, unlockPlayer, updatePlayer } from "@/lib/db/queries/padel";
 import { getUserById } from "@/lib/db/queries/auth";
@@ -97,7 +98,7 @@ export async function PUT(
  * DELETE /api/admin/users/[id]
  * Soft-lock de jugador (status='LOCKED', G10). Reglas:
  * - No puedes bloquearte a ti mismo → 400.
- * - No puedes bloquear a otro ADMIN → 403.
+ * - No puedes bloquear a otro ADMIN/SUPER_ADMIN → 403 (isAdminRole).
  * - Inexistente o no role USER → 404 (anti-IDOR).
  * Audita UPDATE (status ACTIVE/TEMPORARY → LOCKED).
  */
@@ -119,7 +120,7 @@ export async function DELETE(
     if (target.id === session!.user.id) {
       return NextResponse.json({ error: "No puedes bloquear tu propio usuario" }, { status: 400 });
     }
-    if (target.role === 'ADMIN') {
+    if (isAdminRole(target.role)) {
       return NextResponse.json({ error: "No puedes bloquear a otro administrador" }, { status: 403 });
     }
 

@@ -29,7 +29,7 @@ export function getPool(): Pool {
   });
 }
 
-export async function createUser(opts: { role: "USER" | "ADMIN"; email: string; password: string }) {
+export async function createUser(opts: { role: "USER" | "ADMIN" | "SUPER_ADMIN"; email: string; password: string }) {
   const pool = getPool();
   const hash = await bcrypt.hash(opts.password, 10);
   await pool.query(

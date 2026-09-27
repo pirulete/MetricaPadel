@@ -1,5 +1,94 @@
 # FEATURES — Registro de Cambios
 
+## ✨ SUPER_ADMIN — Rol Super Admin de Plataforma (2026-09-27)
+
+> status: released
+> release: v0.7
+> date: 2026-09-27
+> change_id: super-admin-role
+> module: admin+auth+api+db+ui
+> tags: [roles, rbac, super-admin, security, migration, audit, ui]
+
+### Problema
+
+El modelo de roles es binario (USER/ADMIN): cualquier ADMIN tiene acceso total a plataforma (promover admins, CMS, lock de usuarios) sin jerarquía ni control. No hay demote, listado de admins, auditoría global ni visibilidad de plataforma. Audit previo: `production_artifacts/2026-09-27-super-admin-audit/audit-report.md` (10 gaps, G1-G10).
+
+### Solución Implementada
+
+- **DB**: `user_role` extendido a `['USER','ADMIN','SUPER_ADMIN']` (migración `0009_third_white_tiger.sql`); queries en `lib/db/queries/padel/super-admin.ts` (listAdmins, demoteUser transaccional con invariante último SUPER_ADMIN, countActiveSuperAdmins, listAuditLogsPaginated, listAllAcademies); lógica pura `lib/padel/super-admin.ts` (assertNotLastSuperAdmin).
+- **Auth**: `guardSuperAdmin`/`validateSuperAdmin` en `admin-guard.ts`; jerarquía — `guardAdmin`/`validateAdmin` usan `isAdminRole` (ADMIN+SUPER_ADMIN); `role-utils.ts` con `ADMIN_ROLES` ampliado + `SUPER_ADMIN_ROLES` + `canAssignRole` restringido (nunca SUPER_ADMIN vía API).
+- **Seguridad**: promote restringido a SUPER_ADMIN; nuevo endpoint `demote` (ADMIN→USER, 400 self/SUPER_ADMIN/USER, 404 inexistente, defensa último SUPER_ADMIN transaccional); lock (`DELETE /api/admin/users/[id]`) protege SUPER_ADMIN vía `isAdminRole`; auditoría dedicada en `lib/audit/super-admin.ts` (`ADMIN_PROMOTED`, `ADMIN_DEMOTED`).
+- **API**: `GET /api/admin/admins`, `POST /api/admin/users/[id]/demote`, `GET /api/admin/audit-logs`, `GET /api/admin/academies` — todos guardSuperAdmin + documentados en `lib/api-docs/spec.ts` (paths/schemas super-admin) + `lib/auth/protected-routes.ts`.
+- **UI**: `/admin/admins` + `/admin/platform` visibles solo SUPER_ADMIN (`validateSuperAdmin`); nav admin condicional en `app/admin/layout.tsx`; componente `components/admin/admins/admin-list.tsx`.
+- **Primer SUPER_ADMIN**: seed/DB manual (patrón primer ADMIN, QUICKSTART §7) — nunca vía API.
+
+### Solución Propuesta (spec)
+
+- **DB**: extender `user_role` a `['USER', 'ADMIN', 'SUPER_ADMIN']` (migración aditiva vía `db:generate`). Sin tablas nuevas; RBAC por academia intacto.
+- **Auth**: `guardSuperAdmin` + `validateSuperAdmin`; jerarquía — `guardAdmin`/`validateAdmin` aceptan `['ADMIN','SUPER_ADMIN']`; `role-utils.ts` con `ADMIN_ROLES` ampliado + `SUPER_ADMIN_ROLES`.
+- **Seguridad**: promote restringido a SUPER_ADMIN; nuevo endpoint `demote` (ADMIN→USER); protección último SUPER_ADMIN (no puede quedar 0 activos, no auto-demote, no bloqueable); auditoría dedicada (`ADMIN_PROMOTED`, `ADMIN_DEMOTED`, `SUPER_ADMIN_ACTION`).
+- **API**: `GET /api/admin/admins`, `POST /api/admin/users/[id]/demote`, `GET /api/admin/audit-logs`, `GET /api/admin/academies` (visibilidad global) — todos guardSuperAdmin + documentados en `lib/api-docs/spec.ts`.
+- **UI**: `/admin/admins` (gestionar admins) + `/admin/platform` (settings globales) visibles solo para SUPER_ADMIN.
+- **Primer SUPER_ADMIN**: seed/DB manual (patrón primer ADMIN, QUICKSTART §7) — nunca vía API.
+
+### Acceptance Criteria
+
+AC-01 solo SUPER_ADMIN promueve; AC-02 solo SUPER_ADMIN demota; AC-03 no puede existir 0 SUPER_ADMIN activos; AC-04 SUPER_ADMIN pasa guardAdmin; AC-05 acciones auditadas con eventos dedicados; AC-06 UI admins solo SUPER_ADMIN; AC-07 endpoints 403 para ADMIN / 200 para SUPER_ADMIN; AC-08 tests unit + API happy-path SQL real + E2E.
+
+### Tests
+
+- Unit (Jest): guards jerarquía/estados, role-utils, validación último admin.
+- API (Playwright): happy-path SQL real por endpoint + guards 401/403.
+- E2E: flujo navegable promote/demote; ADMIN no ve `/admin/admins`.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+### Referencias
+
+- `production_artifacts/2026-09-27-super-admin/feature-spec.md`
+- `production_artifacts/2026-09-27-super-admin/release-scope.md`
+- `production_artifacts/2026-09-27-super-admin-audit/audit-report.md`
+
+### Auth Security (2026-09-27)
+
+> status: in-progress
+> release: v0.7
+> change_id: super-admin-role
+> module: auth
+> tags: [roles, rbac, super-admin, security, guards]
+
+#### Problema
+
+Los guards eran binarios (`role === 'ADMIN'`): un SUPER_ADMIN no existía en `admin-guard.ts` ni `role-utils.ts`, y el lock endpoint solo protegía a ADMIN (un SUPER_ADMIN era bloqueable).
+
+#### Solución Implementada
+
+- **`lib/auth/admin-guard.ts`**: `validateAdmin`/`guardAdmin` delegan en `isAdminRole` (jerarquía: SUPER_ADMIN hereda todo el back-office, D1). Nuevos `validateSuperAdmin` (layouts server, redirect `/dashboard`) y `guardSuperAdmin` (async `Promise<NextResponse | null>`, solo `SUPER_ADMIN`+`ACTIVE`, patrón academy-guard).
+- **`lib/auth/role-utils.ts`**: `ADMIN_ROLES = ['ADMIN','SUPER_ADMIN']`, `SUPER_ADMIN_ROLES = ['SUPER_ADMIN']`, `isSuperAdminRole`, `canAccessModule`/`canDeleteUser` delegan en `isAdminRole`. `canAssignRole`: solo SUPER_ADMIN actor y target ∈ `['USER','ADMIN']` — nadie asigna SUPER_ADMIN vía API (D2).
+- **`app/api/admin/users/[id]/route.ts` (DELETE lock)**: `target.role === 'ADMIN'` → `isAdminRole(target.role)` — SUPER_ADMIN no bloqueable (403, AC-03).
+- **`types/auth.ts`**: `role: 'USER' | 'ADMIN' | 'SUPER_ADMIN'`.
+- **`lib/auth/protected-routes.ts`**: documentados `POST /api/admin/users/[id]/promote` (MOD → guardSuperAdmin, breaking intencional AC-01), `POST /api/admin/users/[id]/demote`, `GET /api/admin/admins`, `GET /api/admin/audit-logs`, `GET /api/admin/academies` (todos guardSuperAdmin).
+
+#### Archivos Modificados
+
+- `lib/auth/admin-guard.ts`
+- `lib/auth/role-utils.ts`
+- `lib/auth/protected-routes.ts`
+- `app/api/admin/users/[id]/route.ts`
+- `types/auth.ts`
+
+#### Tests
+
+- `tests/unit/auth/role-utils.test.ts` (NUEVO): ADMIN_ROLES incluye SUPER_ADMIN, isAdminRole/isSuperAdminRole, canAssignRole restringe (solo SUPER_ADMIN actor, nunca target SUPER_ADMIN), canDeleteUser/canAccessModule delegan.
+- `tests/unit/auth/super-admin-guard.test.ts` (NUEVO): jerarquía (SUPER_ADMIN pasa guardAdmin), guardSuperAdmin (solo SUPER_ADMIN+ACTIVE; ADMIN/USER/LOCKED/TEMPORARY → 403), lock protege SUPER_ADMIN (403 vía DELETE handler), canAssignRole.
+- Resultado: 25 tests nuevos, 76 tests auth pasando, `tsc --noEmit` 0 errores, lint 0 errores en archivos tocados.
+
+#### Variables de Entorno
+
+Ninguna nueva.
+
 ## ✨ SPEC-EPIC-01 — Administrador de Academia & Branding Institucional (2026-09-26)
 
 > status: released
@@ -1371,3 +1460,47 @@ El skeleton no tenía endpoints para push subscriptions (Web Push/VAPID), inbox 
 ### Variables de Entorno
 
 - `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (ya documentadas en `.env.example`; `vapid-key` devuelve 503 si faltan)
+
+## ✨ SUPER_ADMIN — Endpoints + UI de plataforma (2026-09-27)
+
+> status: in-progress
+> release: v0.7
+> date: 2026-09-27
+> change_id: super-admin-role
+> module: admin+api+ui
+> tags: [roles, rbac, super-admin, security, audit, ui, api]
+
+### Problema
+
+Fase A (DB) y Fase B (auth) del rol SUPER_ADMIN estaban listas (enum, guards, role-utils, audit helpers), pero faltaban los endpoints exclusivos de plataforma y la UI para gestionar admins.
+
+### Solución Implementada
+
+- **`POST /api/admin/users/[id]/promote` (MOD)**: `guardAdmin` → `guardSuperAdmin`; auditoría `auditUpdate` → `auditAdminPromoted` (ADMIN_PROMOTED). Breaking intencional: un ADMIN ya no promueve (AC-01).
+- **`POST /api/admin/users/[id]/demote` (NUEVO)**: `guardSuperAdmin`; 400 self-demote / target SUPER_ADMIN / target USER; 404 inexistente; `canAssignRole` verificado; transaccional (`demoteUser` valida invariante ≥1 SUPER_ADMIN activo dentro de la transacción, D5); audita `ADMIN_DEMOTED`.
+- **`GET /api/admin/admins` (NUEVO)**: `guardSuperAdmin`; lista role ADMIN/SUPER_ADMIN con `?search=` ILIKE.
+- **`GET /api/admin/audit-logs` (NUEVO)**: `guardSuperAdmin`; paginado (`page`/`pageSize` ≤100) + filtros `actionType`/`userId`; logs con usuario asociado (userEmail).
+- **`GET /api/admin/academies` (NUEVO)**: `guardSuperAdmin`; lista TODAS las academias con owner + `memberCount`/`rubricCount` (visibilidad global, D6).
+- **Queries** `lib/db/queries/padel/super-admin.ts`: `listAdmins`, `demoteUser` (transaccional), `countActiveSuperAdmins`, `listAuditLogsPaginated`, `listAllAcademies`. Lógica pura `lib/padel/super-admin.ts`: `assertNotLastSuperAdmin`.
+- **UI**: `/admin/admins` (validateSuperAdmin) + `components/admin/admins/admin-list.tsx` (tabla con demote + confirmación); `/admin/platform` read-only (counts globales, D7); nav en `app/admin/layout.tsx` con links Admins/Plataforma solo para SUPER_ADMIN.
+
+### Archivos Modificados
+
+- `app/api/admin/users/[id]/promote/route.ts` (MOD), `app/api/admin/users/[id]/demote/route.ts` (NUEVO)
+- `app/api/admin/admins/route.ts`, `app/api/admin/audit-logs/route.ts`, `app/api/admin/academies/route.ts` (NUEVOS)
+- `lib/db/queries/padel/super-admin.ts`, `lib/padel/super-admin.ts` (NUEVOS), `lib/db/queries/padel/index.ts` (MOD)
+- `app/admin/admins/page.tsx`, `app/admin/platform/page.tsx`, `components/admin/admins/admin-list.tsx` (NUEVOS), `app/admin/layout.tsx` (MOD)
+- `lib/api-docs/paths/super-admin.ts`, `lib/api-docs/schemas/super-admin.ts` (NUEVOS), `lib/api-docs/spec.ts` (MOD), `lib/api-docs/paths/padel.ts` (MOD promote)
+
+### Tests
+
+- `tests/api/admin/promote-super-admin.spec.ts` — happy-path SQL real (role ADMIN + ADMIN_PROMOTED) + guards 401/403.
+- `tests/api/admin/demote-super-admin.spec.ts` — happy-path SQL real (role USER + ADMIN_DEMOTED) + 400 self/SUPER_ADMIN/USER + 404 + guards.
+- `tests/api/admin/admins-list.spec.ts` — happy-path SQL real (lista ADMIN/SUPER_ADMIN, no USER, search) + guards.
+- `tests/api/admin/audit-logs.spec.ts` — happy-path SQL real (paginación + filtros actionType/userId + userEmail) + guards.
+- `tests/api/admin/academies-global.spec.ts` — happy-path SQL real (academia con owner + métricas) + guards.
+- `tests/unit/padel/super-admin.test.ts` — `assertNotLastSuperAdmin` (count 0/1 bloquea, >1 permite).
+
+### Variables de Entorno
+
+Ninguna nueva.

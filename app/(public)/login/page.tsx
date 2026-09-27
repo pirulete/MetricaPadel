@@ -28,8 +28,14 @@ export default function LoginPage() {
     setLoading(true)
     try {
       // Fetch CSRF token from Auth.js endpoint (required in production).
+      // En development (skipCSRFCheck) el endpoint devuelve 404 — el token
+      // vacío es válido porque el check está deshabilitado.
+      let csrfToken = ""
       const csrfRes = await fetch("/api/auth/csrf")
-      const { csrfToken } = await csrfRes.json()
+      if (csrfRes.ok) {
+        const csrfBody = await csrfRes.json()
+        csrfToken = csrfBody.csrfToken ?? ""
+      }
 
       // Use fetch directly to avoid ClientFetchError from signIn() when
       // CSRF endpoint returns empty body in development (skipCSRFCheck).

@@ -2,7 +2,9 @@
 
 import * as React from "react"
 import { toast } from "sonner"
+import { FileDownIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 type StudentScore = {
   criteriaId: string
@@ -25,6 +27,7 @@ type StudentEvaluationDetail = {
   }
   rubric: { id: string; title: string; category: string } | null
   scores: StudentScore[]
+  academy?: { id: string; name: string; logoUrl: string | null; primaryColor: string } | null
 }
 
 /** Vista read-only de evaluación publicada para el alumno (A03). */
@@ -37,14 +40,21 @@ export function RubricViewer({ evaluationId }: { evaluationId: string }) {
     let cancelled = false
     ;(async () => {
       try {
-        const res = await fetch(`/api/student/evaluations/${evaluationId}`, {
+        // La página es compartida (coach y alumno). El coach usa el endpoint
+        // propio; si 403 (no es coach), cae al endpoint alumno.
+        let res = await fetch(`/api/evaluations/${evaluationId}`, {
           cache: "no-store",
         })
+        if (res.status === 403) {
+          res = await fetch(`/api/student/evaluations/${evaluationId}`, {
+            cache: "no-store",
+          })
+        }
         if (!res.ok) throw new Error("No se pudo cargar la evaluación")
         const body = await res.json()
         if (cancelled) return
         setDetail(body)
-        // Marca como leída (idempotente) en segundo plano.
+        // Marca como leída (idempotente) en segundo plano (solo aplica al alumno).
         void fetch(`/api/student/evaluations/${evaluationId}/read`, { method: "POST" })
       } catch (e) {
         if (!cancelled) {
@@ -60,6 +70,10 @@ export function RubricViewer({ evaluationId }: { evaluationId: string }) {
     }
   }, [evaluationId])
 
+  const handleExportPdf = () => {
+    window.open(`/api/evaluations/${evaluationId}/pdf`, "_blank")
+  }
+
   if (loading) {
     return <p className="py-10 text-center text-sm text-muted-foreground">Cargando…</p>
   }
@@ -68,7 +82,7 @@ export function RubricViewer({ evaluationId }: { evaluationId: string }) {
     return <p className="py-10 text-center text-sm text-destructive">{error ?? "Sin datos"}</p>
   }
 
-  const { evaluation, rubric, scores } = detail
+  const { evaluation, rubric, scores, academy } = detail
 
   return (
     <div className="space-y-6">
@@ -80,18 +94,33 @@ export function RubricViewer({ evaluationId }: { evaluationId: string }) {
               ? `Publicada el ${new Date(evaluation.publishedAt).toLocaleDateString("es-ES")}`
               : "Sin fecha de publicación"}
           </p>
+          {academy && (
+            <p className="mt-1 text-sm font-medium" style={{ color: academy.primaryColor }}>
+              {academy.name}
+            </p>
+          )}
         </div>
-        <div className="text-right">
-          <p className="text-3xl font-bold">
-            {evaluation.totalScore ?? "—"}
-            <span className="text-base font-normal text-muted-foreground">
-              {" "}
-              / {evaluation.maxScore ?? "—"}
-            </span>
-          </p>
-          <Badge variant={evaluation.readAt ? "outline" : "secondary"} className="mt-1">
-            {evaluation.readAt ? "Leída" : "Nueva"}
-          </Badge>
+        <div className="flex flex-col items-end gap-2">
+          <div className="text-right">
+            <p className="text-3xl font-bold">
+              {evaluation.totalScore ?? "—"}
+              <span className="text-base font-normal text-muted-foreground">
+                {" "}
+                / {evaluation.maxScore ?? "—"}
+              </span>
+            </p>
+            <Badge variant={evaluation.readAt ? "outline" : "secondary"} className="mt-1">
+              {evaluation.readAt ? "Leída" : "Nueva"}
+            </Badge>
+          </div>
+          {/* Exportar PDF: solo si la evaluación tiene academia (rúbrica
+              institucional o membresía del teacher). */}
+          {academy && (
+            <Button variant="outline" size="sm" onClick={handleExportPdf}>
+              <FileDownIcon className="size-4" />
+              Exportar PDF
+            </Button>
+          )}
         </div>
       </div>
 

@@ -52,3 +52,22 @@ export async function triggerEvaluationPublished(studentId: string, evaluationId
     category: 'system',
   });
 }
+
+/**
+ * academy.invite — al invitar un miembro a una academia (SPEC-EPIC-01, Fase B).
+ * groupId = membershipId (uuid) para dedup 1h del engine: re-invitar no duplica.
+ * category system + priority P2.
+ */
+export async function triggerAcademyInvite(userId: string, academyName: string, membershipId: string) {
+  return createNotification({
+    userId,
+    type: 'info',
+    priority: 'P2',
+    title: `Invitación a ${academyName}`,
+    body: `Fuiste invitado a la academia ${academyName}`,
+    ctaUrl: '/academias',
+    ctaLabel: 'Ver academia',
+    groupId: membershipId,
+    category: 'system',
+  });
+}

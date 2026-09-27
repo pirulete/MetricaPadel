@@ -1,1 +1,12 @@
-{"events":[]}
+{
+  "events": [
+    {
+      "change_id": "spec-epic-01-academia-branding",
+      "timestamp": "2026-09-26T20:24:36.075Z",
+      "iterations": 3,
+      "gates_failed": 0,
+      "loop_duration_ms": 5400000,
+      "module": "admin"
+    }
+  ]
+}

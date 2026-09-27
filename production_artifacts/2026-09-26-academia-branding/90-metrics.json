@@ -1,0 +1,20 @@
+{
+  "change_id": "spec-epic-01-academia-branding",
+  "change_class": "feature",
+  "timestamp": "2026-09-26T20:24:19Z",
+  "files_changed": 25,
+  "tests_added": 6,
+  "tests_updated": 1,
+  "test_coverage_delta": 82,
+  "gates_passed": 20,
+  "gates_failed": 0,
+  "gates_warning": 3,
+  "loop_iterations": 3,
+  "loop_duration_ms": 5400000,
+  "bugs_found": 3,
+  "bugs_fixed": 3,
+  "bugs_open": 1,
+  "unit_test_count": 493,
+  "api_test_count": 113,
+  "e2e_test_count": 85
+}

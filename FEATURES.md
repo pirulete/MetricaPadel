@@ -1,5 +1,144 @@
 # FEATURES — Registro de Cambios
 
+## ✨ SPEC-EPIC-01 — Administrador de Academia & Branding Institucional (2026-09-26)
+
+> status: released
+> release: v0.6
+> date: 2026-09-26
+> change_id: spec-epic-01-academia-branding
+> module: admin+api+db+ui
+> tags: [multi-tenancy, branding, pdf, roles, rubrics, migration, upload]
+
+### QA Release (2026-09-26)
+
+**Resultado: ✅ APROBADO** — 20/20 gates, 0 fallos, 3 warnings no bloqueantes (harness `--all`).
+
+**Tests agregados en QA**:
+- `tests/api/padel/academies-guard.spec.ts` (15 tests: 401/403/404)
+- `tests/api/padel/academies-happy.spec.ts` (2: CRUD + logo + slug duplicado 409, SQL real)
+- `tests/api/padel/members-happy.spec.ts` (2: invite→accept→list→remove + TEMPORARY, SQL real)
+- `tests/api/padel/institutional-rubrics-happy.spec.ts` (1: COACH 403 PUT/DELETE, SQL real)
+- `tests/api/padel/pdf-happy.spec.ts` (1: PDF válido + draft 400 + ajeno 404, SQL real)
+- `tests/e2e/academy-branding.spec.ts` (1: flujo navegable crear academia → invitar → rúbrica → evaluar → exportar PDF)
+
+**Bugs corregidos durante QA**:
+- BUG-01 (MEDIA): slug duplicado → 500 en vez de 409 (Drizzle envuelve 23505 en `cause`); fix en `app/api/academies/route.ts` + `[id]/route.ts`.
+- BUG-02 (ALTA): login UI roto en dev (`/api/auth/csrf` 404 con skipCSRFCheck → `json()` throw); fix en `app/(public)/login/page.tsx`.
+- BUG-03 (MEDIA): botón "Exportar PDF" inalcanzable para coach (RubricViewer usaba endpoint alumno → 403; GET coach no incluía `academy`); fix en `components/padel/rubric-viewer.tsx` + `app/api/evaluations/[id]/route.ts`.
+- BUG-04 (BAJA): test E2E onboarding usaba heading role inexistente (CardTitle = div); fix en `tests/e2e/onboarding.spec.ts`.
+
+**Bug abierto (fuera de scope)**: BUG-05 — home guard marketing (DELETE única home publicada → 200 en vez de 400, aislamiento de tests del módulo marketing).
+
+**Migración**: `0008_shallow_typhoid_mary.sql` aplicada a DB local (academies, academy_memberships, enums, rubrics.academy_id/scope).
+
+**Referencias QA**: `production_artifacts/2026-09-26-academia-branding/{release-report,test-matrix,acceptance-criteria,evidence-manifest}.md/json`
+
+### Problema
+
+Las academias necesitan estandarizar criterios de evaluación entre profesores y emitir informes oficiales con branding institucional. Hoy no existe entidad Academia, no hay rol de profesor multi-academia, las rúbricas son personales (sin versión "institucional" read-only) y no hay exportación PDF.
+
+### Solución Propuesta (spec)
+
+- **RF-01**: Tabla `academies` (nombre, slug único, logo ≤2MB SVG/PNG, color HEX) + endpoints CRUD + upload de logo.
+- **RF-02**: Tabla `academy_memberships` (role OWNER/ADMIN/COACH por academia, UNIQUE academyId+userId, multi-academia) + invitación por email con usuario TEMPORARY o existente.
+- **RF-03**: `rubrics.academyId` nullable + `rubrics.scope` enum (personal/institutional); COACH usa pero no edita rúbricas institucionales (403).
+- **RF-04**: `GET /api/evaluations/[id]/pdf` — PDF con logo, color primario, radar de 6 dimensiones, firma del profesor.
+- **Decisión clave**: mantener `user_role` global USER/ADMIN; rol por academia vive en `academy_memberships` (no rompe guards existentes).
+
+### Archivos Propuestos
+
+- `lib/db/schema.ts` (+academies, +academy_memberships, +enums, +columnas rubrics), migración nueva vía `db:generate`
+- `lib/auth/` (+guards academia), `lib/validations/padel.ts` (+schemas academia/membership/rubric-scope)
+- `app/api/academies/**`, `app/api/academies/[id]/members/**`, `app/api/academies/[id]/rubrics/**`, `app/api/evaluations/[id]/pdf/route.ts`
+- `lib/api-docs/spec.ts` (+paths/schemas academias, members, pdf)
+- UI: `app/(app)/academias/**` + `components/padel/academy-*`
+
+### Tests
+
+- Unit (Jest): schemas Zod, lógica membresías, guard rúbrica institucional.
+- API (Playwright): happy-path SQL real por endpoint + guards 401/403.
+- E2E: flujo crear academia → invitar profesor → rúbrica institucional → exportar PDF.
+
+### Variables de Entorno
+
+Ninguna nueva (storage local de logos; sin S3 en esta iteración).
+
+### Referencias
+
+- `production_artifacts/2026-09-26-academia-branding/feature-spec.md`
+- `production_artifacts/2026-09-26-academia-branding/release-scope.md`
+
+### Fase B — Guards de Academia (auth-security, 2026-09-26)
+
+> status: in-progress
+> release: v0.6
+> module: auth
+> tags: [rbac, multi-tenancy, guards, audit, notifications]
+
+**Problema**: las operaciones por academia (branding, miembros, rúbricas institucionales) necesitan autorización por academia sin tocar el `user_role` global.
+
+**Solución Implementada**:
+- `lib/auth/academy-guard.ts` (NUEVO): `guardAcademyOwner` (solo OWNER), `guardAcademyAdmin` (OWNER/ADMIN), `guardAcademyCoach` (OWNER/ADMIN/COACH activos) + helper `getAcademyMembership`. Guards async DB-backed (`Promise<NextResponse | null>`): consultan `academy_memberships` (status active) + `academies` (status active) en cada request — nunca confían en claims del JWT para el rol de academia.
+- Anti-IDOR: membresía inexistente o academia archivada → **404** (no 403). LOCKED/TEMPORARY → 403. Sin sesión → 401.
+- `lib/audit/helpers.ts` (MOD): +5 eventos — `ACADEMY_CREATED`, `ACADEMY_UPDATED`, `ACADEMY_ARCHIVED`, `MEMBER_INVITED`, `MEMBER_REMOVED`.
+- `lib/notifications/triggers.ts` (MOD): +`triggerAcademyInvite` (inbox, category system, P2, `groupId=membershipId` para dedup 1h).
+- `lib/auth/protected-routes.ts` (MOD): documenta guards de academia + endpoints planeados.
+
+**Archivos Modificados**: `lib/auth/academy-guard.ts`, `lib/auth/protected-routes.ts`, `lib/audit/helpers.ts`, `lib/notifications/triggers.ts`.
+
+**Tests**: `tests/unit/auth/academy-guard.test.ts` (22 tests: 401/403/404, jerarquía OWNER≥ADMIN≥COACH, academia archivada), `tests/unit/audit/helpers.test.ts` (+6), `tests/unit/notifications/triggers.test.ts` (+2). Suite completa 477 tests verde; typecheck y ESLint 0 errores.
+
+**Variables de Entorno**: ninguna nueva.
+
+**Referencias**: `production_artifacts/2026-09-26-academia-branding/auth-impact.md`, `security-checklist.md`.
+
+### Fase C — Lógica pura y validaciones (app-engineer, 2026-09-26)
+
+> status: in-progress
+> release: v0.6
+> module: api
+> tags: [validations, radar, logo, pdf, branding]
+
+**Problema**: antes de los endpoints de academia/PDF (Fase D) se necesitan las validaciones Zod y la lógica pura de branding (logo, radar, PDF) unit-testable.
+
+**Solución Implementada**:
+- `lib/validations/academy.ts` (NUEVO): `academyCreateSchema` (name 1-200, slug `^[a-z0-9-]{3,50}$` con normalize a minúsculas, primaryColor HEX `#RRGGBB`), `academyUpdateSchema` (partial + refine al menos un campo), `memberInviteSchema` (email), `academyRubricCreateSchema` (reutiliza `rubricCreateSchema` de padel.ts).
+- `lib/padel/logo.ts` (NUEVO): `validateLogoUpload(file)` — MIME image/png|image/svg+xml, ≤2MB, dims ≤1024×1024 (PNG vía firma real + IHDR; SVG vía width/height/viewBox), sanitización SVG, devuelve data-URL base64. `sanitizeSvg` usa DOMPurify cuando hay DOM (browser); en Node serverless DOMPurify es no-op (`isSupported=false`) → fallback conservador por allowlist (elimina script/foreignObject/style/iframe/on*/href/src/javascript:).
+- `lib/padel/radar.ts` (NUEVO, puro): `computeRadarPoints` (6 vértices unitarios, orden RADAR_DIMENSIONS, tope -90° horario, clamp [0,1], maxScore≤0 → centro), `computeRadarPolygon` (string `points` SVG), `computeGridRing`.
+- `lib/padel/pdf.tsx` (NUEVO): `generateEvaluationPdf(evaluation, rubric, scores, academy?, student?, teacher?)` con `renderToBuffer` de `@react-pdf/renderer` — header branding (logo PNG/http embebido; SVG data-URL → fallback iniciales), barra de color, radar SVG 6 dims con grid rings, tabla de scores, comentario global, firma. Server-only.
+- **Nota técnica**: el archivo es `.tsx` (no `.ts` como listaba el change-map) porque el documento react-pdf usa JSX — TypeScript solo permite JSX en `.tsx`.
+
+**Archivos Modificados**: `lib/validations/academy.ts`, `lib/padel/logo.ts`, `lib/padel/radar.ts`, `lib/padel/pdf.tsx`.
+
+**Tests**: `tests/unit/padel/academy-schemas.test.ts` (12), `tests/unit/padel/radar.test.ts` (10), `tests/unit/padel/logo.test.ts` (14) — 36 tests nuevos, suite `tests/unit/padel/` 64/64 verde. Typecheck 0 errores, ESLint 0 errores. Spike PDF validado: `next build` + route handler runtime → `%PDF-` válido (riesgo D1 del technical design cerrado).
+
+**Variables de Entorno**: ninguna nueva.
+
+**Referencias**: `production_artifacts/2026-09-26-academia-branding/app-notes.md`.
+
+### Fase D+E — Endpoints y UI (app-engineer, 2026-09-26)
+
+> status: in-progress
+> release: v0.6
+> module: api+ui
+> tags: [endpoints, academies, members, rubrics, pdf, ui, branding]
+
+**Problema**: las academias (schema + guards + validaciones de Fases A-C) no tenían endpoints ni UI. Se implementan los 10 route handlers del contrato y las páginas/componentes del área privada.
+
+**Solución Implementada**:
+- **Endpoints (10)**: `GET/POST /api/academies` (guardUser/guardAdmin; POST inserta OWNER en academy_memberships, 409 slug duplicado), `GET/PUT/DELETE /api/academies/[id]` (guardAcademyCoach/Admin/Owner; GET devuelve `myRole`; DELETE soft archive), `POST /api/academies/[id]/logo` (multipart `file`, validateLogoUpload, data-URL), `POST /api/academies/[id]/members/invite` (crea usuario TEMPORARY patrón G4 o reutiliza; membresía COACH pending; triggerAcademyInvite; 409 ya miembro), `POST /api/academies/[id]/members/[userId]/accept` (guardUser solo self, idempotente), `GET /api/academies/[id]/members` (guardAcademyCoach, join users), `DELETE /api/academies/[id]/members/[userId]` (guardAcademyAdmin, soft remove, 400 último OWNER), `GET/POST /api/academies/[id]/rubrics` (scope forzado institutional), `GET /api/evaluations/[id]/pdf` (guardUser + ACTIVE, teacher o student, 400 draft, branding vía resolveAcademyForEvaluation), `PUT/DELETE /api/rubrics/[id]` MOD (institucional → OWNER/ADMIN, COACH 403).
+- **Queries**: `lib/db/queries/padel/academies.ts` (NUEVO) — CRUD academias + membresías + rúbricas institucionales + `resolveAcademyForEvaluation` (prioridad rubric.academyId → primera membresía activa del teacher). `rubrics.ts` MOD: `updateRubric`/`archiveRubric` → unión discriminada `RubricMutationResult` (distingue 403 COACH de 404), `getRubricById` access-aware, `createRubric` acepta academyId+scope.
+- **UI**: `hooks/use-academies.ts` (NUEVO), `app/(app)/academias/page.tsx` + `[id]/page.tsx` (NUEVOS), 7 componentes nuevos (`academy-card`, `academy-form`, `academy-detail` con tabs Branding/Miembros/Rúbricas, `logo-upload`, `members-list`, `invite-member-modal`, `academy-rubrics-tab`), `rubric-viewer.tsx` MOD (botón "Exportar PDF" solo si la evaluación tiene academia), `navigation.ts` MOD (link `/academias`).
+- **API docs**: `lib/api-docs/paths/academies.ts` + `schemas/academies.ts` (NUEVOS, 11 paths), importados en `spec.ts`.
+
+**Archivos Modificados**: 10 route handlers (9 nuevos + rubrics/[id] MOD), `lib/db/queries/padel/academies.ts` (nuevo), `lib/db/queries/padel/rubrics.ts` (MOD), `lib/db/queries/padel/index.ts` (MOD), `lib/auth/protected-routes.ts` (MOD), `lib/api-docs/{paths,schemas}/academies.ts` + `spec.ts` (MOD), `hooks/use-academies.ts` (nuevo), `app/(app)/academias/**` (nuevos), 7 componentes padel (nuevos), `rubric-viewer.tsx` + `navigation.ts` (MOD), `app/api/student/evaluations/[id]/route.ts` (MOD — devuelve `academy` para el botón PDF).
+
+**Tests**: `tests/unit/db/academy-queries.test.ts` (16 tests nuevos), `tests/unit/db/rubrics.test.ts` (actualizado al contrato `RubricMutationResult`). Suite unit 493/493 verde. API tests creados: `academies-guard.spec.ts`, `academies-happy.spec.ts`, `members-happy.spec.ts`, `institutional-rubrics-happy.spec.ts`, `pdf-happy.spec.ts` (requieren servidor + DATABASE_URL). Typecheck 0 errores, ESLint 0 errores, `next build` OK (11 rutas nuevas).
+
+**Variables de Entorno**: ninguna nueva.
+
+**Referencias**: `production_artifacts/2026-09-26-academia-branding/app-notes.md`.
+
 ## ✨ README actualizado — documentación del proyecto Métrica Pádel (2026-09-25)
 
 > status: released

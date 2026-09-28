@@ -185,7 +185,7 @@ test.describe("Evaluation delete — happy-path (SQL real)", () => {
       const list = await ctx.get("/api/evaluations");
       expect(list.status()).toBe(200);
       const listBody = await list.json();
-      expect(listBody.evaluations.some((e: { id: string }) => e.id === evaluationId)).toBe(false);
+      expect(listBody.items.some((e: { id: string }) => e.id === evaluationId)).toBe(false);
 
       // Alumno: lista publicadas excluye la archivada
       const studentCtx = await createAuthedContext(STUDENT_EMAIL, STUDENT_PASSWORD);
@@ -193,7 +193,7 @@ test.describe("Evaluation delete — happy-path (SQL real)", () => {
         const studentList = await studentCtx.get("/api/student/evaluations");
         expect(studentList.status()).toBe(200);
         const studentBody = await studentList.json();
-        expect(studentBody.evaluations.some((e: { id: string }) => e.id === evaluationId)).toBe(false);
+        expect(studentBody.items.some((e: { id: string }) => e.id === evaluationId)).toBe(false);
         // Detalle alumno → 404
         expect((await studentCtx.get(`/api/student/evaluations/${evaluationId}`)).status()).toBe(404);
       } finally {

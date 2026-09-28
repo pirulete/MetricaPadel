@@ -17,10 +17,15 @@ export const coursesPaths = {
     get: {
       tags: ['Padel Courses'],
       summary: 'Listar cursos del coach',
-      description: 'Lista cursos del coach (ownerId = sesión) con studentCount. Scoped al owner (anti-IDOR).',
+      description: 'Lista cursos del coach (ownerId = sesión) con studentCount. Scoped al owner (anti-IDOR). Paginación por cursor (G15): ?limit=1..50 (default 20) y ?cursor= (ISO date string del último item). Retorna { items, nextCursor }. El dashboard usa listCoursesForDashboard (sin paginar) vía /api/dashboard/teacher.',
       security: [{ bearerAuth: [] }],
+      parameters: [
+        { name: 'limit', in: 'query', required: false, schema: { type: 'integer', minimum: 1, maximum: 50, default: 20 } },
+        { name: 'cursor', in: 'query', required: false, schema: { type: 'string', format: 'date-time', description: 'ISO date string del último item de la página anterior' } },
+      ],
       responses: {
-        '200': { description: 'Lista de cursos', content: { 'application/json': { schema: { type: 'object', properties: { courses: { type: 'array', items: { $ref: '#/components/schemas/CourseListItem' } } } } } } },
+        '200': { description: 'Lista de cursos', content: { 'application/json': { schema: { type: 'object', properties: { items: { type: 'array', items: { $ref: '#/components/schemas/CourseListItem' } }, nextCursor: { type: 'string', format: 'date-time', nullable: true } } } } } },
+        '400': { description: 'Query inválida' },
         '401': { description: 'No autenticado' },
         '403': { description: 'Sin rol ADMIN' },
       },
@@ -236,15 +241,17 @@ export const coursesPaths = {
     get: {
       tags: ['Padel Courses'],
       summary: 'Historial de evaluaciones del coach (P10)',
-      description: 'Historial con filtros opcionales ?courseId=&studentId=&status=draft|published. Anti-IDOR: teacherId = sesión (D8).',
+      description: 'Historial con filtros opcionales ?courseId=&studentId=&status=draft|published. Anti-IDOR: teacherId = sesión (D8). Paginación por cursor (G15): ?limit=1..50 (default 20) y ?cursor= (ISO date string del último item). Retorna { items, nextCursor }.',
       security: [{ bearerAuth: [] }],
       parameters: [
         { name: 'courseId', in: 'query', required: false, schema: { type: 'string', format: 'uuid' } },
         { name: 'studentId', in: 'query', required: false, schema: { type: 'string', format: 'uuid' } },
         { name: 'status', in: 'query', required: false, schema: { type: 'string', enum: ['draft', 'published'] } },
+        { name: 'limit', in: 'query', required: false, schema: { type: 'integer', minimum: 1, maximum: 50, default: 20 } },
+        { name: 'cursor', in: 'query', required: false, schema: { type: 'string', format: 'date-time', description: 'ISO date string del último item de la página anterior' } },
       ],
       responses: {
-        '200': { description: 'Historial', content: { 'application/json': { schema: { type: 'object', properties: { evaluations: { type: 'array', items: { $ref: '#/components/schemas/HistoryItemDto' } } } } } } },
+        '200': { description: 'Historial', content: { 'application/json': { schema: { type: 'object', properties: { items: { type: 'array', items: { $ref: '#/components/schemas/HistoryItemDto' } }, nextCursor: { type: 'string', format: 'date-time', nullable: true } } } } } },
         '400': { description: 'Query inválida' },
         '401': { description: 'No autenticado' },
         '403': { description: 'Sin rol ADMIN' },

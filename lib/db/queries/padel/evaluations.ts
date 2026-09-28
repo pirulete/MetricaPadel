@@ -1,5 +1,7 @@
 import { db } from "@/lib/db";
-import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lt, sql } from "drizzle-orm";
+import type { PaginatedResult, PaginationParams } from "./pagination";
+import { resolveLimit } from "./pagination";
 import {
   evaluations,
   evaluationScores,
@@ -154,13 +156,29 @@ export async function getStudentEvaluationById(studentId: string, id: string): P
 
 /**
  * Lista evaluaciones del coach (teacher) con studentName + rubricTitle.
- * status opcional: 'draft' | 'published'.
+ * status opcional: 'draft' | 'published'. Paginada por cursor (G15) sobre
+ * updatedAt desc (orden actual de la lista).
  */
-export async function listEvaluations(teacherId: string, status?: EvaluationStatus) {
+export async function listEvaluations(
+  teacherId: string,
+  status?: EvaluationStatus,
+  params?: PaginationParams,
+): Promise<PaginatedResult<{
+  id: string;
+  studentId: string;
+  studentName: string;
+  rubricTitle: string;
+  status: EvaluationStatus;
+  totalScore: number | null;
+  maxScore: number | null;
+  updatedAt: Date;
+}>> {
+  const limit = resolveLimit(params?.limit);
   const conditions = [eq(evaluations.teacherId, teacherId), isNotDeleted];
   if (status) conditions.push(eq(evaluations.status, status));
+  if (params?.cursor) conditions.push(lt(evaluations.updatedAt, new Date(params.cursor)));
 
-  return await db
+  const rows = await db
     .select({
       id: evaluations.id,
       studentId: evaluations.studentId,
@@ -175,14 +193,43 @@ export async function listEvaluations(teacherId: string, status?: EvaluationStat
     .innerJoin(users, eq(users.id, evaluations.studentId))
     .innerJoin(rubrics, eq(rubrics.id, evaluations.rubricId))
     .where(and(...conditions))
-    .orderBy(desc(evaluations.updatedAt));
+    .orderBy(desc(evaluations.updatedAt))
+    .limit(limit + 1);
+
+  const hasMore = rows.length > limit;
+  const items = hasMore ? rows.slice(0, limit) : rows;
+  const nextCursor = hasMore && items.length > 0
+    ? items[items.length - 1].updatedAt.toISOString()
+    : null;
+  return { items, nextCursor };
 }
 
 /**
  * Lista evaluaciones publicadas del alumno (A03). Solo published.
+ * Paginada por cursor (G15) sobre publishedAt desc.
  */
-export async function listStudentEvaluations(studentId: string) {
-  return await db
+export async function listStudentEvaluations(
+  studentId: string,
+  params?: PaginationParams,
+): Promise<PaginatedResult<{
+  id: string;
+  rubricTitle: string;
+  category: (typeof rubricCategoryEnum.enumValues)[number];
+  version: number | null;
+  totalScore: number | null;
+  maxScore: number | null;
+  publishedAt: Date | null;
+  readAt: Date | null;
+}>> {
+  const limit = resolveLimit(params?.limit);
+  const conditions = [
+    eq(evaluations.studentId, studentId),
+    eq(evaluations.status, 'published'),
+    isNotDeleted,
+  ];
+  if (params?.cursor) conditions.push(lt(evaluations.publishedAt, new Date(params.cursor)));
+
+  const rows = await db
     .select({
       id: evaluations.id,
       rubricTitle: rubrics.title,
@@ -195,60 +242,95 @@ export async function listStudentEvaluations(studentId: string) {
     })
     .from(evaluations)
     .innerJoin(rubrics, eq(rubrics.id, evaluations.rubricId))
-    .where(and(
-      eq(evaluations.studentId, studentId),
-      eq(evaluations.status, 'published'),
-      isNotDeleted,
-    ))
-    .orderBy(desc(evaluations.publishedAt));
+    .where(and(...conditions))
+    .orderBy(desc(evaluations.publishedAt))
+    .limit(limit + 1);
+
+  const hasMore = rows.length > limit;
+  const items = hasMore ? rows.slice(0, limit) : rows;
+  const last = items[items.length - 1];
+  const nextCursor = hasMore && last?.publishedAt ? last.publishedAt.toISOString() : null;
+  return { items, nextCursor };
 }
 
 /**
- * Guarda scores de un borrador (solo status=draft): reemplaza el set completo
- * de scores y recalcula totalScore desde los niveles seleccionados.
- * Retorna la evaluación actualizada o null si no existe / no es del teacher /
- * ya está publicada.
+ * Helper tx-scoped: guarda scores de un borrador (solo status=draft): reemplaza
+ * el set completo de scores y recalcula totalScore desde los niveles
+ * seleccionados. Extraído de saveEvaluationScores para reutilización en
+ * evaluaciones de pareja (pair.ts). Retorna la evaluación actualizada o null
+ * si no existe / no es del teacher / ya está publicada.
+ */
+export async function saveEvaluationScoresTx(
+  tx: any,
+  teacherId: string,
+  id: string,
+  input: SaveEvaluationInput
+): Promise<typeof evaluations.$inferSelect | null> {
+  const [evaluation] = await tx.select().from(evaluations)
+    .where(and(eq(evaluations.id, id), eq(evaluations.teacherId, teacherId), isNotDeleted))
+    .limit(1);
+  if (!evaluation || evaluation.status !== 'draft') return null;
+
+  const levelIds = input.scores.map((s) => s.levelId);
+  const levels: Array<{ id: string; score: number }> = levelIds.length > 0
+    ? await tx.select({ id: rubricLevels.id, score: rubricLevels.score })
+        .from(rubricLevels)
+        .where(inArray(rubricLevels.id, levelIds))
+    : [];
+  const scoreByLevel = new Map(levels.map((l) => [l.id, l.score]));
+
+  await tx.delete(evaluationScores).where(eq(evaluationScores.evaluationId, id));
+
+  for (const s of input.scores) {
+    await tx.insert(evaluationScores).values({
+      evaluationId: id,
+      criteriaId: s.criteriaId,
+      levelId: s.levelId,
+      score: scoreByLevel.get(s.levelId) ?? 0,
+      comment: s.comment ?? null,
+    });
+  }
+
+  const totalScore = input.scores.reduce((sum, s) => sum + (scoreByLevel.get(s.levelId) ?? 0), 0);
+
+  const [updated] = await tx.update(evaluations)
+    .set({
+      totalScore,
+      globalComment: input.globalComment !== undefined ? input.globalComment : evaluation.globalComment,
+      updatedAt: new Date(),
+    })
+    .where(eq(evaluations.id, id))
+    .returning();
+
+  return updated;
+}
+
+/**
+ * Guarda scores de un borrador (solo status=draft). Wrapper transaccional de
+ * saveEvaluationScoresTx. Retorna la evaluación actualizada o null si no
+ * existe / no es del teacher / ya está publicada.
  */
 export async function saveEvaluationScores(teacherId: string, id: string, input: SaveEvaluationInput) {
-  return await db.transaction(async (tx) => {
-    const [evaluation] = await tx.select().from(evaluations)
-      .where(and(eq(evaluations.id, id), eq(evaluations.teacherId, teacherId), isNotDeleted))
-      .limit(1);
-    if (!evaluation || evaluation.status !== 'draft') return null;
+  return await db.transaction(async (tx) => saveEvaluationScoresTx(tx, teacherId, id, input));
+}
 
-    const levelIds = input.scores.map((s) => s.levelId);
-    const levels = levelIds.length > 0
-      ? await tx.select({ id: rubricLevels.id, score: rubricLevels.score })
-          .from(rubricLevels)
-          .where(inArray(rubricLevels.id, levelIds))
-      : [];
-    const scoreByLevel = new Map(levels.map((l) => [l.id, l.score]));
+/**
+ * Helper tx-scoped: cuenta criterios de la rúbrica sin score en la evaluación.
+ * Extraído de publishEvaluation para reutilización en evaluaciones de pareja
+ * (pair.ts).
+ */
+export async function countMissingCriteria(
+  tx: any,
+  rubricId: string,
+  evaluationId: string
+): Promise<number> {
+  const criteria: Array<{ id: string }> = await tx.select({ id: rubricCriteria.id }).from(rubricCriteria)
+    .where(eq(rubricCriteria.rubricId, rubricId));
+  const scores: Array<{ criteriaId: string }> = await tx.select({ criteriaId: evaluationScores.criteriaId }).from(evaluationScores)
+    .where(eq(evaluationScores.evaluationId, evaluationId));
 
-    await tx.delete(evaluationScores).where(eq(evaluationScores.evaluationId, id));
-
-    for (const s of input.scores) {
-      await tx.insert(evaluationScores).values({
-        evaluationId: id,
-        criteriaId: s.criteriaId,
-        levelId: s.levelId,
-        score: scoreByLevel.get(s.levelId) ?? 0,
-        comment: s.comment ?? null,
-      });
-    }
-
-    const totalScore = input.scores.reduce((sum, s) => sum + (scoreByLevel.get(s.levelId) ?? 0), 0);
-
-    const [updated] = await tx.update(evaluations)
-      .set({
-        totalScore,
-        globalComment: input.globalComment !== undefined ? input.globalComment : evaluation.globalComment,
-        updatedAt: new Date(),
-      })
-      .where(eq(evaluations.id, id))
-      .returning();
-
-    return updated;
-  });
+  const scoredCriteria = new Set(scores.map((s) => s.criteriaId));
+  return criteria.filter((c) => !scoredCriteria.has(c.id)).length;
 }
 
 /**
@@ -263,15 +345,9 @@ export async function publishEvaluation(teacherId: string, id: string): Promise<
     if (!evaluation) return { ok: false, reason: 'not_found' as const };
     if (evaluation.status !== 'draft') return { ok: false, reason: 'not_draft' as const };
 
-    const criteria = await tx.select({ id: rubricCriteria.id }).from(rubricCriteria)
-      .where(eq(rubricCriteria.rubricId, evaluation.rubricId));
-    const scores = await tx.select({ criteriaId: evaluationScores.criteriaId }).from(evaluationScores)
-      .where(eq(evaluationScores.evaluationId, id));
-
-    const scoredCriteria = new Set(scores.map((s) => s.criteriaId));
-    const missing = criteria.filter((c) => !scoredCriteria.has(c.id));
-    if (missing.length > 0) {
-      return { ok: false, reason: 'incomplete' as const, missingCriteria: missing.length };
+    const missing = await countMissingCriteria(tx, evaluation.rubricId, id);
+    if (missing > 0) {
+      return { ok: false, reason: 'incomplete' as const, missingCriteria: missing };
     }
 
     // G6: versión 1..N por (studentId, rubricId) entre publicadas. Cómputo
@@ -287,6 +363,8 @@ export async function publishEvaluation(teacherId: string, id: string): Promise<
     const nextVersion = (versionRow?.maxVersion ?? 0) + 1;
 
     // maxScore = criteria × 4 (fixed scale)
+    const criteria = await tx.select({ id: rubricCriteria.id }).from(rubricCriteria)
+      .where(eq(rubricCriteria.rubricId, evaluation.rubricId));
     const maxScore = criteria.length * 4;
 
     const [published] = await tx.update(evaluations)

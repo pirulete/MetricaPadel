@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { guardAdmin } from "@/lib/auth/admin-guard";
 import { auditCreate, extractRequestContext } from "@/lib/audit/helpers";
 import { createCourse, listCourses } from "@/lib/db/queries/padel";
-import { courseCreateSchema } from "@/lib/validations/padel";
+import { courseCreateSchema, courseListQuerySchema } from "@/lib/validations/padel";
 import { generateInviteCode } from "@/lib/padel/course-code";
 
 export const runtime = "nodejs";
@@ -13,16 +13,27 @@ const MAX_INVITE_RETRIES = 5;
 
 /**
  * GET /api/courses — lista cursos del coach (P05). Scoped al owner.
+ * Paginación por cursor (G15): ?limit=&cursor=. Retorna { items, nextCursor }.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     const guardError = guardAdmin(session);
     if (guardError) return guardError;
 
-    const courses = await listCourses(session!.user.id as string);
-    return NextResponse.json({ courses }, { status: 200 });
+    const query = courseListQuerySchema.parse(
+      Object.fromEntries(request.nextUrl.searchParams)
+    );
+
+    const result = await listCourses(
+      session!.user.id as string,
+      { limit: query.limit, cursor: query.cursor }
+    );
+    return NextResponse.json({ items: result.items, nextCursor: result.nextCursor }, { status: 200 });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Datos inválidos", details: error.errors }, { status: 400 });
+    }
     console.error("[courses] Error en GET:", error);
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }

@@ -24,6 +24,7 @@ jest.mock("@/lib/db", () => {
 });
 
 import { checkDimensionalCoverage } from "@/lib/padel/coverage";
+import { getCoverageSummary, RUBRIC_CATEGORIES } from "@/lib/padel/coverage-summary";
 
 const mocked = jest.requireMock("@/lib/db") as any;
 const dbQueue = mocked.__dbQueue as any[][];
@@ -53,5 +54,52 @@ describe("checkDimensionalCoverage", () => {
     const result = await checkDimensionalCoverage("stu1", "tecnica_basica");
     expect(result.alreadyEvaluated).toBe(true);
     expect(result.coveredCategories).toContain("tecnica_basica");
+  });
+});
+
+describe("getCoverageSummary", () => {
+  const all = [...RUBRIC_CATEGORIES];
+
+  it("0/6 cuando ninguna categoría está cubierta", () => {
+    const s = getCoverageSummary([], all);
+    expect(s.covered).toBe(0);
+    expect(s.total).toBe(6);
+    expect(s.percentage).toBe(0);
+    expect(s.uncovered).toEqual(all);
+  });
+
+  it("3/6 → 50% con las 3 faltantes listadas", () => {
+    const s = getCoverageSummary(
+      [{ category: "reglas" }, { category: "tactica" }, { category: "fisica" }],
+      all
+    );
+    expect(s.covered).toBe(3);
+    expect(s.total).toBe(6);
+    expect(s.percentage).toBe(50);
+    expect(s.uncovered).toEqual(["tecnica_basica", "tecnica_especifica", "actitud_equipo"]);
+  });
+
+  it("6/6 → 100% sin faltantes", () => {
+    const s = getCoverageSummary(all.map((c) => ({ category: c })), all);
+    expect(s.covered).toBe(6);
+    expect(s.percentage).toBe(100);
+    expect(s.uncovered).toEqual([]);
+  });
+
+  it("deduplica categorías repetidas", () => {
+    const s = getCoverageSummary(
+      [{ category: "tactica" }, { category: "tactica" }, { category: "reglas" }],
+      all
+    );
+    expect(s.covered).toBe(2);
+    expect(s.percentage).toBe(33);
+  });
+
+  it("allCategories vacío → percentage 0 (sin NaN)", () => {
+    const s = getCoverageSummary([{ category: "tactica" }], []);
+    expect(s.covered).toBe(1);
+    expect(s.total).toBe(0);
+    expect(s.percentage).toBe(0);
+    expect(s.uncovered).toEqual([]);
   });
 });

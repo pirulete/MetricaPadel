@@ -98,7 +98,7 @@ test.describe("Rubrics — happy-path (SQL real)", () => {
       const list = await ctx.get("/api/rubrics");
       expect(list.status()).toBe(200);
       const listBody = await list.json();
-      const found = listBody.rubrics.find((r: { id: string }) => r.id === rubricId);
+      const found = listBody.items.find((r: { id: string }) => r.id === rubricId);
       expect(found).toBeTruthy();
       expect(found.criteriaCount).toBe(2);
       expect(found.levelCount).toBe(4);

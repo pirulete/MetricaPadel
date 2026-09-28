@@ -136,6 +136,9 @@ export function CourseDetail({ course }: { course: CourseDetailData }) {
           <Button asChild size="sm">
             <Link href={`/evaluar?courseId=${course.course.id}`}>Evaluar</Link>
           </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/evaluar/pareja?courseId=${course.course.id}`}>Evaluar en Pareja</Link>
+          </Button>
           <EditCourseModal courseId={course.course.id} course={course.course} />
           <AlertDialog>
             <AlertDialogTrigger asChild>

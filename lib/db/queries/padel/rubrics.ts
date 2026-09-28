@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, lt, sql } from "drizzle-orm";
 import {
   rubrics,
   rubricLevels,
@@ -10,6 +10,8 @@ import {
   rubricStatusEnum,
   rubricScopeEnum,
 } from "@/lib/db/schema";
+import type { PaginatedResult, PaginationParams } from "./pagination";
+import { resolveLimit } from "./pagination";
 
 export type RubricStatus = (typeof rubricStatusEnum.enumValues)[number];
 export type RubricCategory = (typeof rubricCategoryEnum.enumValues)[number];
@@ -180,13 +182,29 @@ export async function getRubricById(userId: string, id: string): Promise<RubricW
 
 /**
  * Lista rúbricas del owner con counts de criteria/levels (para P02 biblioteca).
- * status opcional: 'active' | 'archived' | 'draft'.
+ * status opcional: 'active' | 'archived' | 'draft'. Paginada por cursor (G15)
+ * sobre createdAt desc.
  */
-export async function listRubrics(ownerId: string, status?: RubricStatus) {
+export async function listRubrics(
+  ownerId: string,
+  status?: RubricStatus,
+  params?: PaginationParams,
+): Promise<PaginatedResult<{
+  id: string;
+  title: string;
+  category: RubricCategory;
+  status: RubricStatus;
+  createdAt: Date;
+  updatedAt: Date;
+  criteriaCount: number;
+  levelCount: number;
+}>> {
+  const limit = resolveLimit(params?.limit);
   const conditions = [eq(rubrics.ownerId, ownerId)];
   if (status) conditions.push(eq(rubrics.status, status));
+  if (params?.cursor) conditions.push(lt(rubrics.createdAt, new Date(params.cursor)));
 
-  return await db
+  const rows = await db
     .select({
       id: rubrics.id,
       title: rubrics.title,
@@ -202,7 +220,15 @@ export async function listRubrics(ownerId: string, status?: RubricStatus) {
     .leftJoin(rubricLevels, eq(rubricLevels.rubricId, rubrics.id))
     .where(and(...conditions))
     .groupBy(rubrics.id)
-    .orderBy(desc(rubrics.createdAt));
+    .orderBy(desc(rubrics.createdAt))
+    .limit(limit + 1);
+
+  const hasMore = rows.length > limit;
+  const items = hasMore ? rows.slice(0, limit) : rows;
+  const nextCursor = hasMore && items.length > 0
+    ? items[items.length - 1].createdAt.toISOString()
+    : null;
+  return { items, nextCursor };
 }
 
 /**

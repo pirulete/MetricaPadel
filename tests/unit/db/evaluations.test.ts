@@ -158,20 +158,62 @@ describe("getStudentEvaluationById", () => {
 });
 
 describe("listEvaluations", () => {
-  it("lista con studentName y rubricTitle", async () => {
+  it("lista con studentName y rubricTitle (paginado: items + nextCursor null)", async () => {
     const rows = [{ id: "e1", studentId: "stu1", studentName: "Ana Pérez", rubricTitle: "Saque", status: "draft", totalScore: null, maxScore: null, updatedAt: new Date() }];
     dbQueue.push(rows);
     const result = await listEvaluations("coach1");
-    expect(result).toEqual(rows);
+    expect(result).toEqual({ items: rows, nextCursor: null });
+  });
+
+  it("G15: retorna nextCursor cuando hay más items (limit+1)", async () => {
+    const rows = Array.from({ length: 21 }, (_, i) => ({
+      id: `e${i}`,
+      studentId: "stu1",
+      studentName: "Ana Pérez",
+      rubricTitle: "Saque",
+      status: "draft" as const,
+      totalScore: null,
+      maxScore: null,
+      updatedAt: new Date(`2026-09-${String(20 - i).padStart(2, "0")}T10:00:00Z`),
+    }));
+    dbQueue.push(rows);
+    const result = await listEvaluations("coach1", undefined, { limit: 20 });
+    expect(result.items).toHaveLength(20);
+    expect(result.nextCursor).toBe(rows[19].updatedAt.toISOString());
+  });
+
+  it("G15: sin más items retorna nextCursor null", async () => {
+    const rows = [{ id: "e1", studentId: "stu1", studentName: "Ana Pérez", rubricTitle: "Saque", status: "draft", totalScore: null, maxScore: null, updatedAt: new Date() }];
+    dbQueue.push(rows);
+    const result = await listEvaluations("coach1", undefined, { limit: 20 });
+    expect(result.items).toHaveLength(1);
+    expect(result.nextCursor).toBeNull();
   });
 });
 
 describe("listStudentEvaluations", () => {
-  it("lista solo publicadas para el alumno", async () => {
+  it("lista solo publicadas para el alumno (paginado: items + nextCursor null)", async () => {
     const rows = [{ id: "e1", rubricTitle: "Saque", category: "tecnica_basica", totalScore: 7, maxScore: 8, publishedAt: new Date(), readAt: null }];
     dbQueue.push(rows);
     const result = await listStudentEvaluations("stu1");
-    expect(result).toEqual(rows);
+    expect(result).toEqual({ items: rows, nextCursor: null });
+  });
+
+  it("G15: retorna nextCursor cuando hay más items (limit+1)", async () => {
+    const rows = Array.from({ length: 21 }, (_, i) => ({
+      id: `e${i}`,
+      rubricTitle: "Saque",
+      category: "tecnica_basica" as const,
+      version: i + 1,
+      totalScore: 7,
+      maxScore: 8,
+      publishedAt: new Date(`2026-09-${String(20 - i).padStart(2, "0")}T10:00:00Z`),
+      readAt: null,
+    }));
+    dbQueue.push(rows);
+    const result = await listStudentEvaluations("stu1", { limit: 20 });
+    expect(result.items).toHaveLength(20);
+    expect(result.nextCursor).toBe(rows[19].publishedAt!.toISOString());
   });
 });
 
@@ -232,9 +274,10 @@ describe("publishEvaluation", () => {
   it("publica y setea publishedAt cuando todos los criterios tienen score", async () => {
     txQueue.push(
       [evaluation], // select evaluation
-      [{ id: "c1" }, { id: "c2" }], // criteria
+      [{ id: "c1" }, { id: "c2" }], // criteria (countMissingCriteria)
       [{ criteriaId: "c1" }, { criteriaId: "c2" }], // scores completos
       [{ maxVersion: 1 }], // MAX(version) → nextVersion = 2
+      [{ id: "c1" }, { id: "c2" }], // criteria (maxScore = 8)
       [{ ...evaluation, status: "published", publishedAt: new Date(), version: 2, updatedAt: new Date() }], // update returning
     );
     const result = await publishEvaluation("coach1", "e1");
@@ -248,9 +291,10 @@ describe("publishEvaluation", () => {
   it("asigna version 1 cuando no hay publicadas previas (MAX null → 1)", async () => {
     txQueue.push(
       [evaluation], // select evaluation
-      [{ id: "c1" }, { id: "c2" }], // criteria
+      [{ id: "c1" }, { id: "c2" }], // criteria (countMissingCriteria)
       [{ criteriaId: "c1" }, { criteriaId: "c2" }], // scores completos
       [{ maxVersion: null }], // MAX(version) → nextVersion = 1
+      [{ id: "c1" }, { id: "c2" }], // criteria (maxScore = 8)
       [{ ...evaluation, status: "published", publishedAt: new Date(), version: 1, updatedAt: new Date() }], // update returning
     );
     const result = await publishEvaluation("coach1", "e1");

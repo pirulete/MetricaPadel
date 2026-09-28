@@ -10,7 +10,9 @@ export const runtime = "nodejs";
 
 /**
  * GET /api/rubrics
- * Lista rúbricas del coach (ownerId = sesión). Query: ?status=draft|active|archived.
+ * Lista rúbricas del coach (ownerId = sesión). Query:
+ * ?status=draft|active|archived&limit=&cursor= (paginación por cursor, G15).
+ * Retorna { items, nextCursor }.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -22,8 +24,12 @@ export async function GET(request: NextRequest) {
       Object.fromEntries(request.nextUrl.searchParams)
     );
 
-    const rubrics = await listRubrics(session!.user.id as string, query.status);
-    return NextResponse.json({ rubrics }, { status: 200 });
+    const result = await listRubrics(
+      session!.user.id as string,
+      query.status,
+      { limit: query.limit, cursor: query.cursor }
+    );
+    return NextResponse.json({ items: result.items, nextCursor: result.nextCursor }, { status: 200 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Datos inválidos", details: error.errors }, { status: 400 });

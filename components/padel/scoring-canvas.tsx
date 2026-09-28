@@ -14,7 +14,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { StudentPicker } from "@/components/padel/student-picker"
+import { Badge } from "@/components/ui/badge"
 import { computeMaxScore, computeTotalScore, validatePublish } from "@/lib/padel/score"
+import {
+  getCoverageSummary,
+  RUBRIC_CATEGORIES,
+  type CoverageSummary,
+} from "@/lib/padel/coverage-summary"
 
 type Level = { id: string; name: string; score: number; sortOrder: number }
 type Criterion = { id: string; name: string; sortOrder: number }
@@ -43,6 +49,7 @@ export function ScoringCanvas({ evaluationId }: ScoringCanvasProps) {
   const [saving, setSaving] = React.useState(false)
   const [publishing, setPublishing] = React.useState(false)
   const [version, setVersion] = React.useState<number | null>(null)
+  const [coverage, setCoverage] = React.useState<CoverageSummary | null>(null)
 
   const rubric = rubrics.find((r) => r.rubric.id === rubricId) ?? null
   const totalScore = computeTotalScore(
@@ -69,7 +76,7 @@ export function ScoringCanvas({ evaluationId }: ScoringCanvasProps) {
         const rubricsBody = await rubricsRes.json()
 
         const details = await Promise.all(
-          rubricsBody.rubrics.map(async (r: { id: string }) => {
+          rubricsBody.items.map(async (r: { id: string }) => {
             const res = await fetch(`/api/rubrics/${r.id}`, { cache: "no-store" })
             return res.ok ? res.json() : null
           })
@@ -103,6 +110,34 @@ export function ScoringCanvas({ evaluationId }: ScoringCanvasProps) {
       cancelled = true
     }
   }, [evaluationId])
+
+  // R5: aviso pre-publish de cobertura dimensional (informativo, soft-block).
+  React.useEffect(() => {
+    if (!studentId || !rubricId) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch(
+          `/api/evaluations/coverage?studentId=${studentId}&rubricId=${rubricId}`,
+          { cache: "no-store" }
+        )
+        if (!res.ok) return
+        const body = await res.json()
+        if (cancelled) return
+        setCoverage(
+          getCoverageSummary(
+            body.coveredCategories.map((c: string) => ({ category: c })),
+            [...RUBRIC_CATEGORIES]
+          )
+        )
+      } catch {
+        // Aviso informativo: si falla el fetch, no bloquear el canvas.
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [studentId, rubricId])
 
   const selectLevel = (criteriaId: string, levelId: string) => {
     setScores((prev) => {
@@ -238,11 +273,23 @@ export function ScoringCanvas({ evaluationId }: ScoringCanvasProps) {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>Alumno</Label>
-            <StudentPicker value={studentId} onChange={setStudentId} />
+            <StudentPicker
+              value={studentId}
+              onChange={(v) => {
+                setCoverage(null)
+                setStudentId(v)
+              }}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="eval-rubric">Rúbrica</Label>
-            <Select value={rubricId} onValueChange={setRubricId}>
+            <Select
+              value={rubricId}
+              onValueChange={(v) => {
+                setCoverage(null)
+                setRubricId(v)
+              }}
+            >
               <SelectTrigger id="eval-rubric">
                 <SelectValue placeholder="Selecciona rúbrica" />
               </SelectTrigger>
@@ -335,6 +382,28 @@ export function ScoringCanvas({ evaluationId }: ScoringCanvasProps) {
               rows={3}
             />
           </div>
+
+          {coverage && (
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <Badge
+                className={
+                  coverage.percentage > 66
+                    ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                    : coverage.percentage >= 33
+                      ? "border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                      : "border-red-500/30 bg-red-500/15 text-red-700 dark:text-red-400"
+                }
+              >
+                Cobertura: {coverage.covered}/{coverage.total} dimensiones (
+                {coverage.percentage}%)
+              </Badge>
+              {coverage.uncovered.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  Faltan: {coverage.uncovered.join(", ")}
+                </span>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-2">
             <Button onClick={handleSave} disabled={saving}>

@@ -17,6 +17,9 @@ import {
   courseJoinSchema,
   courseRubricAssignSchema,
   historyQuerySchema,
+  pairEvaluationCreateSchema,
+  pairEvaluationSaveSchema,
+  pairEvaluationPublishSchema,
 } from "@/lib/validations/padel";
 
 describe("adminCreateUserSchema", () => {
@@ -335,5 +338,108 @@ describe("historyQuerySchema", () => {
 
   it("rechaza courseId no uuid", () => {
     expect(() => historyQuerySchema.parse({ courseId: "abc" })).toThrow();
+  });
+});
+
+describe("pairEvaluationCreateSchema", () => {
+  const valid = {
+    studentAId: "00000000-0000-0000-0000-000000000001",
+    studentBId: "00000000-0000-0000-0000-000000000002",
+    rubricId: "00000000-0000-0000-0000-000000000003",
+    courseId: "00000000-0000-0000-0000-000000000004",
+  };
+
+  it("acepta payload válido con alumnos distintos", () => {
+    const result = pairEvaluationCreateSchema.parse(valid);
+    expect(result.studentAId).not.toBe(result.studentBId);
+  });
+
+  it("rechaza studentAId === studentBId (400)", () => {
+    expect(() =>
+      pairEvaluationCreateSchema.parse({ ...valid, studentBId: valid.studentAId })
+    ).toThrow();
+  });
+
+  it("rechaza uuid inválido", () => {
+    expect(() => pairEvaluationCreateSchema.parse({ ...valid, courseId: "no-uuid" })).toThrow();
+  });
+});
+
+describe("pairEvaluationSaveSchema", () => {
+  const valid = {
+    evaluationAId: "00000000-0000-0000-0000-000000000001",
+    evaluationBId: "00000000-0000-0000-0000-000000000002",
+    scoresA: [
+      {
+        criteriaId: "00000000-0000-0000-0000-000000000003",
+        levelId: "00000000-0000-0000-0000-000000000004",
+        comment: "Bien",
+      },
+    ],
+    scoresB: [
+      {
+        criteriaId: "00000000-0000-0000-0000-000000000003",
+        levelId: "00000000-0000-0000-0000-000000000005",
+      },
+    ],
+    globalCommentA: "Comentario A",
+    globalCommentB: "Comentario B",
+  };
+
+  it("acepta scores de ambos alumnos + comentarios globales", () => {
+    const result = pairEvaluationSaveSchema.parse(valid);
+    expect(result.scoresA).toHaveLength(1);
+    expect(result.scoresB).toHaveLength(1);
+    expect(result.globalCommentA).toBe("Comentario A");
+  });
+
+  it("acepta sin comentarios globales", () => {
+    const result = pairEvaluationSaveSchema.parse({
+      evaluationAId: valid.evaluationAId,
+      evaluationBId: valid.evaluationBId,
+      scoresA: valid.scoresA,
+      scoresB: valid.scoresB,
+    });
+    expect(result.globalCommentA).toBeUndefined();
+  });
+
+  it("rechaza scoresA vacío", () => {
+    expect(() =>
+      pairEvaluationSaveSchema.parse({ ...valid, scoresA: [] })
+    ).toThrow();
+  });
+
+  it("rechaza levelId inválido en scoresB", () => {
+    expect(() =>
+      pairEvaluationSaveSchema.parse({
+        ...valid,
+        scoresB: [{ criteriaId: valid.scoresB[0].criteriaId, levelId: "no-uuid" }],
+      })
+    ).toThrow();
+  });
+});
+
+describe("pairEvaluationPublishSchema", () => {
+  const valid = {
+    evaluationAId: "00000000-0000-0000-0000-000000000001",
+    evaluationBId: "00000000-0000-0000-0000-000000000002",
+  };
+
+  it("acepta sin durationSeconds (default 0)", () => {
+    const result = pairEvaluationPublishSchema.parse(valid);
+    expect(result.durationSeconds).toBeUndefined();
+  });
+
+  it("acepta durationSeconds >= 0", () => {
+    expect(pairEvaluationPublishSchema.parse({ ...valid, durationSeconds: 0 }).durationSeconds).toBe(0);
+    expect(pairEvaluationPublishSchema.parse({ ...valid, durationSeconds: 120 }).durationSeconds).toBe(120);
+  });
+
+  it("rechaza durationSeconds negativo", () => {
+    expect(() => pairEvaluationPublishSchema.parse({ ...valid, durationSeconds: -1 })).toThrow();
+  });
+
+  it("rechaza durationSeconds no entero", () => {
+    expect(() => pairEvaluationPublishSchema.parse({ ...valid, durationSeconds: 1.5 })).toThrow();
   });
 });

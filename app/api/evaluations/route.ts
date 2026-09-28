@@ -15,7 +15,9 @@ export const runtime = "nodejs";
 
 /**
  * GET /api/evaluations
- * Lista evaluaciones del coach (teacherId = sesión). Query: ?status=draft|published.
+ * Lista evaluaciones del coach (teacherId = sesión). Query:
+ * ?status=draft|published&limit=&cursor= (paginación por cursor, G15).
+ * Retorna { items, nextCursor }.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -27,8 +29,12 @@ export async function GET(request: NextRequest) {
       Object.fromEntries(request.nextUrl.searchParams)
     );
 
-    const evaluations = await listEvaluations(session!.user.id as string, query.status);
-    return NextResponse.json({ evaluations }, { status: 200 });
+    const result = await listEvaluations(
+      session!.user.id as string,
+      query.status,
+      { limit: query.limit, cursor: query.cursor }
+    );
+    return NextResponse.json({ items: result.items, nextCursor: result.nextCursor }, { status: 200 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Datos inválidos", details: error.errors }, { status: 400 });

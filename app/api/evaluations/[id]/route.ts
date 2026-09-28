@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { guardAdmin } from "@/lib/auth/admin-guard";
-import { auditUpdate, extractRequestContext } from "@/lib/audit/helpers";
+import { auditDelete, auditUpdate, extractRequestContext } from "@/lib/audit/helpers";
 import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { rubrics, users } from "@/lib/db/schema";
+import { evaluations, rubrics, users } from "@/lib/db/schema";
 import { getEvaluationById, saveEvaluationScores } from "@/lib/db/queries/padel";
 import { resolveAcademyForEvaluation } from "@/lib/db/queries/padel/academies";
 import { evaluationSaveSchema, padelIdParamsSchema } from "@/lib/validations/padel";
@@ -100,6 +100,56 @@ export async function PUT(
       return NextResponse.json({ error: "Datos inválidos", details: error.errors }, { status: 400 });
     }
     console.error("[evaluations/[id]] Error en PUT:", error);
+    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/evaluations/[id]
+ * G16: soft-delete (archivado) de evaluación. Solo el teacher que la creó
+ * puede archivarla (anti-IDOR → 404). Los datos se conservan (historial +
+ * versiones); las queries de coach/alumno la ocultan vía deletedAt.
+ * Audita DELETE.
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    const guardError = guardAdmin(session);
+    if (guardError) return guardError;
+
+    const { id } = padelIdParamsSchema.parse(await params);
+
+    const result = await getEvaluationById(session!.user.id as string, id);
+    if (!result) {
+      return NextResponse.json({ error: "Evaluación no encontrada" }, { status: 404 });
+    }
+
+    await db.update(evaluations)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(eq(evaluations.id, id));
+
+    await auditDelete(
+      "evaluation",
+      id,
+      {
+        status: result.evaluation.status,
+        totalScore: result.evaluation.totalScore,
+        version: result.evaluation.version,
+        studentId: result.evaluation.studentId,
+        rubricId: result.evaluation.rubricId,
+      },
+      { userId: session!.user.id, ...extractRequestContext(request) }
+    );
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Datos inválidos", details: error.errors }, { status: 400 });
+    }
+    console.error("[evaluations/[id]] Error en DELETE:", error);
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
   }
 }

@@ -1,5 +1,117 @@
 # FEATURES — Registro de Cambios
 
+## ✨ Soft-delete de evaluaciones — G16 (2026-09-28)
+
+> status: released
+> release: v0.7
+> date: 2026-09-28
+> change_id: evaluation-soft-delete
+> module: dashboard
+> tags: [padel, evaluation, soft-delete, api, db, migration]
+
+### Problema
+
+No había forma de retirar una evaluación publicada errónea sin borrarla permanentemente. El coach necesita archivar evaluaciones mientras conserva el historial y las versiones.
+
+### Solución Implementada
+
+- **`lib/db/schema.ts`**: columna `deletedAt: timestamp("deleted_at")` nullable en `evaluations` (mismo patrón que `notifications.deletedAt`). Migración `0010_hard_wrecker.sql` generada con `db:generate` (nunca SQL a mano).
+- **`lib/db/queries/padel/evaluations.ts`**: helper reusable `isNotDeleted = isNull(evaluations.deletedAt)` aplicado a todas las queries de coach/alumno: `getEvaluationById`, `getStudentEvaluationById`, `listEvaluations`, `listStudentEvaluations`, `saveEvaluationScores`, `publishEvaluation`, `listEvaluationSeries`, `listStudentEvaluationSeries`, `listStudentEvolution`, `markEvaluationRead`. Las queries de admin/super-admin NO filtran (el super admin ve todo). El cómputo de `version` en `publishEvaluation` NO excluye archivadas → no se reutilizan versiones.
+- **`lib/db/queries/padel/history.ts`**: `listHistory` excluye archivadas vía `isNotDeleted`.
+- **`app/api/evaluations/[id]/route.ts`**: nuevo handler `DELETE` — `guardAdmin`, anti-IDOR (404 si no pertenece al teacher), soft-delete (`UPDATE evaluations SET deletedAt = now()`), auditoría `auditDelete("evaluation", id, oldValues, context)`, retorna `{ success: true }`. DELETE repetido → 404.
+- **`lib/api-docs/paths/padel.ts`**: path `delete` documentado en `/api/evaluations/{id}` (G16).
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/db/schema.ts` | 🔧 Modificado — `evaluations.deletedAt` |
+| `drizzle/0010_hard_wrecker.sql` | ➕ Nuevo — migración |
+| `lib/db/queries/padel/evaluations.ts` | 🔧 Modificado — `isNotDeleted` + filtros |
+| `lib/db/queries/padel/history.ts` | 🔧 Modificado — filtro deleted |
+| `app/api/evaluations/[id]/route.ts` | 🔧 Modificado — handler DELETE |
+| `lib/api-docs/paths/padel.ts` | 🔧 Modificado — docs DELETE |
+| `tests/api/padel/evaluation-delete.spec.ts` | ➕ Nuevo — guards + happy-path SQL real |
+| `tests/unit/db/evaluations.test.ts` | 🔧 Modificado — tests G16 |
+
+### Tests
+
+- Unit (Jest): `tests/unit/db/evaluations.test.ts` — 11 tests G16: `isNotDeleted` reusable, todas las queries incluyen `deleted_at` en el where (vía `sqlColumns` sobre `queryChunks`), `saveEvaluationScores`/`publishEvaluation`/`markEvaluationRead` retornan null/not_found sobre archivadas.
+- API (Playwright): `tests/api/padel/evaluation-delete.spec.ts` — 401 sin sesión, 403 USER, 404 inexistente, happy-path con SQL real (deleted_at persistido, oculta de GET/lista coach y alumno, PUT/publish → 404, auditoría DELETE registrada, DELETE repetido → 404).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Dashboard de métricas globales para SUPER_ADMIN (2026-09-28)
+
+> status: released
+> release: v0.7
+> date: 2026-09-28
+> change_id: platform-metrics-dashboard
+> module: admin
+> tags: [admin, super-admin, metrics, dashboard, ui, read-only]
+
+### Problema
+
+`/admin/platform` solo mostraba 4 counts básicos (admins, super admins, academias, activas). Un super admin necesita ver tendencias, actividad reciente y breakdown por academia para operar la plataforma.
+
+### Solución Implementada
+
+- **`lib/db/queries/padel/super-admin.ts`**: nueva query `getPlatformMetrics()` que reutiliza `getPlatformStats()` y agrega: rúbricas (total + scope personal/institutional), últimos 10 `audit_logs` con usuario (leftJoin users), y breakdown por academia con `memberCount` (miembros activos) y `evaluationCount` (evaluaciones vía join rubrics.academyId). Se carga server-side — sin endpoint nuevo.
+- **`app/admin/platform/page.tsx`**: reescrita con UI rica — sección Resumen (5 cards: Usuarios, Academias, Evaluaciones, Cursos, Rúbricas), sección Rúbricas con barras de distribución por scope, sección Actividad reciente (tabla usuario/acción/entidad/fecha) y sección Academias (tabla nombre/owner/miembros/evaluaciones/estado). Guard `validateSuperAdmin` intacto. Responsive: grid mobile → desktop, tablas con overflow-x.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/db/queries/padel/super-admin.ts` | 🔧 Modificado — `getPlatformMetrics()` |
+| `app/admin/platform/page.tsx` | 🔧 Modificado — UI rica read-only |
+| `tests/unit/db/super-admin.test.ts` | 🔧 Modificado — tests de `getPlatformMetrics` |
+
+### Tests
+
+- Unit (Jest): `tests/unit/db/super-admin.test.ts` — `getPlatformMetrics` con db mockeado: stats existentes + rubrics + actividad reciente + breakdown (2 passed: happy-path y arrays vacíos).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Template picker para rúbricas — G14 (2026-09-28)
+
+> status: released
+> release: v0.7
+> date: 2026-09-28
+> change_id: rubric-template-picker
+> module: dashboard
+> tags: [padel, rubric, template, ui, client-only]
+
+### Problema
+
+El coach tenía que crear rúbricas desde cero cada vez. La plantilla `RUBRICA_INTEGRAL_TEMPLATE` (6 dimensiones × 4 niveles × 1 criterio) existía en `lib/padel/rubric-templates.ts` pero solo como seed manual/API — sin UI. Identificado como gap G14 en `production_artifacts/2026-09-28-roadmap/roadmap.md`.
+
+### Solución Implementada
+
+- **`components/padel/rubric-editor.tsx`**: botón "Usar plantilla" (icono Wand2) en el header de Criterios, visible solo cuando el editor está vacío (0 criterios o 1 criterio en blanco). Abre un `AlertDialog` de confirmación ("Esto reemplazará los criterios actuales. ¿Continuar?") y al confirmar hidrata el state del editor con el template: `title`, `category` y los 6 criterios con sus 4 descriptores (copias mutables vía spread para no mutar la constante `as const`).
+- **Sin API nueva ni tabla nueva** — todo client-side; el template se importa como constante.
+- **Tipos**: `RUBRICA_INTEGRAL_TEMPLATE` ya era compatible con `CriterionDraft` del editor (name + descriptors[4]); solo se adaptó la hidratación con `[...c.descriptors]` para convertir readonly tuples en arrays mutables.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `components/padel/rubric-editor.tsx` | 🔧 Modificado — botón "Usar plantilla" + AlertDialog + `applyTemplate` |
+| `tests/unit/padel/rubric-templates.test.ts` | ✨ Nuevo — unit tests del template |
+
+### Tests
+
+- Unit (Jest): `tests/unit/padel/rubric-templates.test.ts` — 6 criterios, 4 niveles por criterio, scores 4/3/2/1, descriptores completos, categoría válida, título no vacío (6 passed).
+- Manual: el botón hidrata el form (título, categoría y 6 criterios con descriptores visibles en el editor).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
 ## ✨ Rate limiting en invitaciones de academia (2026-09-28)
 
 > status: released
@@ -1684,6 +1796,46 @@ Ninguna nueva.
 - `npx tsc --noEmit` sin errores.
 - `npx playwright test tests/e2e/evaluation-version.spec.ts --list` parsea (1 test).
 - Happy-path `evaluation-series-happy.spec.ts` sigue el patrón de `evaluations-happy.spec.ts` (SQL real contra NeonDB; skip graceful sin `DATABASE_URL`). Guard tests 401/403 añadidos.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ G13 — Trigger evaluation.read para Métrica Pádel (2026-09-28)
+
+> status: released
+> release: v0.4
+> date: 2026-09-28
+> change_id: g13-evaluation-read-trigger-2026-09-28
+> module: dashboard
+> tags: [api, notifications, g13, trigger, padel]
+
+### Problema
+
+Cuando un alumno lee una evaluación publicada, el coach no recibía notificación. El engine de notificaciones ya existía pero no había trigger para el evento `evaluation.read`.
+
+### Solución Implementada
+
+- `lib/notifications/triggers.ts`: nuevo `triggerEvaluationRead(teacherId, evaluationId)` — category `system`, priority `P2` (informativa), type `info`, `groupId = evaluationId` para dedup 1h del engine (re-leer no duplica).
+- `lib/db/queries/padel/evaluations.ts`: `markEvaluationRead` ahora retorna `{ evaluation, firstRead } | null`. Detecta la primera lectura de forma atómica (UPDATE condicionado a `readAt IS NULL` + fallback SELECT para re-lectura idempotente sin romper el 404).
+- `app/api/student/evaluations/[id]/read/route.ts`: tras `markEvaluationRead`, si `firstRead` y existe `teacherId`, dispara `triggerEvaluationRead`. La respuesta al alumno no cambia.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/notifications/triggers.ts` | 🔧 Modificado — +`triggerEvaluationRead` |
+| `lib/db/queries/padel/evaluations.ts` | 🔧 Modificado — `markEvaluationRead` retorna `{ evaluation, firstRead }` |
+| `app/api/student/evaluations/[id]/read/route.ts` | 🔧 Modificado — trigger en primera lectura |
+| `tests/unit/notifications/triggers.test.ts` | 🔧 Modificado — +2 tests `triggerEvaluationRead` |
+| `tests/unit/db/evaluations.test.ts` | 🔧 Modificado — tests `markEvaluationRead` adaptados a `firstRead` |
+| `tests/api/padel/evaluation-read-happy.spec.ts` | ✨ Nuevo — happy-path SQL real (notificación al coach + dedup re-lectura) |
+
+### Tests
+
+- Unit: `triggerEvaluationRead` verifica payload P2/system + groupId; `markEvaluationRead` cubre firstRead=true/false/null.
+- API happy-path con SQL real: crear rúbrica → evaluación → publish → leer como alumno → verifica notificación `info/P2/system` para el coach con `group_id = evaluationId`; re-leer no duplica (dedup).
+- `npx tsc --noEmit` y `pnpm run test:unit` pasan.
 
 ### Variables de Entorno
 

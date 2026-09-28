@@ -5,7 +5,7 @@
  */
 import { db } from "@/lib/db";
 import { and, count as drizzleCount, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
-import { academies, auditLogs, evaluations, courses, users } from "@/lib/db/schema";
+import { academies, auditLogs, evaluations, courses, rubrics, users } from "@/lib/db/schema";
 import { assertNotLastSuperAdmin } from "@/lib/padel/super-admin";
 
 export type DemoteResult =
@@ -223,5 +223,71 @@ export async function getPlatformStats() {
     academies: academyStats,
     evaluations: evalStats,
     courses: courseStats,
+  };
+}
+
+/**
+ * Métricas globales extendidas para el dashboard de plataforma (SUPER_ADMIN).
+ * Reutiliza getPlatformStats y agrega: rúbricas (total + scope), últimos 10
+ * audit_logs con usuario y breakdown por academia (miembros + evaluaciones).
+ * Se carga server-side en app/admin/platform — sin endpoint nuevo.
+ */
+export async function getPlatformMetrics() {
+  const stats = await getPlatformStats();
+
+  const [rubricStats] = await db
+    .select({
+      total: sql<number>`count(*)::int`,
+      personal: sql<number>`count(*) filter (where scope = 'personal')::int`,
+      institutional: sql<number>`count(*) filter (where scope = 'institutional')::int`,
+    })
+    .from(rubrics);
+
+  const recentActivity = await db
+    .select({
+      id: auditLogs.id,
+      userId: auditLogs.userId,
+      actionType: auditLogs.actionType,
+      entityName: auditLogs.entityName,
+      entityId: auditLogs.entityId,
+      createdAt: auditLogs.createdAt,
+      userEmail: users.email,
+      userFirstName: users.firstName,
+      userLastName: users.lastName,
+    })
+    .from(auditLogs)
+    .leftJoin(users, eq(users.id, auditLogs.userId))
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(10);
+
+  const academyBreakdown = await db
+    .select({
+      id: academies.id,
+      name: academies.name,
+      slug: academies.slug,
+      status: academies.status,
+      ownerId: academies.ownerId,
+      ownerEmail: users.email,
+      ownerFirstName: users.firstName,
+      ownerLastName: users.lastName,
+      memberCount: sql<number>`(
+        SELECT count(*)::int FROM academy_memberships am
+        WHERE am.academy_id = ${academies.id} AND am.status = 'active'
+      )`,
+      evaluationCount: sql<number>`(
+        SELECT count(*)::int FROM evaluations e
+        JOIN rubrics r ON r.id = e.rubric_id
+        WHERE r.academy_id = ${academies.id}
+      )`,
+    })
+    .from(academies)
+    .leftJoin(users, eq(users.id, academies.ownerId))
+    .orderBy(desc(academies.createdAt));
+
+  return {
+    ...stats,
+    rubrics: rubricStats,
+    recentActivity,
+    academyBreakdown,
   };
 }

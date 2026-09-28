@@ -6,7 +6,7 @@ import {
   rubrics,
   users,
 } from "@/lib/db/schema";
-import type { EvaluationStatus } from "./evaluations";
+import { isNotDeleted, type EvaluationStatus } from "./evaluations";
 
 export type HistoryFilters = {
   courseId?: string;
@@ -31,7 +31,7 @@ export type HistoryItem = {
  * para el nombre de curso. Anti-IDOR: teacherId siempre de la sesión.
  */
 export async function listHistory(teacherId: string, filters: HistoryFilters = {}): Promise<HistoryItem[]> {
-  const conditions = [eq(evaluations.teacherId, teacherId)];
+  const conditions = [eq(evaluations.teacherId, teacherId), isNotDeleted];
   if (filters.courseId) conditions.push(eq(evaluations.courseId, filters.courseId));
   if (filters.studentId) conditions.push(eq(evaluations.studentId, filters.studentId));
   if (filters.status) conditions.push(eq(evaluations.status, filters.status));

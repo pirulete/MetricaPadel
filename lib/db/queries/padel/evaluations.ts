@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   evaluations,
   evaluationScores,
@@ -12,6 +12,13 @@ import {
 } from "@/lib/db/schema";
 
 export type EvaluationStatus = (typeof evaluationStatusEnum.enumValues)[number];
+
+/**
+ * G16: condición reusable para excluir evaluaciones archivadas (soft-delete).
+ * Todas las queries de coach/alumno la aplican; las de admin/super-admin NO
+ * (el super admin necesita ver todo).
+ */
+export const isNotDeleted = isNull(evaluations.deletedAt);
 
 export type EvaluationWithScores = {
   evaluation: typeof evaluations.$inferSelect;
@@ -112,7 +119,7 @@ export async function createEvaluation(data: {
  */
 export async function getEvaluationById(teacherId: string, id: string): Promise<EvaluationWithScores | null> {
   const evaluation = await db.query.evaluations.findFirst({
-    where: and(eq(evaluations.id, id), eq(evaluations.teacherId, teacherId)),
+    where: and(eq(evaluations.id, id), eq(evaluations.teacherId, teacherId), isNotDeleted),
   });
   if (!evaluation) return null;
 
@@ -133,6 +140,7 @@ export async function getStudentEvaluationById(studentId: string, id: string): P
       eq(evaluations.id, id),
       eq(evaluations.studentId, studentId),
       eq(evaluations.status, 'published'),
+      isNotDeleted,
     ),
   });
   if (!evaluation) return null;
@@ -149,7 +157,7 @@ export async function getStudentEvaluationById(studentId: string, id: string): P
  * status opcional: 'draft' | 'published'.
  */
 export async function listEvaluations(teacherId: string, status?: EvaluationStatus) {
-  const conditions = [eq(evaluations.teacherId, teacherId)];
+  const conditions = [eq(evaluations.teacherId, teacherId), isNotDeleted];
   if (status) conditions.push(eq(evaluations.status, status));
 
   return await db
@@ -190,6 +198,7 @@ export async function listStudentEvaluations(studentId: string) {
     .where(and(
       eq(evaluations.studentId, studentId),
       eq(evaluations.status, 'published'),
+      isNotDeleted,
     ))
     .orderBy(desc(evaluations.publishedAt));
 }
@@ -203,7 +212,7 @@ export async function listStudentEvaluations(studentId: string) {
 export async function saveEvaluationScores(teacherId: string, id: string, input: SaveEvaluationInput) {
   return await db.transaction(async (tx) => {
     const [evaluation] = await tx.select().from(evaluations)
-      .where(and(eq(evaluations.id, id), eq(evaluations.teacherId, teacherId)))
+      .where(and(eq(evaluations.id, id), eq(evaluations.teacherId, teacherId), isNotDeleted))
       .limit(1);
     if (!evaluation || evaluation.status !== 'draft') return null;
 
@@ -249,7 +258,7 @@ export async function saveEvaluationScores(teacherId: string, id: string, input:
 export async function publishEvaluation(teacherId: string, id: string): Promise<PublishResult> {
   return await db.transaction(async (tx) => {
     const [evaluation] = await tx.select().from(evaluations)
-      .where(and(eq(evaluations.id, id), eq(evaluations.teacherId, teacherId)))
+      .where(and(eq(evaluations.id, id), eq(evaluations.teacherId, teacherId), isNotDeleted))
       .limit(1);
     if (!evaluation) return { ok: false, reason: 'not_found' as const };
     if (evaluation.status !== 'draft') return { ok: false, reason: 'not_draft' as const };
@@ -301,6 +310,7 @@ export async function listEvaluationSeries(teacherId: string, studentId: string,
       eq(evaluations.teacherId, teacherId),
       eq(evaluations.studentId, studentId),
       eq(evaluations.rubricId, rubricId),
+      isNotDeleted,
     ))
     .orderBy(sql`${evaluations.version} ASC NULLS LAST`, asc(evaluations.publishedAt));
 
@@ -327,6 +337,7 @@ export async function listStudentEvaluationSeries(studentId: string, rubricId: s
       eq(evaluations.studentId, studentId),
       eq(evaluations.rubricId, rubricId),
       eq(evaluations.status, 'published'),
+      isNotDeleted,
     ))
     .orderBy(asc(evaluations.version));
 
@@ -365,6 +376,7 @@ export async function listStudentEvolution(studentId: string): Promise<StudentEv
     .where(and(
       eq(evaluations.studentId, studentId),
       eq(evaluations.status, 'published'),
+      isNotDeleted,
     ))
     .orderBy(asc(evaluations.publishedAt));
 
@@ -375,16 +387,36 @@ export async function listStudentEvolution(studentId: string): Promise<StudentEv
 /**
  * Marca evaluación publicada como leída (idempotente: re-set readAt no falla).
  * Scoped al alumno (anti-IDOR). Retorna null si no existe / no es del alumno /
- * no está publicada.
+ * no está publicada. `firstRead` indica si readAt era null antes (primera lectura,
+ * útil para triggers de notificación).
  */
 export async function markEvaluationRead(studentId: string, id: string) {
-  const [row] = await db.update(evaluations)
+  // Intento atómico: solo actualiza si aún no fue leída → detecta primera lectura
+  const [updated] = await db.update(evaluations)
     .set({ readAt: new Date() })
     .where(and(
       eq(evaluations.id, id),
       eq(evaluations.studentId, studentId),
       eq(evaluations.status, 'published'),
+      isNull(evaluations.readAt),
+      isNotDeleted,
     ))
     .returning();
-  return row ?? null;
+  if (updated) return { evaluation: updated, firstRead: true };
+
+  // Ya leída (idempotente) o no existe: distingue para no romper el 404
+  const [existing] = await db.select({
+    id: evaluations.id,
+    readAt: evaluations.readAt,
+    teacherId: evaluations.teacherId,
+  })
+    .from(evaluations)
+    .where(and(
+      eq(evaluations.id, id),
+      eq(evaluations.studentId, studentId),
+      eq(evaluations.status, 'published'),
+      isNotDeleted,
+    ));
+  if (!existing) return null;
+  return { evaluation: existing, firstRead: false };
 }

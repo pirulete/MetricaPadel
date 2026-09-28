@@ -267,6 +267,20 @@ export const padelPaths = {
         '404': { description: 'No encontrada o ya publicada' },
       },
     },
+    delete: {
+      tags: ['Padel Admin'],
+      summary: 'Archivar evaluación (soft-delete, G16)',
+      description: 'Soft-delete: setea deletedAt. Solo el teacher que creó la evaluación puede archivarla (404 anti-IDOR). Los datos se conservan (historial + versiones); las queries de coach/alumno la ocultan. Audita DELETE.',
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+      responses: {
+        '200': { description: 'Evaluación archivada', content: { 'application/json': { schema: { type: 'object', properties: { success: { type: 'boolean', enum: [true] } } } } } },
+        '400': { description: 'id inválido' },
+        '401': { description: 'No autenticado' },
+        '403': { description: 'Sin rol ADMIN' },
+        '404': { description: 'No encontrada o ya archivada' },
+      },
+    },
   },
   '/api/evaluations/{id}/publish': {
     post: {

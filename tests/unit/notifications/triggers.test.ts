@@ -11,6 +11,7 @@ import {
   triggerWelcome,
   triggerEmailVerified,
   triggerEvaluationPublished,
+  triggerEvaluationRead,
   triggerAcademyInvite,
 } from "@/lib/notifications/triggers";
 import { createNotification } from "@/lib/notifications/engine";
@@ -116,6 +117,33 @@ describe("triggerEvaluationPublished", () => {
     mocked.mockResolvedValue(null);
 
     const result = await triggerEvaluationPublished("student-1", "evaluation-1");
+
+    expect(result).toBeNull();
+    expect(mocked).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("triggerEvaluationRead", () => {
+  it("crea notificación para el coach con payload P2/system y groupId = evaluationId", async () => {
+    mocked.mockResolvedValue(fakeNotification);
+
+    await triggerEvaluationRead("coach-1", "evaluation-1");
+
+    expect(mocked).toHaveBeenCalledWith({
+      userId: "coach-1",
+      type: "info",
+      priority: "P2",
+      title: "Evaluación leída",
+      body: "Tu evaluación fue vista por el alumno.",
+      groupId: "evaluation-1",
+      category: "system",
+    });
+  });
+
+  it("retorna null si el engine aplica dedup (re-lectura en ventana 1h)", async () => {
+    mocked.mockResolvedValue(null);
+
+    const result = await triggerEvaluationRead("coach-1", "evaluation-1");
 
     expect(result).toBeNull();
     expect(mocked).toHaveBeenCalledTimes(1);

@@ -219,6 +219,24 @@ export const padelPaths = {
       },
     },
   },
+  '/api/evaluations/series': {
+    get: {
+      tags: ['Padel Admin'],
+      summary: 'Serie de evaluaciones del coach (G6)',
+      description: 'Serie draft + published de un alumno con una rúbrica, ordenada por version ASC NULLS LAST. Anti-IDOR: scoped al teacherId de la sesión (retorna [] si el alumno/rúbrica es ajeno).',
+      security: [{ bearerAuth: [] }],
+      parameters: [
+        { name: 'studentId', in: 'query', required: true, schema: { type: 'string', format: 'uuid' } },
+        { name: 'rubricId', in: 'query', required: true, schema: { type: 'string', format: 'uuid' } },
+      ],
+      responses: {
+        '200': { description: 'Serie de evaluaciones', content: { 'application/json': { schema: { type: 'object', properties: { series: { type: 'array', items: { $ref: '#/components/schemas/EvaluationSeriesItem' } } } } } } },
+        '400': { description: 'Query inválida' },
+        '401': { description: 'No autenticado' },
+        '403': { description: 'Sin rol ADMIN' },
+      },
+    },
+  },
   '/api/evaluations/{id}': {
     get: {
       tags: ['Padel Admin'],

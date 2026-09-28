@@ -7,6 +7,13 @@ import { getAcademyById, inviteMember } from "@/lib/db/queries/padel/academies";
 import { triggerAcademyInvite } from "@/lib/notifications/triggers";
 import { memberInviteSchema } from "@/lib/validations/academy";
 import { padelIdParamsSchema } from "@/lib/validations/padel";
+import {
+  ACADEMY_INVITE_MAX,
+  ACADEMY_INVITE_WINDOW_MS,
+  checkPublicRateLimit,
+  extractIP,
+  rateLimitedResponse,
+} from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -22,6 +29,16 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Rate limit por IP (10/min, key compartida con accept).
+    const ip = extractIP(request);
+    const rate = checkPublicRateLimit(`academy-invite:${ip}`, {
+      windowMs: ACADEMY_INVITE_WINDOW_MS,
+      max: ACADEMY_INVITE_MAX,
+    });
+    if (!rate.allowed) {
+      return rateLimitedResponse(rate.resetTime, ACADEMY_INVITE_MAX);
+    }
+
     const session = await auth();
     const { id } = padelIdParamsSchema.parse(await params);
     const guardError = await guardAcademyAdmin(session, id);

@@ -171,6 +171,7 @@ Aislamiento de DB para preview deploys vía Neon database branching:
 - Toda mutación sensible debe auditarse vía `lib/audit/helpers.ts` (audit_logs).
 - Todo endpoint público requiere rate limit (`lib/rate-limit.ts`) + Cache-Control + security headers.
 - Todo endpoint admin requiere guard server-side + auditoría en mutaciones.
+- Rate limit por IP en mutaciones sensibles de academia: `POST /api/academies/[id]/members/invite` y `POST /api/academies/[id]/members/[userId]/accept` comparten la key `academy-invite:{ip}` (10/min, ventana 60s, 429 al exceder; límite alto en test env vía `ACADEMY_INVITE_MAX`).
 - `lib/auth/protected-routes.ts` documenta el guard y estados permitidos por endpoint (referencia, no middleware automático).
 
 ## Pruebas y Calidad

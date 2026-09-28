@@ -105,7 +105,7 @@ export const academiesPaths = {
     post: {
       tags: ['Academias'],
       summary: 'Invitar miembro por email',
-      description: 'guardAcademyAdmin. Crea usuario TEMPORARY con password generado si no existe, o reutiliza el existente; crea membresía COACH pending; dispara triggerAcademyInvite (inbox). 409 ya miembro. Audita CREATE.',
+      description: 'guardAcademyAdmin. Crea usuario TEMPORARY con password generado si no existe, o reutiliza el existente; crea membresía COACH pending; dispara triggerAcademyInvite (inbox). 409 ya miembro. Rate limit por IP (10/min, key compartida con accept). Audita CREATE.',
       security: [{ bearerAuth: [] }],
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
       requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/MemberInviteInput' } } } },
@@ -116,6 +116,7 @@ export const academiesPaths = {
         '403': { description: 'Rol insuficiente' },
         '404': { description: 'Academia no encontrada' },
         '409': { description: 'Ya es miembro' },
+        '429': { description: 'Rate limit excedido (10/min por IP)' },
       },
     },
   },
@@ -123,7 +124,7 @@ export const academiesPaths = {
     post: {
       tags: ['Academias'],
       summary: 'Aceptar invitación',
-      description: 'guardUser, solo self (userId=sesión). Marca la membresía active (idempotente). 404 si no existe o fue removida. Audita UPDATE.',
+      description: 'guardUser, solo self (userId=sesión). Marca la membresía active (idempotente). 404 si no existe o fue removida. Rate limit por IP (10/min, key compartida con invite). Audita UPDATE.',
       security: [{ bearerAuth: [] }],
       parameters: [
         { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
@@ -135,6 +136,7 @@ export const academiesPaths = {
         '401': { description: 'No autenticado' },
         '403': { description: 'No es self' },
         '404': { description: 'Invitación no encontrada' },
+        '429': { description: 'Rate limit excedido (10/min por IP)' },
       },
     },
   },

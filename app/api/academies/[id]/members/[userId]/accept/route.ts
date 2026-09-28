@@ -5,6 +5,13 @@ import { guardUser } from "@/lib/auth/admin-guard";
 import { auditUpdate, extractRequestContext } from "@/lib/audit/helpers";
 import { acceptMembership } from "@/lib/db/queries/padel/academies";
 import { padelIdParamsSchema } from "@/lib/validations/padel";
+import {
+  ACADEMY_INVITE_MAX,
+  ACADEMY_INVITE_WINDOW_MS,
+  checkPublicRateLimit,
+  extractIP,
+  rateLimitedResponse,
+} from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -19,6 +26,16 @@ export async function POST(
   { params }: { params: Promise<{ id: string; userId: string }> }
 ) {
   try {
+    // Rate limit por IP (10/min, key compartida con invite).
+    const ip = extractIP(request);
+    const rate = checkPublicRateLimit(`academy-invite:${ip}`, {
+      windowMs: ACADEMY_INVITE_WINDOW_MS,
+      max: ACADEMY_INVITE_MAX,
+    });
+    if (!rate.allowed) {
+      return rateLimitedResponse(rate.resetTime, ACADEMY_INVITE_MAX);
+    }
+
     const session = await auth();
     const guardError = guardUser(session);
     if (guardError) return guardError;

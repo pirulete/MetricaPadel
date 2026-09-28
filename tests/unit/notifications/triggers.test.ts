@@ -7,7 +7,12 @@ jest.mock("@/lib/notifications/engine", () => ({
   createNotification: jest.fn(),
 }));
 
-import { triggerEvaluationPublished, triggerAcademyInvite } from "@/lib/notifications/triggers";
+import {
+  triggerWelcome,
+  triggerEmailVerified,
+  triggerEvaluationPublished,
+  triggerAcademyInvite,
+} from "@/lib/notifications/triggers";
 import { createNotification } from "@/lib/notifications/engine";
 import type { notifications } from "@/lib/db/schema";
 
@@ -32,6 +37,60 @@ const fakeNotification = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+});
+
+describe("triggerWelcome", () => {
+  it("crea notificación de bienvenida con payload P2/account y CTA al dashboard", async () => {
+    mocked.mockResolvedValue(fakeNotification);
+
+    await triggerWelcome("student-1");
+
+    expect(mocked).toHaveBeenCalledWith({
+      userId: "student-1",
+      type: "info",
+      priority: "P2",
+      title: "¡Bienvenido!",
+      body: "Tu cuenta está lista. Completa tu perfil para aprovechar al máximo.",
+      category: "account",
+      ctaUrl: "/dashboard",
+      ctaLabel: "Ir al dashboard",
+    });
+  });
+
+  it("retorna null si el engine rechaza la notificación", async () => {
+    mocked.mockResolvedValue(null);
+
+    const result = await triggerWelcome("student-1");
+
+    expect(result).toBeNull();
+    expect(mocked).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("triggerEmailVerified", () => {
+  it("crea notificación de email verificado con payload P3/account sin CTA", async () => {
+    mocked.mockResolvedValue(fakeNotification);
+
+    await triggerEmailVerified("student-1");
+
+    expect(mocked).toHaveBeenCalledWith({
+      userId: "student-1",
+      type: "success",
+      priority: "P3",
+      title: "Email verificado",
+      body: "Tu dirección de correo fue verificada correctamente.",
+      category: "account",
+    });
+  });
+
+  it("retorna null si el engine rechaza la notificación", async () => {
+    mocked.mockResolvedValue(null);
+
+    const result = await triggerEmailVerified("student-1");
+
+    expect(result).toBeNull();
+    expect(mocked).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("triggerEvaluationPublished", () => {

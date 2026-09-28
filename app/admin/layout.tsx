@@ -32,6 +32,9 @@ export default async function AdminLayout({
                 </Link>
               </>
             )}
+            <Link href="/dashboard" className="text-muted-foreground transition-colors hover:text-foreground">
+              Coach
+            </Link>
           </nav>
         </div>
       </header>

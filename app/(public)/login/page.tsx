@@ -22,6 +22,21 @@ export default function LoginPage() {
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
 
+  const redirectToRoleHome = async () => {
+    try {
+      const res = await fetch("/api/auth/session")
+      const session = await res.json()
+      const role = session?.user?.role
+      if (role === "ADMIN" || role === "SUPER_ADMIN") {
+        router.push("/admin")
+      } else {
+        router.push("/dashboard")
+      }
+    } catch {
+      router.push("/dashboard")
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email.trim() || !password) return
@@ -42,13 +57,13 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/callback/credentials", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          email: email.trim(),
-          password,
-          redirect: "false",
-          callbackUrl: "/dashboard",
-          csrfToken,
-        }),
+          body: new URLSearchParams({
+            email: email.trim(),
+            password,
+            redirect: "false",
+            callbackUrl: "/",
+            csrfToken,
+          }),
         redirect: "manual",
       })
 
@@ -57,7 +72,7 @@ export default function LoginPage() {
       // or 200 JSON with { url } when redirect: "false" is respected.
       if (res.type === "opaqueredirect" || res.status >= 300 && res.status < 400) {
         toast.success("Sesión iniciada")
-        router.push("/dashboard")
+        await redirectToRoleHome()
         router.refresh()
         return
       }
@@ -65,7 +80,7 @@ export default function LoginPage() {
       // Auth.js returns 200 JSON when redirect: "false" — session cookie is set
       if (res.ok) {
         toast.success("Sesión iniciada")
-        router.push("/dashboard")
+        await redirectToRoleHome()
         router.refresh()
         return
       }

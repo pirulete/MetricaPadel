@@ -13,7 +13,8 @@ import { Badge } from "@/components/ui/badge"
  */
 export default async function DashboardPage() {
   const session = await auth()
-  const role = session?.user?.role === "ADMIN" ? "ADMIN" : "USER"
+  const isAdminRole = ["ADMIN", "SUPER_ADMIN"].includes(session?.user?.role as string)
+  const role = isAdminRole ? "ADMIN" : "USER"
   const isTemporary = session?.user?.status === "TEMPORARY"
 
   return (

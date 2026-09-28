@@ -1,4 +1,5 @@
 import { auth } from "@/auth"
+import { redirect } from "next/navigation"
 import { Section } from "@/components/ui/section"
 import { BottomNav } from "@/components/padel/bottom-nav"
 import { EvolutionView, type EvolutionGroup } from "@/components/padel/evolution-view"
@@ -7,12 +8,14 @@ import { computeTrend, groupByCategory } from "@/lib/padel/evolution"
 
 /**
  * /evolucion — G7 vista de evolución del alumno (server component).
- * El layout (app) ya valida sesión; los datos se scoped al studentId de la
- * sesión (anti-IDOR). Para ADMIN (coach) la lista propia está vacía.
+ * Solo accesible para USER (alumno). ADMIN/SUPER_ADMIN son redirigidos.
  */
 export default async function EvolucionPage() {
   const session = await auth()
-  const role = session?.user?.role === "ADMIN" ? "ADMIN" : "USER"
+  const role = session?.user?.role as string
+  if (role === "ADMIN" || role === "SUPER_ADMIN") {
+    redirect("/dashboard")
+  }
   const items = session?.user?.id
     ? await listStudentEvolution(session.user.id as string)
     : []
@@ -45,7 +48,7 @@ export default async function EvolucionPage() {
         </div>
         <EvolutionView evolution={evolution} />
       </div>
-      <BottomNav role={role} />
+      <BottomNav role="USER" />
     </Section>
   )
 }

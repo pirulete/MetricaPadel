@@ -24,7 +24,7 @@ export default async function AppLayout({
     )
   }
 
-  const role = (session.user.role === "ADMIN" ? "ADMIN" : "USER") as "ADMIN" | "USER"
+  const role: "ADMIN" | "USER" = (session.user.role === "ADMIN" || session.user.role === "SUPER_ADMIN") ? "ADMIN" : "USER"
 
   return <AppLayoutClient role={role}>{children}</AppLayoutClient>
 }

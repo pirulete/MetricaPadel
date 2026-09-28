@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { Section } from "@/components/ui/section"
 import { EmptyState } from "@/components/padel/empty-state"
 import {
@@ -8,8 +9,9 @@ import {
   type StudentEvaluationListItem,
 } from "@/components/padel/evaluation-card"
 
-/** A03 — Lista de evaluaciones publicadas del alumno (protegida por layout validateUser). */
+/** A03 — Lista de evaluaciones publicadas del alumno. Solo USER. */
 export default function EvaluacionesPage() {
+  const router = useRouter()
   const [evaluations, setEvaluations] = React.useState<StudentEvaluationListItem[]>([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -19,6 +21,10 @@ export default function EvaluacionesPage() {
     ;(async () => {
       try {
         const res = await fetch("/api/student/evaluations", { cache: "no-store" })
+        if (res.status === 403) {
+          router.replace("/dashboard")
+          return
+        }
         if (!res.ok) throw new Error("No se pudieron cargar las evaluaciones")
         const body = await res.json()
         if (!cancelled) setEvaluations(body.evaluations)
@@ -31,7 +37,7 @@ export default function EvaluacionesPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [router])
 
   return (
     <Section className="py-8 md:py-12">

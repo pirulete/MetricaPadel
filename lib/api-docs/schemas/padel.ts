@@ -191,6 +191,31 @@ export const padelSchemas = {
       updatedAt: { type: 'string', format: 'date-time' },
     },
   },
+  EvaluationSeriesItem: {
+    type: 'object',
+    properties: {
+      id: { type: 'string', format: 'uuid' },
+      version: { type: 'integer', nullable: true },
+      status: { type: 'string', enum: ['draft', 'published'] },
+      totalScore: { type: 'integer', nullable: true },
+      maxScore: { type: 'integer', nullable: true },
+      publishedAt: { type: 'string', format: 'date-time', nullable: true },
+      scores: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            criteriaId: { type: 'string', format: 'uuid' },
+            criterionName: { type: 'string' },
+            levelId: { type: 'string', format: 'uuid' },
+            levelName: { type: 'string' },
+            score: { type: 'integer' },
+            comment: { type: 'string', nullable: true },
+          },
+        },
+      },
+    },
+  },
   EvaluationDetail: {
     type: 'object',
     properties: {

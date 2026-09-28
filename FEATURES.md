@@ -1,5 +1,75 @@
 # FEATURES — Registro de Cambios
 
+## ✨ Rate limiting en invitaciones de academia (2026-09-28)
+
+> status: released
+> release: v0.7
+> date: 2026-09-28
+> change_id: academy-invite-rate-limit
+> module: auth+api
+> tags: [security, rate-limit, academy, owasp, tech-debt]
+
+### Problema
+
+Los endpoints `POST /api/academies/[id]/members/invite` y `POST /api/academies/[id]/members/[userId]/accept` no tenían rate limiting: un atacante podía invitar/aceptar masivamente por IP (abuso de emails, spam de notificaciones, carga a la DB). Identificado como gap en `production_artifacts/2026-09-28-roadmap/roadmap.md` (rate limiting academia).
+
+### Solución Implementada
+
+- **`lib/rate-limit.ts`**: `checkPublicRateLimit(ip, options?)` ahora acepta `{ windowMs, max }` opcionales (backward compatible, defaults 100/60s intactos); `rateLimitedResponse`/`rateLimitSuccessHeaders` aceptan `limit` opcional para headers `X-RateLimit-*` precisos. Nuevas constantes `ACADEMY_INVITE_MAX` (10 en prod/dev, 10000 en test para no romper API tests — patrón `PUSH_DIRECT_MAX`) y `ACADEMY_INVITE_WINDOW_MS` (60s).
+- **invite route**: rate limit por IP al inicio del handler (antes de auth/guard), key `academy-invite:{ip}`, 429 con `rateLimitedResponse`.
+- **accept route**: mismo rate limit y misma key `academy-invite:{ip}` (límite combinado invite+accept — accept no puede bypassear el límite de invite).
+- **OWASP**: mitiga A04 (Insecure Design — abuso de función de negocio) y A01 (exceso de requests como vector de spam/DoS parcial).
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/rate-limit.ts` | 🔧 Modificado — opciones custom en `checkPublicRateLimit` + constantes academy |
+| `app/api/academies/[id]/members/invite/route.ts` | 🔧 Modificado — rate limit por IP |
+| `app/api/academies/[id]/members/[userId]/accept/route.ts` | 🔧 Modificado — rate limit por IP |
+| `lib/api-docs/paths/academies.ts` | 🔧 Modificado — respuesta 429 documentada |
+| `tests/unit/rate-limit.test.ts` | ✨ Nuevo — unit tests del rate limiter |
+
+### Tests
+
+- Unit (Jest): `tests/unit/rate-limit.test.ts` — límite max, aislamiento por key, reset de ventana, defaults, `extractIP`, constantes academy (10 passed).
+- API (Playwright): sin cambios — los tests existentes (`members-happy.spec.ts`, `academies-guard.spec.ts`, `institutional-rubrics-happy.spec.ts`) siguen pasando (límite alto en test env).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Roadmap del proyecto — Métrica Pádel (2026-09-28)
+
+> status: proposed
+> release: docs
+> date: 2026-09-28
+> change_id: roadmap-2026-09-28
+> module: docs
+> tags: [roadmap, backlog, gaps, tech-debt, priorities]
+
+### Problema
+
+No existía una vista consolidada de qué está hecho y qué queda pendiente en el proyecto. La información estaba dispersa en FEATURES.md (39 entradas), ARCHITECTURE.md y múltiples artifacts (pending-features, rubric-gap-analysis, user-flows-v2, super-admin-audit, security-checklist).
+
+### Solución Implementada
+
+Reporte de roadmap en `production_artifacts/2026-09-28-roadmap/roadmap.md` con: features released por versión (v0.1→v0.7, 35 entradas), pendientes (G1/G2/G13/G14/G15/G16, R4/R5, out-of-scope diferidos de super-admin y academia), gaps de UX (BUG-05, avatar sin UI, términos sin UI, E2E Etapa 4 ausentes, rate limiting academia), backlog de infra/calidad (FLAKY-1, cobertura baja, paginación, carpetas vacías, docs debt) y prioridades recomendadas (impacto × esfuerzo + YAGNI).
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `production_artifacts/2026-09-28-roadmap/roadmap.md` | 🔧 Nuevo — reporte de roadmap |
+
+### Tests
+
+No aplica (cambio de documentación).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
 ## ✨ SUPER_ADMIN — Rol Super Admin de Plataforma (2026-09-27)
 
 > status: released
@@ -1500,6 +1570,120 @@ Fase A (DB) y Fase B (auth) del rol SUPER_ADMIN estaban listas (enum, guards, ro
 - `tests/api/admin/audit-logs.spec.ts` — happy-path SQL real (paginación + filtros actionType/userId + userEmail) + guards.
 - `tests/api/admin/academies-global.spec.ts` — happy-path SQL real (academia con owner + métricas) + guards.
 - `tests/unit/padel/super-admin.test.ts` — `assertNotLastSuperAdmin` (count 0/1 bloquea, >1 permite).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Tech Debt — Cobertura unit tests >70% en triggers, enrollments y admin-users (2026-09-28)
+
+> status: released
+> release: v0.7
+> date: 2026-09-28
+> change_id: coverage-unit-tests-2026-09-28
+> module: dashboard
+> tags: [tests, coverage, tech-debt, unit]
+
+### Problema
+
+Tres archivos de unit tests no alcanzaban >70% en todas las métricas (statements, branches, functions, lines): `triggers.test.ts` (50% functions), `enrollments.test.ts` (89% functions, 86% branches) y `admin-users.test.ts` (83% functions, 77% branches).
+
+### Solución Implementada
+
+- `triggers.test.ts`: tests para `triggerWelcome` y `triggerEmailVerified` (payload P2/P3, category account, CTA, dedup null).
+- `enrollments.test.ts`: tests para `listStudentCourses` y `listCourseStudents`; ramas de fallback en `getStudentCourseDetail` (rúbrica/criterio/nivel ausentes → null, evaluación sin scores → []).
+- `admin-users.test.ts`: tests para `getPlayerById` (existe + anti-IDOR null); se agregó `.limit` al mock chain de `@/lib/db` que faltaba.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `tests/unit/notifications/triggers.test.ts` | 🔧 Modificado — +4 tests |
+| `tests/unit/db/enrollments.test.ts` | 🔧 Modificado — +4 tests |
+| `tests/unit/db/admin-users.test.ts` | 🔧 Modificado — +2 tests, fix mock chain |
+
+### Tests
+
+Los 3 archivos pasan a 100% en statements/branches/functions/lines. Suite completa: 44 suites, 544 tests pasando. `npx tsc --noEmit` sin errores.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Tech Debt — E2E Tests Etapa 4 (evaluation-version, student-evolution, course-students) (2026-09-28)
+
+> status: released
+> release: v0.4
+> date: 2026-09-28
+> change_id: etapa4-e2e-tests-2026-09-28
+> module: dashboard
+> tags: [tests, e2e, tech-debt, etapa4, g6, g7, g12]
+
+### Problema
+
+El roadmap (`production_artifacts/2026-09-28-roadmap/roadmap.md` §3) detectó que Etapa 4 (G6 versionado, G7 evolución, G12 gestión de alumnos) figuraba released pero sus 3 E2E navegables no existían en `tests/e2e/`, violando el gate `tests` de features UI.
+
+### Solución Implementada
+
+- `tests/e2e/evaluation-version.spec.ts` — coach publica 2 evaluaciones (misma studentId+rubricId) → v1 y v2; badge v2 en evaluation-card del alumno; serie de versiones; historial del coach.
+- `tests/e2e/student-evolution.spec.ts` — alumno con evaluaciones ve heading "Mi evolución" + categorías con trend indicator; alumno sin evaluaciones ve empty state; link /evolucion en bottom-nav.
+- `tests/e2e/course-students.spec.ts` — coach abre curso → tab Alumnos → modal búsqueda → agregar alumno → verificar en lista → remover (confirm + DELETE 200) → desaparece.
+- Setup/cleanup con SQL real (usuarios bcrypt, rúbrica con criterio/niveles/descriptors, curso, evaluaciones publicadas v1/v2); helpers `serverUp()` y `signIn()` compartidos.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `tests/e2e/evaluation-version.spec.ts` | ✨ Nuevo — 1 test |
+| `tests/e2e/student-evolution.spec.ts` | ✨ Nuevo — 3 tests |
+| `tests/e2e/course-students.spec.ts` | ✨ Nuevo — 1 test |
+
+### Tests
+
+Los 3 archivos parsean (`--list`: 1+3+1 tests) y pasan `npx tsc --noEmit` sin errores.
+
+### Hallazgo (BUG-E2E-01)
+
+`GET /api/evaluations/series` no existe (404): las queries `listEvaluationSeries`/`listStudentEvaluationSeries` están implementadas pero los route handlers nunca se crearon. El test de serie fallará en runtime hasta implementarlos. Detalle en `production_artifacts/2026-09-28-etapa4-e2e-tests/repair-report.md`.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Fix BUG-E2E-01 — Route handler GET /api/evaluations/series (2026-09-28)
+
+> status: released
+> release: v0.4
+> date: 2026-09-28
+> change_id: fix-evaluations-series-route-2026-09-28
+> module: dashboard
+> tags: [api, fix, etapa4, g6, route-handler]
+
+### Problema
+
+`GET /api/evaluations/series` retornaba 404: la query `listEvaluationSeries` existía en `lib/db/queries/padel/evaluations.ts` (L298) pero el route handler nunca se creó (BUG-E2E-01, `production_artifacts/2026-09-28-etapa4-e2e-tests/repair-report.md`).
+
+### Solución Implementada
+
+- Nuevo `app/api/evaluations/series/route.ts`: `GET` con query params `studentId`/`rubricId` validados con Zod (uuid), `guardAdmin`, llama `listEvaluationSeries(teacherId, studentId, rubricId)` y retorna `{ series }`.
+- Anti-IDOR a nivel query: `listEvaluationSeries` scopa por `teacherId` de la sesión → alumno/rúbrica ajenos retornan `[]` (no 404, no leak).
+- `lib/api-docs/spec.ts`: path `/api/evaluations/series` + schema `EvaluationSeriesItem`.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `app/api/evaluations/series/route.ts` | ✨ Nuevo — GET guardAdmin + Zod + listEvaluationSeries |
+| `lib/api-docs/paths/padel.ts` | 🔧 Modificado — path `/api/evaluations/series` |
+| `lib/api-docs/schemas/padel.ts` | 🔧 Modificado — schema `EvaluationSeriesItem` |
+| `tests/api/padel/guard.spec.ts` | 🔧 Modificado — +401 sin sesión, +403 USER |
+| `tests/api/padel/evaluation-series-happy.spec.ts` | ✨ Nuevo — happy-path SQL real (v1/v2, 400, anti-IDOR []) |
+
+### Tests
+
+- `npx tsc --noEmit` sin errores.
+- `npx playwright test tests/e2e/evaluation-version.spec.ts --list` parsea (1 test).
+- Happy-path `evaluation-series-happy.spec.ts` sigue el patrón de `evaluations-happy.spec.ts` (SQL real contra NeonDB; skip graceful sin `DATABASE_URL`). Guard tests 401/403 añadidos.
 
 ### Variables de Entorno
 

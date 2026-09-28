@@ -44,6 +44,8 @@ import {
   getEnrollment,
   getStudentCourseDetail,
   joinCourse,
+  listCourseStudents,
+  listStudentCourses,
   searchCourseCandidates,
 } from "@/lib/db/queries/padel/enrollments";
 import { removeStudentFromCourse } from "@/lib/db/queries/padel/courses";
@@ -125,6 +127,34 @@ describe("deleteEnrollment", () => {
     const result = await deleteEnrollment("c1", "s1");
 
     expect(result).toBeNull();
+  });
+});
+
+describe("listStudentCourses", () => {
+  it("retorna cursos activos del alumno ordenados por joinedAt desc", async () => {
+    const rows = [
+      { id: "c1", name: "Pádel iniciación", level: "iniciacion", schedule: "18:00", days: ["Lun"], inviteCode: "PAD-AB12", joinedAt: new Date("2026-09-21T10:00:00Z") },
+    ];
+    dbQueue.push(rows);
+
+    const result = await listStudentCourses("s1");
+
+    expect(result).toEqual(rows);
+    expect(db.select).toHaveBeenCalled();
+  });
+});
+
+describe("listCourseStudents", () => {
+  it("retorna alumnos inscritos al curso ordenados por joinedAt asc", async () => {
+    const rows = [
+      { id: "s1", firstName: "Ana", lastName: "Pérez", email: "ana@test.com", joinedAt: new Date("2026-09-21T10:00:00Z") },
+    ];
+    dbQueue.push(rows);
+
+    const result = await listCourseStudents("c1");
+
+    expect(result).toEqual(rows);
+    expect(db.select).toHaveBeenCalled();
   });
 });
 
@@ -237,6 +267,52 @@ describe("getStudentCourseDetail", () => {
     expect(result).not.toBeNull();
     expect(result!.evaluations).toEqual([]);
     expect(result!.rubrics).toEqual([rubricRow]);
+  });
+
+  it("usa fallbacks null cuando faltan rúbrica/criterio/nivel y no hay scores", async () => {
+    const orphanEvaluation = { ...evaluationRow, rubricId: "rX", id: "evX" };
+    const orphanScore = { ...scoreRow, evaluationId: "evX", criteriaId: "critX", levelId: "lvX" };
+    dbQueue.push([enrollment]); // getEnrollment
+    dbQueue.push([courseRow]); // course
+    dbQueue.push([rubricRow]); // listCourseRubrics
+    dbQueue.push([orphanEvaluation]); // evaluations
+    dbQueue.push([]); // rubricRows → rX no existe
+    dbQueue.push([orphanScore]); // scores
+    dbQueue.push([]); // criteria → critX no existe
+    dbQueue.push([]); // levels → lvX no existe
+
+    const result = await getStudentCourseDetail("s1", "c1");
+
+    expect(result!.evaluations[0]).toMatchObject({
+      id: "evX",
+      rubricTitle: null,
+      category: null,
+    });
+    expect(result!.evaluations[0].scores).toEqual([
+      {
+        criteriaId: "critX",
+        criterionName: null,
+        levelId: "lvX",
+        levelName: null,
+        score: 3,
+        comment: null,
+      },
+    ]);
+  });
+
+  it("retorna scores vacíos si la evaluación no tiene scores", async () => {
+    dbQueue.push([enrollment]); // getEnrollment
+    dbQueue.push([courseRow]); // course
+    dbQueue.push([rubricRow]); // listCourseRubrics
+    dbQueue.push([evaluationRow]); // evaluations
+    dbQueue.push([{ id: "r1", title: "Rúbrica base", category: "tecnica_basica" }]); // rubricRows
+    dbQueue.push([]); // scores → vacío
+    dbQueue.push([{ id: "crit1", rubricId: "r1", name: "Drive" }]); // criteria
+    dbQueue.push([{ id: "lv1", rubricId: "r1", name: "Bueno" }]); // levels
+
+    const result = await getStudentCourseDetail("s1", "c1");
+
+    expect(result!.evaluations[0].scores).toEqual([]);
   });
 });
 

@@ -82,6 +82,10 @@ test.describe("Padel — 401 sin sesión", () => {
     expect((await request.post(`${BASE_URL}/api/evaluations/${UUID}/publish`)).status()).toBe(401);
   });
 
+  test("GET /api/evaluations/series → 401", async ({ request }) => {
+    expect((await request.get(`${BASE_URL}/api/evaluations/series?studentId=${UUID}&rubricId=${UUID}`)).status()).toBe(401);
+  });
+
   test("GET /api/student/evaluations → 401", async ({ request }) => {
     expect((await request.get(`${BASE_URL}/api/student/evaluations`)).status()).toBe(401);
   });
@@ -132,6 +136,7 @@ test.describe("Padel — 403 de rol + 404 IDOR (SQL real)", () => {
       expect((await ctx.get("/api/rubrics")).status()).toBe(403);
       expect((await ctx.get("/api/evaluations")).status()).toBe(403);
       expect((await ctx.get("/api/admin/users")).status()).toBe(403);
+      expect((await ctx.get(`/api/evaluations/series?studentId=${UUID}&rubricId=${UUID}`)).status()).toBe(403);
       const post = await ctx.post("/api/rubrics", {
         data: { title: "X", category: "tecnica_basica", criteria: [] },
         headers: { "Content-Type": "application/json" },

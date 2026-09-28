@@ -65,7 +65,7 @@ test.describe("Admin users CRUD — happy-path y guards (SQL real)", () => {
   test.afterAll(async () => {
     const pool = getPool();
     await pool.query(
-      `DELETE FROM audit_logs WHERE entity_name = 'user' AND entity_id::uuid IN (SELECT id FROM users WHERE email = ANY($1))`,
+      `DELETE FROM audit_logs al USING users u WHERE al.entity_name = 'user' AND al.entity_id = u.id::text AND u.email = ANY($1)`,
       [[ADMIN_EMAIL, PLAYER_EMAIL, ADMIN2_EMAIL]]
     );
     await deleteUserByEmail(ADMIN_EMAIL);

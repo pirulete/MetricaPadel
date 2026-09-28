@@ -83,6 +83,14 @@ function splitStatements(sqlContent: string): string[] {
     .filter(s => s.length > 0 && !s.startsWith('--'))
 }
 
+function errorMessage(e: unknown): string {
+  if (e instanceof Error) {
+    const cause = e.cause instanceof Error ? e.cause.message : ''
+    return `${e.message} ${cause}`.trim()
+  }
+  return String(e)
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function runMigration() {
@@ -140,7 +148,7 @@ async function runMigration() {
     // 5. Execute each migration statement-by-statement
     let appliedCount = 0
     let skippedCount = 0
-    let errorCount = 0
+    const errorCount = 0
 
     for (const entry of entries) {
       const sqlFile = path.join(drizzleDir, `${entry.tag}.sql`)
@@ -164,8 +172,8 @@ async function runMigration() {
       for (const stmt of statements) {
         try {
           await db.execute(sql.raw(stmt))
-        } catch (e: any) {
-          const msg = `${e?.message ?? ''} ${e?.cause?.message ?? ''}`
+        } catch (e: unknown) {
+          const msg = errorMessage(e)
           if (msg.includes('already exists') || msg.includes('does not exist') || msg.includes('duplicate')) {
             // Object already exists from a partial previous migration — skip
             migrationErrors++
@@ -201,8 +209,8 @@ async function runMigration() {
             INSERT INTO drizzle.__drizzle_migrations (hash, created_at)
             VALUES (${hash}, ${Date.now()})
           `)
-        } catch (e: any) {
-          console.error(`[v0]   ⚠ Could not record migration: ${e?.message?.substring(0, 80)}`)
+        } catch (e: unknown) {
+          console.error(`[v0]   ⚠ Could not record migration: ${errorMessage(e).substring(0, 80)}`)
         }
       }
 
@@ -226,11 +234,8 @@ async function runMigration() {
     console.log('[v0] ✓ All critical tables verified')
 
     process.exit(0)
-  } catch (error: any) {
-    console.error('[v0] ✗ Migration failed:', error?.message ?? error)
-    if (error?.cause?.message) {
-      console.error('[v0]   Cause:', error.cause.message)
-    }
+  } catch (error: unknown) {
+    console.error('[v0] ✗ Migration failed:', errorMessage(error))
     process.exit(1)
   }
 }

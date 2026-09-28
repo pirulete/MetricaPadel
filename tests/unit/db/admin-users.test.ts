@@ -13,6 +13,7 @@ jest.mock("@/lib/db", () => {
     c.from = jest.fn(() => c);
     c.where = jest.fn(() => c);
     c.orderBy = jest.fn(() => c);
+    c.limit = jest.fn(() => c);
     c.values = jest.fn((v: any) => {
       valuesLog.push(v);
       return c;
@@ -39,7 +40,7 @@ jest.mock("bcryptjs", () => ({
 
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
-import { createActiveUser, listPlayers, lockPlayer, unlockPlayer, updatePlayer } from "@/lib/db/queries/padel/admin-users";
+import { createActiveUser, getPlayerById, listPlayers, lockPlayer, unlockPlayer, updatePlayer } from "@/lib/db/queries/padel/admin-users";
 import { promoteUser } from "@/lib/db/queries/padel/promote";
 
 const mocked = jest.requireMock("@/lib/db") as any;
@@ -77,6 +78,25 @@ describe("createActiveUser", () => {
     expect(valuesLog[0].role).toBe("USER");
     expect(valuesLog[0].passwordHash).toBe("hashed-password");
     expect(result).toEqual({ ...player, role: "USER", passwordHash: "hashed-password" });
+  });
+});
+
+describe("getPlayerById", () => {
+  it("retorna el jugador si existe y es role USER", async () => {
+    dbQueue.push([player]);
+
+    const result = await getPlayerById("u1");
+
+    expect(result).toEqual(player);
+    expect(db.select).toHaveBeenCalled();
+  });
+
+  it("retorna null si no existe o no es role USER (anti-IDOR)", async () => {
+    dbQueue.push([]);
+
+    const result = await getPlayerById("u1");
+
+    expect(result).toBeNull();
   });
 });
 

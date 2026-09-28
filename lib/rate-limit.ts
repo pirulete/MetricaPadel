@@ -224,32 +224,44 @@ const PUBLIC_RATE_LIMIT_MAX = 100;
 const PUBLIC_RATE_LIMIT_WINDOW_MS = 60_000;
 const publicRequestCounts = new Map<string, { count: number; resetTime: number }>();
 
-export function checkPublicRateLimit(ip: string): { allowed: boolean; remaining: number; resetTime: number } {
+// ── Academy Invite Rate Limiting ───────────────────────────────
+// Límite combinado invite+accept: 10 por IP por minuto (ventana 60s).
+// Comparten la key `academy-invite:{ip}` para que accept no pueda bypassear
+// el límite de invite. En test: límite alto para no interferir con API tests.
+export const ACADEMY_INVITE_MAX = isTestEnv ? 10000 : 10;
+export const ACADEMY_INVITE_WINDOW_MS = 60_000;
+
+export function checkPublicRateLimit(
+  ip: string,
+  options?: { windowMs?: number; max?: number }
+): { allowed: boolean; remaining: number; resetTime: number } {
+  const windowMs = options?.windowMs ?? PUBLIC_RATE_LIMIT_WINDOW_MS;
+  const max = options?.max ?? PUBLIC_RATE_LIMIT_MAX;
   const now = Date.now();
   const entry = publicRequestCounts.get(ip);
   if (!entry || now > entry.resetTime) {
-    publicRequestCounts.set(ip, { count: 1, resetTime: now + PUBLIC_RATE_LIMIT_WINDOW_MS });
-    return { allowed: true, remaining: PUBLIC_RATE_LIMIT_MAX - 1, resetTime: now + PUBLIC_RATE_LIMIT_WINDOW_MS };
+    publicRequestCounts.set(ip, { count: 1, resetTime: now + windowMs });
+    return { allowed: true, remaining: max - 1, resetTime: now + windowMs };
   }
-  if (entry.count >= PUBLIC_RATE_LIMIT_MAX) {
+  if (entry.count >= max) {
     return { allowed: false, remaining: 0, resetTime: entry.resetTime };
   }
   entry.count++;
-  return { allowed: true, remaining: PUBLIC_RATE_LIMIT_MAX - entry.count, resetTime: entry.resetTime };
+  return { allowed: true, remaining: max - entry.count, resetTime: entry.resetTime };
 }
 
-function publicRateLimitHeaders(remaining: number, resetTime: number) {
+function publicRateLimitHeaders(remaining: number, resetTime: number, limit = PUBLIC_RATE_LIMIT_MAX) {
   return {
-    "X-RateLimit-Limit": String(PUBLIC_RATE_LIMIT_MAX),
+    "X-RateLimit-Limit": String(limit),
     "X-RateLimit-Remaining": String(remaining),
     "X-RateLimit-Reset": String(Math.ceil(resetTime / 1000)),
   };
 }
 
-export function rateLimitedResponse(resetTime: number) {
+export function rateLimitedResponse(resetTime: number, limit = PUBLIC_RATE_LIMIT_MAX) {
   return NextResponse.json(
     { error: "Demasiadas solicitudes. Intente nuevamente más tarde." },
-    { status: 429, headers: { "Cache-Control": "no-store", ...publicRateLimitHeaders(0, resetTime) } }
+    { status: 429, headers: { "Cache-Control": "no-store", ...publicRateLimitHeaders(0, resetTime, limit) } }
   );
 }
 
@@ -259,6 +271,6 @@ export function extractIP(req: { headers: { get: (name: string) => string | null
     || "unknown";
 }
 
-export function rateLimitSuccessHeaders(remaining: number, resetTime: number) {
-  return { ...publicRateLimitHeaders(remaining, resetTime) };
+export function rateLimitSuccessHeaders(remaining: number, resetTime: number, limit = PUBLIC_RATE_LIMIT_MAX) {
+  return { ...publicRateLimitHeaders(remaining, resetTime, limit) };
 }

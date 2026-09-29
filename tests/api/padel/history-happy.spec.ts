@@ -104,7 +104,7 @@ test.describe("History — happy-path (SQL real)", () => {
       const history = await ctx.get("/api/history");
       expect(history.status()).toBe(200);
       const historyBody = await history.json();
-      const found = historyBody.evaluations.find((e: { id: string }) => e.id === evaluationId);
+      const found = historyBody.items.find((e: { id: string }) => e.id === evaluationId);
       expect(found).toBeTruthy();
       expect(found.status).toBe("published");
       expect(found.totalScore).toBe(4);
@@ -114,13 +114,13 @@ test.describe("History — happy-path (SQL real)", () => {
       const published = await ctx.get("/api/history?status=published");
       expect(published.status()).toBe(200);
       const publishedBody = await published.json();
-      expect(publishedBody.evaluations.find((e: { id: string }) => e.id === evaluationId)).toBeTruthy();
+      expect(publishedBody.items.find((e: { id: string }) => e.id === evaluationId)).toBeTruthy();
 
       // Filtro por studentId
       const studentId = (await pool.query(`SELECT id FROM users WHERE email = $1`, [USER_EMAIL])).rows[0].id;
       const byStudent = await ctx.get(`/api/history?studentId=${studentId}`);
       expect(byStudent.status()).toBe(200);
-      expect((await byStudent.json()).evaluations.length).toBeGreaterThanOrEqual(1);
+      expect((await byStudent.json()).items.length).toBeGreaterThanOrEqual(1);
 
       // Query inválida → 400
       const bad = await ctx.get("/api/history?status=archived");
@@ -130,7 +130,7 @@ test.describe("History — happy-path (SQL real)", () => {
       const otherHistory = await otherCtx.get("/api/history");
       expect(otherHistory.status()).toBe(200);
       const otherBody = await otherHistory.json();
-      expect(otherBody.evaluations.find((e: { id: string }) => e.id === evaluationId)).toBeFalsy();
+      expect(otherBody.items.find((e: { id: string }) => e.id === evaluationId)).toBeFalsy();
     } finally {
       await ctx.dispose();
       await otherCtx.dispose();

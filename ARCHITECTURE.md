@@ -142,6 +142,27 @@ Principio: **NUNCA permitir LOCKED** en rutas privadas. TEMPORARY solo si explí
 - **UI**: `app/(app)/academias` (lista + detalle con tabs Branding/Miembros/Rúbricas), 7 componentes en `components/padel/` (academy-card/form/detail, logo-upload, members-list, invite-member-modal, academy-rubrics-tab), botón "Exportar PDF" en `rubric-viewer.tsx` (solo si la evaluación tiene academia), link `/academias` en bottom-nav.
 - **Migración**: `0008_*` (enums + 2 tablas + rubrics.academyId/scope + índices).
 
+## Padel Evaluativo — Evaluación en Pareja (v0.8)
+
+- **Roles**: mismos USER/ADMIN (ADMIN=coach, USER=player). Sin cambios de auth; se reutiliza `guardAdmin`.
+- **DB**: **sin migración** (D1/D2) — las 2 filas por pareja son evaluaciones normales (`studentId`/`teacherId`/`rubricId`/`courseId`/`status`/`version`). No hay columna `pairId`; la relación de pareja se infiere del evento de auditoría `PAIR_EVALUATION_PUBLISHED` (student_a_id/student_b_id).
+- **Queries** (`lib/db/queries/padel/pair.ts`): `createPairDrafts` (2 inserts draft en tx + validación de inscripción), `savePairEvaluationScores` (RF-06, rollback si falla un save), `publishPairEvaluation` (2 updates a published + versión `COALESCE(MAX(version),0)+1` por (studentId, rubricId) dentro de la tx + insert de auditoría en la misma tx, D5). Refactor puro en `evaluations.ts`: extracción de `saveEvaluationScoresTx` y `countMissingCriteria` (1v1 intacto).
+- **Endpoints nuevos** (3): `POST /api/evaluations/pair` (create 201, anti-IDOR 404), `PUT /api/evaluations/pair` (save 200, transaccional), `POST /api/evaluations/pair/publish` (publish 200, transaccional + auditoría). Guards `guardAdmin` + Zod (`pairEvaluationCreateSchema` con `studentAId !== studentBId` → 400). Anti-IDOR: rúbrica del coach (404), alumnos role USER (404), ambos inscritos al curso (404, CA-07) — re-validado en publish (defensa en profundidad). Sin notificaciones (D8) ni coverage check (D9).
+- **Lógica pura** (`lib/padel/pair.ts`, sin imports server-side): `SHARED_CATEGORIES = ['tactica','actitud_equipo','reglas']` (D3), `INDIVIDUAL_CATEGORIES = ['tecnica_basica','tecnica_especifica','fisica']`, `applySharedSelection` (sync A→B), `syncPairScores` (al activar toggle), `computePairTotals`, `validatePairPublish`, `computePairAuditCounts` (D7: conteo derivado de scores reales), `buildPairAuditPayload`.
+- **UI**: `app/(app)/evaluar/pareja/page.tsx` (validateAdmin), `components/padel/pair-student-picker.tsx` (selección de exactamente 2 alumnos inscritos), `components/padel/pair-scoring-canvas.tsx` (2 columnas A/B + Switch "Evaluar en Pareja" por criterio + score en vivo + duración desde mount). Botón "Evaluar en Pareja" en `course-detail.tsx`. `ScoringCanvas` 1v1 y `StudentPicker` intactos (D12).
+- **Auditoría**: constante `PAIR_EVALUATION_PUBLISHED` + helper `auditPairEvaluationPublished` en `lib/audit/helpers.ts` (el insert autoritativo ocurre dentro de la tx de publish).
+- **Tests**: `tests/unit/padel/pair.test.ts`, `tests/unit/db/pair-queries.test.ts`, `tests/unit/validations/padel.test.ts` (extendido), `tests/api/padel/pair-evaluations-happy.spec.ts` (SQL real), `tests/api/padel/pair-evaluations-guard.spec.ts` (401/403/400/404), `tests/e2e/pair-evaluation.spec.ts`.
+- **Migración**: ninguna (schema existente suficiente).
+
+## Padel Evaluativo — Paginación por cursor (G15)
+
+- **Patrón**: cursor por fecha ISO (`limit+1` para `hasMore`, `nextCursor` = ISO del último item, `lt(col, cursor)`). Tipos compartidos `PaginationParams`/`PaginatedResult` + `resolveLimit` (default 20, máx 50) en `lib/db/queries/padel/pagination.ts` (mismo patrón que `getNotificationsByUserId`).
+- **Queries paginadas** (5): `listEvaluations` (cursor `updatedAt`), `listStudentEvaluations` (cursor `publishedAt`), `listHistory` (cursor `publishedAt`; borradores con publishedAt null quedan en página 1), `listRubrics` (cursor `createdAt`), `listCourses` (cursor `createdAt`). El campo de cursor SIEMPRE coincide con el `orderBy` de la query.
+- **`listCoursesForDashboard`** (sin paginar): `getTeacherDashboard` la usa — el dashboard espera array completo para métricas (`classesToday`) y la lista del home.
+- **Endpoints** (5): `GET /api/{evaluations,history,rubrics,courses,student/evaluations}` aceptan `?limit=&cursor=` (Zod `paginationQuerySchema`) y retornan `{ items, nextCursor }`.
+- **UI**: botón "Cargar más" en `history-list.tsx`, `rubric-library.tsx`, `cursos/page.tsx` (rama ADMIN usa `/api/courses` paginado; alumno sigue con `/api/dashboard/student` sin paginar) y `evaluaciones/page.tsx`.
+- **Migración**: ninguna (sin cambios de schema).
+
 ## Convenciones de Migraciones
 
 - **Siempre usar `pnpm run db:generate` tras modificar `lib/db/schema.ts`** — nunca crear SQL a mano.

@@ -15,11 +15,16 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { EmptyState } from "@/components/padel/empty-state"
+import { Button } from "@/components/ui/button"
+import { Download } from "lucide-react"
+import { downloadCsv } from "@/lib/utils"
+import { historyToCsv } from "@/lib/padel/history-csv"
 
 export type HistoryItem = {
   id: string
   studentName: string
   rubricTitle: string
+  category: string | null
   courseName: string | null
   date: string | null
   totalScore: number | null
@@ -30,9 +35,13 @@ export type HistoryItem = {
 type CourseOption = { id: string; name: string }
 type StudentOption = { id: string; name: string }
 
-/** Historial del coach (P10) con filtros curso/alumno/estado. */
+const PAGE_SIZE = 20
+
+/** Historial del coach (P10) con filtros curso/alumno/estado + paginación por cursor (G15). */
 export function HistoryList() {
   const [items, setItems] = React.useState<HistoryItem[]>([])
+  const [nextCursor, setNextCursor] = React.useState<string | null>(null)
+  const [loadingMore, setLoadingMore] = React.useState(false)
   const [courses, setCourses] = React.useState<CourseOption[]>([])
   const [students, setStudents] = React.useState<StudentOption[]>([])
   const [courseId, setCourseId] = React.useState<string>("all")
@@ -41,24 +50,56 @@ export function HistoryList() {
   const [loading, setLoading] = React.useState(true)
   const firstLoad = React.useRef(true)
 
+  const buildParams = React.useCallback((cursor?: string) => {
+    const params = new URLSearchParams()
+    params.set("limit", String(PAGE_SIZE))
+    if (courseId !== "all") params.set("courseId", courseId)
+    if (studentId !== "all") params.set("studentId", studentId)
+    if (status !== "all") params.set("status", status)
+    if (cursor) params.set("cursor", cursor)
+    return params
+  }, [courseId, studentId, status])
+
   const load = React.useCallback(async () => {
     try {
-      const params = new URLSearchParams()
-      if (courseId !== "all") params.set("courseId", courseId)
-      if (studentId !== "all") params.set("studentId", studentId)
-      if (status !== "all") params.set("status", status)
-      const qs = params.toString()
-      const res = await fetch(`/api/history${qs ? `?${qs}` : ""}`, { cache: "no-store" })
+      const qs = buildParams().toString()
+      const res = await fetch(`/api/history?${qs}`, { cache: "no-store" })
       const data = await res.json()
       if (!res.ok) {
         toast.error(data.error ?? "Error al cargar el historial")
         return
       }
-      setItems(data.evaluations ?? [])
+      setItems(data.items ?? [])
+      setNextCursor(data.nextCursor ?? null)
     } catch {
       toast.error("Error de conexión")
     }
-  }, [courseId, studentId, status])
+  }, [buildParams])
+
+  const loadMore = React.useCallback(async () => {
+    if (!nextCursor || loadingMore) return
+    setLoadingMore(true)
+    try {
+      const qs = buildParams(nextCursor).toString()
+      const res = await fetch(`/api/history?${qs}`, { cache: "no-store" })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error ?? "Error al cargar más historial")
+        return
+      }
+      setItems((prev) => [...prev, ...(data.items ?? [])])
+      setNextCursor(data.nextCursor ?? null)
+    } catch {
+      toast.error("Error de conexión")
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [nextCursor, loadingMore, buildParams])
+
+  const handleExportCsv = () => {
+    const csv = historyToCsv(items)
+    downloadCsv(csv, `evaluaciones-${new Date().toISOString().slice(0, 10)}.csv`)
+  }
 
   React.useEffect(() => {
     let cancelled = false
@@ -71,7 +112,7 @@ export function HistoryList() {
         const coursesData = await coursesRes.json()
         const studentsData = await studentsRes.json()
         if (!cancelled) {
-          setCourses((coursesData.courses ?? []).map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })))
+          setCourses((coursesData.items ?? []).map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })))
           setStudents((studentsData.users ?? []).map((u: { id: string; firstName: string | null; lastName: string | null }) => ({
             id: u.id,
             name: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim(),
@@ -81,10 +122,12 @@ export function HistoryList() {
         // Filtros opcionales: no bloquean la lista
       }
       try {
-        const params = new URLSearchParams()
-        const res = await fetch("/api/history", { cache: "no-store" })
+        const res = await fetch(`/api/history?limit=${PAGE_SIZE}`, { cache: "no-store" })
         const data = await res.json()
-        if (res.ok && !cancelled) setItems(data.evaluations ?? [])
+        if (res.ok && !cancelled) {
+          setItems(data.items ?? [])
+          setNextCursor(data.nextCursor ?? null)
+        }
       } catch {
         // ya se muestra empty state
       } finally {
@@ -141,6 +184,12 @@ export function HistoryList() {
             <SelectItem value="published">Publicada</SelectItem>
           </SelectContent>
         </Select>
+        {items.length > 0 && (
+          <Button variant="outline" className="ml-auto" onClick={handleExportCsv} aria-label="Exportar CSV">
+            <Download className="h-4 w-4" />
+            Exportar CSV
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -151,36 +200,45 @@ export function HistoryList() {
           description="Ajusta los filtros o crea tu primera evaluación."
         />
       ) : (
-        <Card>
-          <CardContent className="divide-y divide-border">
-            {items.map((item) => (
-              <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                <div>
-                  <p className="text-sm font-medium">{item.studentName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {item.rubricTitle}
-                    {item.courseName ? ` · ${item.courseName}` : ""}
-                  </p>
+        <>
+          <Card>
+            <CardContent className="divide-y divide-border">
+              {items.map((item) => (
+                <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+                  <div>
+                    <p className="text-sm font-medium">{item.studentName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.rubricTitle}
+                      {item.courseName ? ` · ${item.courseName}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {item.totalScore !== null && item.maxScore !== null && (
+                      <span className="text-sm font-semibold">
+                        {item.totalScore}/{item.maxScore}
+                      </span>
+                    )}
+                    <Badge variant={item.status === "published" ? "secondary" : "outline"}>
+                      {item.status === "published" ? "Publicada" : "Borrador"}
+                    </Badge>
+                    {item.date && (
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(item.date).toLocaleDateString("es-ES")}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  {item.totalScore !== null && item.maxScore !== null && (
-                    <span className="text-sm font-semibold">
-                      {item.totalScore}/{item.maxScore}
-                    </span>
-                  )}
-                  <Badge variant={item.status === "published" ? "secondary" : "outline"}>
-                    {item.status === "published" ? "Publicada" : "Borrador"}
-                  </Badge>
-                  {item.date && (
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(item.date).toLocaleDateString("es-ES")}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+              ))}
+            </CardContent>
+          </Card>
+          {nextCursor && (
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? "Cargando…" : "Cargar más"}
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

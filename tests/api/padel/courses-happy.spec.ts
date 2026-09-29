@@ -85,7 +85,7 @@ test.describe("Courses — happy-path (SQL real)", () => {
       const list = await ctx.get("/api/courses");
       expect(list.status()).toBe(200);
       const listBody = await list.json();
-      const found = listBody.courses.find((c: { id: string }) => c.id === courseId);
+      const found = listBody.items.find((c: { id: string }) => c.id === courseId);
       expect(found).toBeTruthy();
       expect(found.studentCount).toBe(0);
 

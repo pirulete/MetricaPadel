@@ -156,13 +156,13 @@ describe("getRubricById", () => {
 });
 
 describe("listRubrics", () => {
-  it("lista con counts de criteria/levels", async () => {
+  it("lista con counts de criteria/levels (paginado: items + nextCursor null)", async () => {
     const rows = [{ ...rubric, criteriaCount: 1, levelCount: 4 }];
     dbQueue.push(rows);
 
     const result = await listRubrics("coach1");
 
-    expect(result).toEqual(rows);
+    expect(result).toEqual({ items: rows, nextCursor: null });
     expect(db.select).toHaveBeenCalled();
   });
 
@@ -170,6 +170,32 @@ describe("listRubrics", () => {
     dbQueue.push([]);
     await listRubrics("coach1", "archived");
     expect(db.select).toHaveBeenCalled();
+  });
+
+  it("G15: retorna nextCursor cuando hay más items (limit+1)", async () => {
+    const rows = Array.from({ length: 21 }, (_, i) => ({
+      ...rubric,
+      id: `r${i}`,
+      createdAt: new Date(`2026-09-${String(20 - i).padStart(2, "0")}T10:00:00Z`),
+      criteriaCount: 1,
+      levelCount: 4,
+    }));
+    dbQueue.push(rows);
+
+    const result = await listRubrics("coach1", undefined, { limit: 20 });
+
+    expect(result.items).toHaveLength(20);
+    expect(result.nextCursor).toBe(rows[19].createdAt.toISOString());
+  });
+
+  it("G15: sin más items retorna nextCursor null", async () => {
+    const rows = [{ ...rubric, criteriaCount: 1, levelCount: 4 }];
+    dbQueue.push(rows);
+
+    const result = await listRubrics("coach1", undefined, { limit: 20 });
+
+    expect(result.items).toHaveLength(1);
+    expect(result.nextCursor).toBeNull();
   });
 });
 

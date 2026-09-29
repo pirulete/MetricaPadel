@@ -121,7 +121,7 @@ test.describe("Institutional rubrics — happy-path (SQL real)", () => {
       const list = await coachCtx.get(`/api/academies/${academyId}/rubrics`);
       expect(list.status()).toBe(200);
       const listBody = await list.json();
-      expect(listBody.rubrics.find((r: { id: string }) => r.id === rubricId)).toBeTruthy();
+      expect(listBody.items.find((r: { id: string }) => r.id === rubricId)).toBeTruthy();
 
       // COACH puede leer el detalle de la rúbrica institucional (GET /api/rubrics/[id])
       const detail = await coachCtx.get(`/api/rubrics/${rubricId}`);

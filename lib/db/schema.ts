@@ -512,6 +512,9 @@ export const evaluations = pgTable("evaluations", {
   globalComment: text("global_comment"),
   publishedAt: timestamp("published_at"),
   readAt: timestamp("read_at"),
+  // G16: soft-delete (archivado). Las evaluaciones archivadas se ocultan de
+  // todas las queries de coach/alumno pero se conservan (historial + versiones).
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => [

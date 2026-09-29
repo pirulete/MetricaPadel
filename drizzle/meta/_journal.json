@@ -71,6 +71,13 @@
       "when": 1790545329558,
       "tag": "0009_third_white_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790623455734,
+      "tag": "0010_hard_wrecker",
+      "breakpoints": true
     }
   ]
 }

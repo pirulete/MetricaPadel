@@ -11,6 +11,16 @@ export const padelIdParamsSchema = z.object({
   id: z.string().uuid("id debe ser un uuid válido"),
 });
 
+/**
+ * Paginación por cursor (G15) para query params de listados.
+ * limit: 1..50 (default 20 en la query). cursor: ISO date string del último
+ * item de la página anterior (producido por toISOString).
+ */
+export const paginationQuerySchema = z.object({
+  limit: z.coerce.number().int("limit debe ser un entero").min(1, "limit mínimo 1").max(50, "limit máximo 50").optional(),
+  cursor: z.string().datetime({ offset: true, message: "cursor debe ser una fecha ISO (ej: 2026-09-28T10:00:00.000Z)" }).optional(),
+});
+
 /** POST /api/admin/users — crea jugador (USER, status=ACTIVE). password opcional (G4): si no viene, el handler genera una. */
 export const adminCreateUserSchema = z.object({
   email: z.string().trim().email("email inválido").max(255),
@@ -78,15 +88,21 @@ export const evaluationSaveSchema = z.object({
   globalComment: z.string().trim().max(5000).optional(),
 });
 
-/** GET /api/rubrics — query status (draft|active|archived). */
-export const rubricListQuerySchema = z.object({
+/** GET /api/rubrics — query status (draft|active|archived) + paginación (G15). */
+export const rubricListQuerySchema = paginationQuerySchema.extend({
   status: z.enum(rubricStatusValues).optional(),
 });
 
-/** GET /api/evaluations — query status (draft|published). */
-export const evaluationListQuerySchema = z.object({
+/** GET /api/evaluations — query status (draft|published) + paginación (G15). */
+export const evaluationListQuerySchema = paginationQuerySchema.extend({
   status: z.enum(evaluationStatusValues).optional(),
 });
+
+/** GET /api/courses — paginación por cursor (G15). */
+export const courseListQuerySchema = paginationQuerySchema;
+
+/** GET /api/student/evaluations — paginación por cursor (G15). */
+export const studentEvaluationListQuerySchema = paginationQuerySchema;
 
 /** POST /api/courses — crea curso (inviteCode lo genera el handler). */
 export const courseCreateSchema = z.object({
@@ -113,8 +129,8 @@ export const courseRubricAssignSchema = z.object({
   rubricId: z.string().uuid("rubricId debe ser un uuid válido"),
 });
 
-/** GET /api/history — filtros opcionales (courseId/studentId/status). */
-export const historyQuerySchema = z.object({
+/** GET /api/history — filtros opcionales (courseId/studentId/status) + paginación (G15). */
+export const historyQuerySchema = paginationQuerySchema.extend({
   courseId: z.string().uuid("courseId debe ser un uuid válido").optional(),
   studentId: z.string().uuid("studentId debe ser un uuid válido").optional(),
   status: z.enum(evaluationStatusValues).optional(),
@@ -130,6 +146,47 @@ export const courseStudentSearchQuerySchema = z.object({
   q: z.string().trim().min(1, "q es requerido").max(100, "q no puede superar 100 caracteres"),
 });
 
+/** Item de score reutilizado por los schemas de pareja (SPEC-01, v0.8). */
+const pairScoreItemSchema = z.object({
+  criteriaId: z.string().uuid("criteriaId debe ser un uuid válido"),
+  levelId: z.string().uuid("levelId debe ser un uuid válido"),
+  comment: z.string().trim().max(2000).optional(),
+});
+
+/** POST /api/evaluations/pair — crea borradores de pareja (SPEC-01). */
+export const pairEvaluationCreateSchema = z
+  .object({
+    studentAId: z.string().uuid("studentAId debe ser un uuid válido"),
+    studentBId: z.string().uuid("studentBId debe ser un uuid válido"),
+    rubricId: z.string().uuid("rubricId debe ser un uuid válido"),
+    courseId: z.string().uuid("courseId debe ser un uuid válido"),
+  })
+  .refine((v) => v.studentAId !== v.studentBId, {
+    message: "studentAId y studentBId deben ser distintos",
+    path: ["studentBId"],
+  });
+
+/** PUT /api/evaluations/pair — guarda scores de ambos borradores (RF-06). */
+export const pairEvaluationSaveSchema = z.object({
+  evaluationAId: z.string().uuid("evaluationAId debe ser un uuid válido"),
+  evaluationBId: z.string().uuid("evaluationBId debe ser un uuid válido"),
+  scoresA: z.array(pairScoreItemSchema).min(1, "mínimo 1 score").max(100, "máximo 100 scores"),
+  scoresB: z.array(pairScoreItemSchema).min(1, "mínimo 1 score").max(100, "máximo 100 scores"),
+  globalCommentA: z.string().trim().max(5000).optional(),
+  globalCommentB: z.string().trim().max(5000).optional(),
+});
+
+/** POST /api/evaluations/pair/publish — publica pareja (D10: durationSeconds opcional). */
+export const pairEvaluationPublishSchema = z.object({
+  evaluationAId: z.string().uuid("evaluationAId debe ser un uuid válido"),
+  evaluationBId: z.string().uuid("evaluationBId debe ser un uuid válido"),
+  durationSeconds: z
+    .number()
+    .int("durationSeconds debe ser un entero")
+    .min(0, "durationSeconds debe ser >= 0")
+    .optional(),
+});
+
 export type AdminCreateUserInput = z.infer<typeof adminCreateUserSchema>;
 export type AdminUpdateUserInput = z.infer<typeof adminUpdateUserSchema>;
 export type RubricCreateInput = z.infer<typeof rubricCreateSchema>;
@@ -143,3 +200,6 @@ export type CourseRubricAssignInput = z.infer<typeof courseRubricAssignSchema>;
 export type HistoryQueryInput = z.infer<typeof historyQuerySchema>;
 export type CourseStudentAddInput = z.infer<typeof courseStudentAddSchema>;
 export type CourseStudentSearchQueryInput = z.infer<typeof courseStudentSearchQuerySchema>;
+export type PairEvaluationCreateInput = z.infer<typeof pairEvaluationCreateSchema>;
+export type PairEvaluationSaveInput = z.infer<typeof pairEvaluationSaveSchema>;
+export type PairEvaluationPublishInput = z.infer<typeof pairEvaluationPublishSchema>;

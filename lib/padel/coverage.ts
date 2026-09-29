@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { evaluations, rubrics } from "@/lib/db/schema";
 import { and, eq, ne } from "drizzle-orm";
 
+export { getCoverageSummary, RUBRIC_CATEGORIES } from "./coverage-summary";
+
 /**
  * Check if the student already has a published evaluation for the given category.
  * Excludes the current evaluation (by ID) since it was just published.

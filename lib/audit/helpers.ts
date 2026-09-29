@@ -537,3 +537,43 @@ export async function auditMemberRemoved(
     metadata: { academy: true, action: 'member_removed', ...context.metadata },
   })
 }
+
+// ─── Evaluación en Pareja (SPEC-01, v0.8) ────────────────────────────────────
+
+/**
+ * Constante para el nuevo evento de publicación en pareja.
+ */
+export const PAIR_EVALUATION_PUBLISHED = 'PAIR_EVALUATION_PUBLISHED';
+
+/**
+ * Audit: publicación de evaluación en pareja (PAIR_EVALUATION_PUBLISHED).
+ * entityId = evaluationA.id (la pareja se infiere del payload).
+ *
+ * Nota de implementación: el insert autoritativo ocurre DENTRO de la
+ * transacción de publish (lib/db/queries/padel/pair.ts, D5 del technical
+ * design). Este helper espeja el mismo payload para consistencia de API y
+ * NO puede usarse dentro de la transacción (createAuditLog usa el handle
+ * global `db`, no el cliente tx). Se incluye entityId porque
+ * audit_logs.entity_id es NOT NULL.
+ */
+export async function auditPairEvaluationPublished(
+  entityId: string,
+  context: AuditContext,
+  payload: {
+    coach_id: string;
+    course_id: string;
+    student_a_id: string;
+    student_b_id: string;
+    shared_criteria_count: number;
+    individual_criteria_count: number;
+    duration_seconds: number;
+  }
+): Promise<void> {
+  await createAuditLog(PAIR_EVALUATION_PUBLISHED, 'evaluation', entityId, {
+    userId: context.userId,
+    newValues: payload,
+    ipAddress: context.ipAddress,
+    userAgent: context.userAgent,
+    metadata: context.metadata,
+  })
+}

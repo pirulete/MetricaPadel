@@ -47,7 +47,7 @@ export function AssignRubricModal({
     try {
       const res = await fetch("/api/rubrics?status=active", { cache: "no-store" })
       const data = await res.json()
-      if (res.ok) setRubrics(data.rubrics ?? [])
+      if (res.ok) setRubrics(data.items ?? [])
     } catch {
       toast.error("Error al cargar rúbricas")
     }

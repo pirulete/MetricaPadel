@@ -291,42 +291,70 @@ task(description="Validación release", subagent_type="qa-release", prompt="
 ")
 ```
 
-**Artifact Completeness Validator:**
-Verificar que existen todos los deliverables esperados:
-- [ ] feature-spec.md
-- [ ] release-scope.md
+**Artifact Completeness Validator (antes de @qa-validator):**
+Verificar que existen todos los deliverables de agentes ANTES de invocar a @qa-validator:
+- [ ] feature-spec.md (@pm)
+- [ ] release-scope.md (@pm)
 - [ ] ui-kit-audit.md (si aplicó @ui-designer)
 - [ ] design-exploration.md (si aplicó @ui-designer)
 - [ ] design-approved.md (si aplicó @ui-designer)
 - [ ] mockup-spec.md (si aplicó @ui-designer)
-- [ ] technical-design.md
-- [ ] change-map.md
+- [ ] technical-design.md (@architect)
+- [ ] change-map.md (@architect)
 - [ ] db-plan.md / migration-notes.md (si aplicó @db-engineer)
 - [ ] auth-impact.md / security-checklist.md (si aplicó @auth-security)
-- [ ] app-notes.md / admin-notes.md
-- [ ] ponytail-review-report.md
-- [ ] release-report.md
-- [ ] test-matrix.md
-- [ ] acceptance-criteria.md
+- [ ] app-notes.md / admin-notes.md (@app-engineer)
+- [ ] ponytail-review-report.md (@ponytail-reviewer)
+- [ ] release-report.md (@qa-release)
+- [ ] test-matrix.md (@qa-release)
+- [ ] acceptance-criteria.md (@qa-release)
+
+**Los 3 archivos JSON se generan DESPUÉS por @qa-validator (Paso 7a):**
 - [ ] 90-metrics.json
 - [ ] 91-gate-results.json
-- [ ] 92-improvement-notes.md (solo si hay observaciones)
+- [ ] evidence-manifest.json
 
-Si falta alguno → generarlo o notificar al usuario.
+Si falta alguno de los primeros 15 → NO invocar a @qa-validator. Primero generar o notificar al usuario.
 
-## 7. Post-Flight @qa-validator
+## 7. Post-Flight @qa-validator + Harness Gate
 
-Después de que @qa-release complete la validación final, ejecutar el validation gate:
+### ⛔ REGLA CRÍTICA — Separar generación de artifacts vs. ejecución del harness
+
+**PROBLEMA RESUELTO:** El harness verifica que `evidence-manifest.json` exista. Si @qa-validator ejecuta el harness ANTES de generar los artifacts, entra en loop infinito.
+
+**FLUJO CORRECTO (2 pasos + 3 capas de protección):**
+
+### Capa 3 — Circuit Breaker Global (aplica a todo Step 7)
+
+| Contador | Límite | Acción al alcanzar |
+|----------|--------|-------------------|
+| Intentos de @qa-validator | **1** | Si falla, NOTIFICAR al usuario y DETENER |
+| Re-ejecuciones del harness | **1** | Si falla第二次, NOTIFICAR al usuario y DETENER |
+| Total de iteraciones Step 7 | **2** | Si excede, generar `escalation-report.md` y DETENER |
+
+**Si se activa cualquier circuit breaker:**
+1. Generar `production_artifacts/YYYY-MM-DD-short-slug/escalation-report.md` con:
+   - Qué se intentó
+   - Por qué falló
+   -Archivos tocados
+   - Recomendación de próximo paso
+2. Notificar al usuario: "❌ Step 7 falló después de [N] intentos. Ver escalation-report.md"
+3. **DETENER el workflow.** No continuar al Post-Flight.
+
+### Paso 7a — @qa-validator: Generar artifacts de validación (MAX 1 intento)
 
 ```
-task(description="Post-flight validation gate", subagent_type="qa-validator", prompt="
+task(description="Generate validation artifacts", subagent_type="qa-validator", prompt="
   Actúa como @qa-validator. Sigue las reglas de AGENTS.md para @qa-validator.
-  Ejecuta el script de validación local:
-  ```
-  node scripts/validate-harness.js --all
-  ```
 
-  Lee .validation/status.json para conocer el resultado.
+  ⛔ CIRCUIT BREAKER: MAX 1 INTENTO. Si algo falla, reporta y DETENTE.
+  ⛔ NO ejecutes el harness aquí. Solo genera los 3 archivos JSON.
+
+  Lee los artifacts de @qa-release para extraer la data:
+  - production_artifacts/YYYY-MM-DD-short-slug/release-report.md
+  - production_artifacts/YYYY-MM-DD-short-slug/test-matrix.md
+  - production_artifacts/YYYY-MM-DD-short-slug/acceptance-criteria.md
+  - change-map.md para count de archivos
 
   Genera production_artifacts/YYYY-MM-DD-short-slug/91-gate-results.json con:
   {
@@ -340,6 +368,10 @@ task(description="Post-flight validation gate", subagent_type="qa-validator", pr
     \"features_check\": \"(pass|fail)\",
     \"artifact_completeness\": \"(pass|fail)\",
     \"build\": \"(pass|fail)\",
+    \"migrations_check\": \"(pass|fail)\",
+    \"docs_check\": \"(pass|fail)\",
+    \"security_check\": \"(pass|fail)\",
+    \"evidence_check\": \"(pass|fail)\",
     \"gates_passed\": <number>,
     \"gates_failed\": <number>,
     \"overall\": \"(pass|fail)\"
@@ -358,10 +390,94 @@ task(description="Post-flight validation gate", subagent_type="qa-validator", pr
     \"gates_failed\": <number>
   }
 
+  Genera production_artifacts/YYYY-MM-DD-short-slug/evidence-manifest.json con:
+  {
+    \"change_id\": \"YYYY-MM-DD-short-slug\",
+    \"change_class\": \"feature\",
+    \"validated_at\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+    \"sha\": null,
+    \"env\": \"local\",
+    \"risk_level\": \"(LOW|MEDIUM|HIGH)\",
+    \"completion_claim\": true,
+    \"gatesRun\": {
+      \"typecheck\": { \"status\": \"(pass|fail)\" },
+      \"lint\": { \"status\": \"(pass|fail)\" },
+      \"unit_tests\": { \"status\": \"(pass|fail)\", \"testCount\": <number> },
+      \"api_tests\": { \"status\": \"(pass|fail|skipped)\" },
+      \"build\": { \"status\": \"(pass|fail)\" },
+      \"secrets\": { \"status\": \"(pass|fail)\" },
+      \"sast\": { \"status\": \"(pass|fail)\" },
+      \"features_check\": { \"status\": \"(pass|fail)\" },
+      \"migrations_check\": { \"status\": \"(pass|fail)\" },
+      \"docs_check\": { \"status\": \"(pass|fail)\" },
+      \"artifact_completeness\": { \"status\": \"(pass|fail)\" },
+      \"security_check\": { \"status\": \"(pass|fail)\" },
+      \"evidence_check\": { \"status\": \"pass\" },
+      \"coverage_check\": { \"status\": \"(pass|fail)\" }
+    },
+    \"summary\": {
+      \"gates_passed\": <number>,
+      \"gates_failed\": <number>,
+      \"unit_test_count\": <number>,
+      \"overall\": \"(pass|fail)\"
+    },
+    \"artifacts\": [<lista de archivos generados en production_artifacts/>]
+  }
+
   Si hay observaciones de mejora, genera production_artifacts/YYYY-MM-DD-short-slug/92-improvement-notes.md.
 
-  Reporta al usuario el resultado de la validación final.
+  Reporta al orquestador: \"Artifacts generados: [lista]\" o \"Error: [descripción]\"
 ")
+```
+
+### Capa 2 — Post-Condition Check (orquestador verifica después de @qa-validator)
+
+**DESPUÉS de que @qa-validator retorne,** el orquestador ejecuta esta verificación ANTES de continuar:
+
+```bash
+# Verificar que los 3 archivos JSON existen
+ls production_artifacts/YYYY-MM-DD-short-slug/{90-metrics.json,91-gate-results.json,evidence-manifest.json} 2>/dev/null
+```
+
+**Si los archivos existen:**
+- Continuar al Paso 7b (ejecutar harness)
+
+**Si falta alguno:**
+- **NO re-intentar @qa-validator** (Capa 1: MAX 1 intento)
+- **NO ejecutar el harness** (fallaría por evidence_check)
+- **NOTIFICAR al usuario:** "❌ @qa-validator no generó todos los archivos. Faltan: [lista]. Requiere intervención manual."
+- **DETENER el workflow.**
+
+### Paso 7b — Orquestador: Ejecutar harness validation (MAX 1 re-ejecución)
+
+```bash
+node scripts/validate-harness.js --all
+```
+
+Lee `.validation/status.json` para conocer el resultado.
+
+**Si el harness pasa (status: "pass"):**
+- Continuar al Post-Flight (commit + push)
+
+**Si el harness falla (status: "fail"):**
+- **NO re-ejecutar el harness** (Capa 3: MAX 1 re-ejecución)
+- Mostrar los gates fallidos al usuario
+- Si es `evidence_check` o `artifact_completeness`: verificar que los JSONs se generaron correctamente
+- Si es otro gate: escalar al usuario para decidir si fixear o continuar
+- **NOTIFICAR al usuario:** "❌ Harness falló. Gates fallidos: [lista]. Requiere intervención."
+
+### ⛔ REGLA CRÍTICA — Nunca ejecutar harness antes de generar artifacts
+
+El harness `validate-harness.js` verifica que `evidence-manifest.json` exista en el directorio más reciente de `production_artifacts/`. Si ejecutas el harness antes de que @qa-validator genere los artifacts, el gate `evidence_check` fallará y el status quedará en "fail", bloqueando futuros workflows.
+
+**Secuencia correcta:**
+```
+@qa-release → genera release-report.md, test-matrix.md, acceptance-criteria.md
+  → @qa-validator → genera 90-metrics.json, 91-gate-results.json, evidence-manifest.json (MAX 1 intento)
+    → Orquestador → verifica que JSONs existen (Capa 2)
+      → Orquestador → ejecuta validate-harness.js --all (MAX 1 re-ejecución)
+        → si pass → commit + push
+        → si fail → reportar al usuario y DETENER
 ```
 
 ## Reglas

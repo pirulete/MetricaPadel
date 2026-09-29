@@ -12,11 +12,15 @@ import { RubricCard, type RubricListItem } from "@/components/padel/rubric-card"
 
 type Filter = "all" | "draft" | "active" | "archived"
 
-/** Biblioteca de rúbricas P02: lista con filtro por status + archivar. */
+const PAGE_SIZE = 20
+
+/** Biblioteca de rúbricas P02: lista con filtro por status + archivar + paginación por cursor (G15). */
 export function RubricLibrary() {
   const router = useRouter()
   const [filter, setFilter] = React.useState<Filter>("all")
   const [rubrics, setRubrics] = React.useState<RubricListItem[]>([])
+  const [nextCursor, setNextCursor] = React.useState<string | null>(null)
+  const [loadingMore, setLoadingMore] = React.useState(false)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
 
@@ -24,17 +28,40 @@ export function RubricLibrary() {
     setLoading(true)
     setError(null)
     try {
-      const query = next === "all" ? "" : `?status=${next}`
-      const res = await fetch(`/api/rubrics${query}`, { cache: "no-store" })
+      const params = new URLSearchParams()
+      params.set("limit", String(PAGE_SIZE))
+      if (next !== "all") params.set("status", next)
+      const res = await fetch(`/api/rubrics?${params.toString()}`, { cache: "no-store" })
       if (!res.ok) throw new Error("No se pudieron cargar las rúbricas")
       const body = await res.json()
-      setRubrics(body.rubrics)
+      setRubrics(body.items ?? [])
+      setNextCursor(body.nextCursor ?? null)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al cargar rúbricas")
     } finally {
       setLoading(false)
     }
   }, [])
+
+  const loadMore = React.useCallback(async () => {
+    if (!nextCursor || loadingMore) return
+    setLoadingMore(true)
+    try {
+      const params = new URLSearchParams()
+      params.set("limit", String(PAGE_SIZE))
+      params.set("cursor", nextCursor)
+      if (filter !== "all") params.set("status", filter)
+      const res = await fetch(`/api/rubrics?${params.toString()}`, { cache: "no-store" })
+      if (!res.ok) throw new Error("No se pudieron cargar más rúbricas")
+      const body = await res.json()
+      setRubrics((prev) => [...prev, ...(body.items ?? [])])
+      setNextCursor(body.nextCursor ?? null)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Error al cargar más rúbricas")
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [nextCursor, loadingMore, filter])
 
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -91,11 +118,20 @@ export function RubricLibrary() {
           }
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {rubrics.map((rubric) => (
-            <RubricCard key={rubric.id} rubric={rubric} onArchive={handleArchive} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {rubrics.map((rubric) => (
+              <RubricCard key={rubric.id} rubric={rubric} onArchive={handleArchive} />
+            ))}
+          </div>
+          {nextCursor && (
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? "Cargando…" : "Cargar más"}
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

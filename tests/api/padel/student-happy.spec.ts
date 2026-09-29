@@ -97,7 +97,7 @@ test.describe("Student evaluations — happy-path (SQL real)", () => {
       const list = await studentCtx.get("/api/student/evaluations");
       expect(list.status()).toBe(200);
       const listBody = await list.json();
-      const found = listBody.evaluations.find((e: { id: string }) => e.id === evaluationId);
+      const found = listBody.items.find((e: { id: string }) => e.id === evaluationId);
       expect(found).toBeTruthy();
       expect(found.rubricTitle).toBe("Rúbrica alumno");
       expect(found.readAt).toBeNull();

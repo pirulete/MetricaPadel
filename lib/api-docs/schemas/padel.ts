@@ -303,4 +303,72 @@ export const padelSchemas = {
       },
     },
   },
+  PairEvaluationCreateInput: {
+    type: 'object',
+    description: 'Crea 2 borradores de evaluación en pareja (SPEC-01). studentAId !== studentBId (400).',
+    required: ['studentAId', 'studentBId', 'rubricId', 'courseId'],
+    properties: {
+      studentAId: { type: 'string', format: 'uuid' },
+      studentBId: { type: 'string', format: 'uuid', description: 'Debe ser distinto de studentAId' },
+      rubricId: { type: 'string', format: 'uuid', description: 'Debe pertenecer al coach (404)' },
+      courseId: { type: 'string', format: 'uuid', description: 'Ambos alumnos deben estar inscritos (404, CA-07)' },
+    },
+  },
+  PairEvaluationSaveInput: {
+    type: 'object',
+    description: 'Guarda scores de ambos borradores en una sola transacción (RF-06).',
+    required: ['evaluationAId', 'evaluationBId', 'scoresA', 'scoresB'],
+    properties: {
+      evaluationAId: { type: 'string', format: 'uuid' },
+      evaluationBId: { type: 'string', format: 'uuid' },
+      scoresA: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 100,
+        items: {
+          type: 'object',
+          required: ['criteriaId', 'levelId'],
+          properties: {
+            criteriaId: { type: 'string', format: 'uuid' },
+            levelId: { type: 'string', format: 'uuid' },
+            comment: { type: 'string', maxLength: 2000 },
+          },
+        },
+      },
+      scoresB: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 100,
+        items: {
+          type: 'object',
+          required: ['criteriaId', 'levelId'],
+          properties: {
+            criteriaId: { type: 'string', format: 'uuid' },
+            levelId: { type: 'string', format: 'uuid' },
+            comment: { type: 'string', maxLength: 2000 },
+          },
+        },
+      },
+      globalCommentA: { type: 'string', maxLength: 5000 },
+      globalCommentB: { type: 'string', maxLength: 5000 },
+    },
+  },
+  PairEvaluationPublishInput: {
+    type: 'object',
+    description: 'Publica la pareja (transaccional + auditoría en tx).',
+    required: ['evaluationAId', 'evaluationBId'],
+    properties: {
+      evaluationAId: { type: 'string', format: 'uuid' },
+      evaluationBId: { type: 'string', format: 'uuid' },
+      durationSeconds: { type: 'integer', minimum: 0, description: 'Duración medida client-side desde el mount del canvas (default 0)' },
+    },
+  },
+  PairEvaluationResponse: {
+    type: 'object',
+    description: 'Respuesta de create/save/publish de pareja: 2 evaluaciones independientes.',
+    properties: {
+      evaluationA: { $ref: '#/components/schemas/EvaluationDto' },
+      evaluationB: { $ref: '#/components/schemas/EvaluationDto' },
+    },
+  },
 } as const;

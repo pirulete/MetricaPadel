@@ -5,7 +5,7 @@ import {
   courseEnrollments,
   evaluations,
 } from "@/lib/db/schema";
-import { listCourses } from "./courses";
+import { listCoursesForDashboard } from "./courses";
 import { listStudentCourses } from "./enrollments";
 import { getNotificationsByUserId } from "@/lib/db/queries/notifications";
 import { deriveLevel, isClassToday } from "@/lib/padel/dashboard";
@@ -17,7 +17,7 @@ export type TeacherDashboard = {
     average: number | null;
     classesToday: number;
   };
-  courses: Awaited<ReturnType<typeof listCourses>>;
+  courses: Awaited<ReturnType<typeof listCoursesForDashboard>>;
 };
 
 export type StudentDashboard = {
@@ -50,7 +50,7 @@ export async function getTeacherDashboard(teacherId: string): Promise<TeacherDas
         eq(evaluations.teacherId, teacherId),
         eq(evaluations.status, 'published'),
       )),
-    listCourses(teacherId),
+    listCoursesForDashboard(teacherId),
   ]);
 
   const average = avgRow[0]?.average ?? null;

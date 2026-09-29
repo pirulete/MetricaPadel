@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, lt, sql } from "drizzle-orm";
 import {
   courses,
   courseEnrollments,
@@ -9,6 +9,8 @@ import {
   courseLevelEnum,
   courseStatusEnum,
 } from "@/lib/db/schema";
+import type { PaginatedResult, PaginationParams } from "./pagination";
+import { resolveLimit } from "./pagination";
 
 export type CourseLevel = (typeof courseLevelEnum.enumValues)[number];
 export type CourseStatus = (typeof courseStatusEnum.enumValues)[number];
@@ -38,6 +40,7 @@ export type CourseListItem = {
   inviteCode: string;
   status: CourseStatus;
   studentCount: number;
+  createdAt: Date;
 };
 
 export type CourseDetail = {
@@ -76,8 +79,49 @@ export async function createCourse(data: CreateCourseInput) {
 
 /**
  * Lista cursos del coach con studentCount (P05). Scoped al owner (anti-IDOR).
+ * Paginada por cursor (G15) sobre createdAt desc.
  */
-export async function listCourses(ownerId: string): Promise<CourseListItem[]> {
+export async function listCourses(
+  ownerId: string,
+  params?: PaginationParams,
+): Promise<PaginatedResult<CourseListItem>> {
+  const limit = resolveLimit(params?.limit);
+  const conditions = [eq(courses.ownerId, ownerId)];
+  if (params?.cursor) conditions.push(lt(courses.createdAt, new Date(params.cursor)));
+
+  const rows = await db
+    .select({
+      id: courses.id,
+      name: courses.name,
+      level: courses.level,
+      schedule: courses.schedule,
+      days: sql<string[]>`${courses.days}`,
+      inviteCode: courses.inviteCode,
+      status: courses.status,
+      createdAt: courses.createdAt,
+      studentCount: sql<number>`count(distinct ${courseEnrollments.id})::int`,
+    })
+    .from(courses)
+    .leftJoin(courseEnrollments, eq(courseEnrollments.courseId, courses.id))
+    .where(and(...conditions))
+    .groupBy(courses.id)
+    .orderBy(desc(courses.createdAt))
+    .limit(limit + 1);
+
+  const hasMore = rows.length > limit;
+  const items = hasMore ? rows.slice(0, limit) : rows;
+  const nextCursor = hasMore && items.length > 0
+    ? items[items.length - 1].createdAt.toISOString()
+    : null;
+  return { items, nextCursor };
+}
+
+/**
+ * Lista cursos del coach SIN paginar (array completo). Alimenta
+ * getTeacherDashboard (P01): el dashboard necesita todos los cursos para
+ * métricas (classesToday) y la lista del home. No usar en listados paginados.
+ */
+export async function listCoursesForDashboard(ownerId: string): Promise<CourseListItem[]> {
   return await db
     .select({
       id: courses.id,
@@ -87,6 +131,7 @@ export async function listCourses(ownerId: string): Promise<CourseListItem[]> {
       days: sql<string[]>`${courses.days}`,
       inviteCode: courses.inviteCode,
       status: courses.status,
+      createdAt: courses.createdAt,
       studentCount: sql<number>`count(distinct ${courseEnrollments.id})::int`,
     })
     .from(courses)

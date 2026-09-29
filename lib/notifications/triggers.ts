@@ -54,6 +54,23 @@ export async function triggerEvaluationPublished(studentId: string, evaluationId
 }
 
 /**
+ * evaluation.read — al leer el alumno una evaluación publicada (G13).
+ * groupId = evaluationId (uuid) para dedup 1h del engine: re-leer no duplica.
+ * category system + priority P2 (informativa para el coach).
+ */
+export async function triggerEvaluationRead(teacherId: string, evaluationId: string) {
+  return createNotification({
+    userId: teacherId,
+    type: 'info',
+    priority: 'P2',
+    title: 'Evaluación leída',
+    body: 'Tu evaluación fue vista por el alumno.',
+    groupId: evaluationId,
+    category: 'system',
+  });
+}
+
+/**
  * academy.invite — al invitar un miembro a una academia (SPEC-EPIC-01, Fase B).
  * groupId = membershipId (uuid) para dedup 1h del engine: re-invitar no duplica.
  * category system + priority P2.

@@ -1,14 +1,16 @@
 {
-  "status": "pass",
-  "last_validated": "2026-09-26T20:24:19.575Z",
-  "gates_passed": 20,
-  "gates_failed": 0,
-  "gates_warning": 3,
-  "failed_gates": [],
+  "status": "fail",
+  "last_validated": "2026-09-28T20:09:01.056Z",
+  "gates_passed": 18,
+  "gates_failed": 1,
+  "gates_warning": 4,
+  "failed_gates": [
+    "loop_metrics"
+  ],
   "warning_gates": [
     "lint",
+    "api_integration",
     "env_vars",
-    "loop_metrics",
     "file_size"
   ],
   "risk_level": "HIGH",
@@ -37,6 +39,6 @@
     "coverage_check",
     "loop_metrics"
   ],
-  "test_coverage_delta": 82,
-  "message": "⚠️ All 20 gates passed, 3 warning(s): [lint] Lint, [env_vars] Env Vars, [loop_metrics] Loop metrics, [file_size] File size"
+  "test_coverage_delta": 65,
+  "message": "❌ 1 gate(s) failed, 4 warning(s): [loop_metrics] Loop metrics (rework rate). Run /validate for details."
 }

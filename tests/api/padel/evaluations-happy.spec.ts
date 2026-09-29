@@ -163,7 +163,7 @@ test.describe("Evaluations — happy-path (SQL real)", () => {
       const list = await ctx.get("/api/evaluations?status=published");
       expect(list.status()).toBe(200);
       const listBody = await list.json();
-      expect(listBody.evaluations.some((e: { id: string }) => e.id === evaluationId)).toBe(true);
+      expect(listBody.items.some((e: { id: string }) => e.id === evaluationId)).toBe(true);
 
       // POST con rúbrica ajena/inexistente → 404
       const badRubric = await ctx.post("/api/evaluations", {

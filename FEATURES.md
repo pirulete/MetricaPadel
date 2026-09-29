@@ -1,5 +1,312 @@
 # FEATURES — Registro de Cambios
 
+## ✨ G2 — Exportación CSV del historial de evaluaciones (2026-09-28)
+
+> status: released
+> release: v0.8
+> date: 2026-09-28
+> change_id: g2-history-csv-export-2026-09-28
+> module: dashboard+ui
+> tags: [padel, csv, export, ui, queries]
+
+### Problema
+
+El coach necesita exportar evaluaciones como CSV para análisis externo (Excel, hojas de cálculo). No existía botón de exportar en el historial.
+
+### Solución Implementada
+
+- **`listHistory`** (`lib/db/queries/padel/history.ts`): agregado `category: rubrics.category` al select (el join con `rubrics` ya existía) + campo `category: RubricCategory` en `HistoryItem`. Sin migración.
+- **`lib/padel/history-csv.ts`** (nuevo): función pura `historyToCsv(items)` que mapea los items visibles a CSV usando `buildCsv`/`escapeCsvField` de `lib/utils.ts` (0 dependencias nuevas). Columnas: Alumno, Rúbrica, Categoría, Score, Máximo, Fecha (locale `es-AR`), Estado. Maneja nulls (categoría/fecha vacías, scores → 0).
+- **`components/padel/history-list.tsx`**: botón "Exportar CSV" (shadcn `Button` + icono `Download` de lucide-react) visible solo si `items.length > 0`, en la fila de filtros (`ml-auto`). Exporta los items ya cargados en la página (client-side, sin endpoint nuevo). Nombre de archivo `evaluaciones-YYYY-MM-DD.csv`; `downloadCsv` agrega BOM UTF-8 para compatibilidad Excel.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/db/queries/padel/history.ts` | 🔧 Modificado — `category` en select + `HistoryItem` |
+| `lib/padel/history-csv.ts` | ✨ Nuevo — `historyToCsv` puro |
+| `components/padel/history-list.tsx` | 🔧 Modificado — botón Exportar CSV + campo `category` |
+
+### Tests
+
+- Unit: `tests/unit/utils/csv.test.ts` (nuevo) — mapeo de campos, formato de fecha es-AR, nulls, escaping de comas/comillas, headers-only con items vacíos.
+- `npx tsc --noEmit` sin errores; `pnpm run test:unit` pasa.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ G15 — Paginación por cursor en los 5 listados de Métrica Pádel (2026-09-28)
+
+> status: released
+> release: v0.8
+> date: 2026-09-28
+> change_id: g15-cursor-pagination-2026-09-28
+> module: dashboard+api+ui
+> tags: [padel, pagination, cursor, api, ui, queries]
+
+### Problema
+
+5 queries de listado devolvían arrays completos sin límite (`listEvaluations`, `listStudentEvaluations`, `listHistory`, `listRubrics`, `listCourses`). Con datos reales los listados se degradan (payloads grandes, render lento, sin forma de paginar).
+
+### Solución Implementada
+
+- **Patrón de cursor reutilizado** de `getNotificationsByUserId`: `limit+1` para detectar `hasMore`, `nextCursor` = ISO date string del último item, `lt(col, cursor)` en el where. Default limit 20, máx 50 (`resolveLimit` en `lib/db/queries/padel/pagination.ts`, tipos `PaginationParams`/`PaginatedResult` compartidos).
+- **Campo de cursor = campo de orden** de cada query (no siempre `createdAt`): `listEvaluations` → `updatedAt`, `listStudentEvaluations`/`listHistory` → `publishedAt`, `listRubrics`/`listCourses` → `createdAt`. Sin esto la paginación sería inconsistente con el `orderBy`.
+- **`listCoursesForDashboard`** (nueva, sin paginar): `getTeacherDashboard` la usa para métricas (`classesToday`) y la lista del home — el dashboard espera array completo.
+- **Endpoints** (5): `GET /api/evaluations`, `/api/history`, `/api/rubrics`, `/api/courses`, `/api/student/evaluations` aceptan `?limit=&cursor=` (Zod `paginationQuerySchema` en `lib/validations/padel.ts`) y retornan `{ items, nextCursor }` (antes `{ evaluations }`/`{ rubrics }`/`{ courses }`).
+- **UI** (4): botón "Cargar más" con fetch por cursor en `history-list.tsx`, `rubric-library.tsx`, `cursos/page.tsx` (rama ADMIN ahora usa `/api/courses` paginado en vez de `/api/dashboard/teacher`; el alumno sigue con dashboard/student sin paginar) y `evaluaciones/page.tsx`. Consumidores del shape `items` actualizados: `assign-rubric-modal`, `scoring-canvas`, `pair-scoring-canvas`, `history-list` (filtros de cursos).
+- **Edge case**: borradores en historial tienen `publishedAt` null → quedan en la primera página (DESC pone NULLs primero) y no generan cursor.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/db/queries/padel/pagination.ts` | ✨ Nuevo — `PaginationParams`/`PaginatedResult`/`resolveLimit` |
+| `lib/db/queries/padel/evaluations.ts` | 🔧 Modificado — `listEvaluations`/`listStudentEvaluations` paginadas |
+| `lib/db/queries/padel/history.ts` | 🔧 Modificado — `listHistory` paginada |
+| `lib/db/queries/padel/rubrics.ts` | 🔧 Modificado — `listRubrics` paginada |
+| `lib/db/queries/padel/courses.ts` | 🔧 Modificado — `listCourses` paginada + `listCoursesForDashboard` (sin paginar) |
+| `lib/db/queries/padel/dashboard.ts` | 🔧 Modificado — usa `listCoursesForDashboard` |
+| `lib/validations/padel.ts` | 🔧 Modificado — `paginationQuerySchema` + schemas de listado extendidos |
+| `app/api/{evaluations,history,rubrics,courses}/route.ts` | 🔧 Modificado — GET con cursor/limit → `{ items, nextCursor }` |
+| `app/api/student/evaluations/route.ts` | 🔧 Modificado — GET con cursor/limit → `{ items, nextCursor }` |
+| `components/padel/history-list.tsx` | 🔧 Modificado — "Cargar más" + shape `items` |
+| `components/padel/rubric-library.tsx` | 🔧 Modificado — "Cargar más" + shape `items` |
+| `app/(app)/cursos/page.tsx` | 🔧 Modificado — ADMIN usa `/api/courses` paginado + "Cargar más" |
+| `app/(app)/evaluaciones/page.tsx` | 🔧 Modificado — "Cargar más" + shape `items` |
+| `components/padel/{assign-rubric-modal,scoring-canvas,pair-scoring-canvas}.tsx` | 🔧 Modificado — shape `items` |
+| `lib/api-docs/paths/{padel,courses}.ts` | 🔧 Modificado — params cursor/limit + respuesta `{ items, nextCursor }` |
+
+### Tests
+
+- Unit: `tests/unit/db/evaluations.test.ts` y `tests/unit/db/rubrics.test.ts` (extendidos — nextCursor con limit+1), `tests/unit/db/courses.test.ts` y `tests/unit/db/history.test.ts` (nuevos — paginación + `listCoursesForDashboard` array completo + borradores sin cursor).
+- API: `tests/api/padel/pagination-happy.spec.ts` (nuevo — SQL real: walk de los 5 endpoints con limit=2, sin duplicados, nextCursor null al final, 400 en limit/cursor inválidos). Happy specs existentes actualizados al shape `items`.
+- `npx tsc --noEmit` sin errores; `pnpm run test:unit` 627 tests pasan.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ R5 — Aviso pre-publish de cobertura dimensional (2026-09-28)
+
+> status: released
+> release: v0.8
+> date: 2026-09-28
+> change_id: r5-coverage-prepublish
+> module: dashboard+api+ui
+> tags: [padel, evaluation, coverage, scoring, ui, api, soft-block]
+
+### Problema
+
+Cuando un coach va a publicar una evaluación, no sabe si el alumno ya tiene evaluaciones en otras dimensiones de la misma rúbrica. El aviso de cobertura dimensional (`checkDimensionalCoverage`) solo aparecía DESPUÉS de publicar como toast efímero (`toast.warning` en `scoring-canvas.tsx`). Faltaba mostrarlo ANTES de publicar.
+
+### Solución Implementada
+
+- **Función pura `getCoverageSummary`**: `lib/padel/coverage-summary.ts` (nuevo, sin imports server-side, importable desde client) retorna `{ covered, total, uncovered, percentage }` a partir de las categorías ya evaluadas y las 6 categorías (`RUBRIC_CATEGORIES`). Guard para `allCategories` vacío → percentage 0 (sin NaN). Re-exportada desde `lib/padel/coverage.ts` para uso server-side.
+- **Endpoint `GET /api/evaluations/coverage?studentId=&rubricId=`**: `app/api/evaluations/coverage/route.ts` (nuevo, `guardAdmin` + Zod). Retorna `{ coveredCategories, alreadyEvaluated }` vía `checkDimensionalCoverage`. Anti-IDOR: rúbrica del coach (404) y alumno existente (404). Sin auditoría (lectura).
+- **Indicador pre-publish en `scoring-canvas.tsx`**: fetch de cobertura cuando `studentId` + `rubricId` están definidos; Badge de shadcn/ui compacto antes del botón "Publicar": "Cobertura: 3/6 dimensiones (50%) — Faltan: táctica, física, actitud_equipo". Color por porcentaje: verde >66%, amarillo 33-66%, rojo <33%. **Soft-block**: informativo, nunca bloquea el publish. Si el fetch falla, el aviso se omite silenciosamente.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/padel/coverage-summary.ts` | ✨ Nuevo — `getCoverageSummary` + `RUBRIC_CATEGORIES` (puro, client-safe) |
+| `app/api/evaluations/coverage/route.ts` | ✨ Nuevo — GET cobertura dimensional (guardAdmin + anti-IDOR) |
+| `lib/padel/coverage.ts` | 🔧 Modificado — re-export de `getCoverageSummary`/`RUBRIC_CATEGORIES` |
+| `components/padel/scoring-canvas.tsx` | 🔧 Modificado — fetch cobertura + Badge pre-publish |
+| `lib/api-docs/paths/padel.ts` | 🔧 Modificado — +path `/api/evaluations/coverage` |
+
+### Tests
+
+- Unit: `tests/unit/padel/coverage.test.ts` (extendido — 5 tests de `getCoverageSummary`: 0/6, 3/6→50%, 6/6→100%, dedup, allCategories vacío sin NaN).
+- API: `tests/api/padel/coverage-endpoint-happy.spec.ts` (401, 403 USER, 400 query inválida, happy-path SQL real: coveredCategories vacío antes de publicar + categoría cubierta/alreadyEvaluated=true tras publicar + anti-IDOR 404).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+### Referencias
+
+- `lib/padel/coverage.ts` — `checkDimensionalCoverage` (server-only, ya existente)
+- `app/api/evaluations/[id]/publish/route.ts` — retorna `alreadyEvaluated` post-publish (toast existente, se mantiene)
+
+## ✨ SPEC-01 — Evaluación en Pareja 2v2 (2026-09-28)
+
+> status: released
+> release: v0.8
+> date: 2026-09-28
+> change_id: pair-evaluation-2v2
+> module: dashboard+api+db+ui
+> tags: [padel, evaluation, pair, scoring, ui, api, db, audit, transaction]
+
+### Problema
+
+Evaluar individualmente a 4 alumnos en una clase de 60 minutos consume demasiado tiempo. Al ser un deporte de pareja, los criterios de `tactica` y `actitud_equipo` son compartidos por la dupla y hoy el `ScoringCanvas` solo soporta 1v1 (un `studentId`, un registro por publicación). No existía modo pareja en el código.
+
+### Solución Implementada
+
+- **RF-01 — Selector de Dupla**: `components/padel/pair-student-picker.tsx` lista alumnos inscritos del curso (`GET /api/courses/[id]`), selección de exactamente 2 distintos (Alumno A / Alumno B), botón "Continuar" deshabilitado con 1 o 3+ seleccionados.
+- **RF-02 — Sincronización de Criterios Compartidos**: `components/padel/pair-scoring-canvas.tsx` con Switch "Evaluar en Pareja" por criterio. `lib/padel/pair.ts` → `applySharedSelection` asigna el nivel a ambos alumnos en tiempo real (sin recargar). Categorías compartidas por defecto: `tactica`, `actitud_equipo`, `reglas` (D3). Al desactivar el toggle, los niveles se desvinculan (CA-02).
+- **RF-03 — Desglose Individual**: criterios `tecnica_basica`/`tecnica_especifica`/`fisica` en columnas A/B sin sincronización, con comentario por criterio y comentario global por alumno.
+- **RF-04 — Persistencia Transaccional**: `lib/db/queries/padel/pair.ts` → `createPairDrafts` (2 inserts draft), `savePairEvaluationScores` (RF-06, rollback si falla B), `publishPairEvaluation` (2 updates a published + versión `MAX(version)+1` por (studentId, rubricId) dentro de la tx + auditoría en la misma tx). Sin migración de DB (D1/D2).
+- **RF-05 — Auditoría con Analytics**: evento `PAIR_EVALUATION_PUBLISHED` insertado dentro de la transacción de publish (D5) con payload `{coach_id, course_id, student_a_id, student_b_id, shared_criteria_count, individual_criteria_count, duration_seconds}`. Conteos derivados de los scores reales (D7).
+- **RF-06 — Guardado de borrador en pareja**: `PUT /api/evaluations/pair` transaccional con rollback si falla un save.
+- **Anti-IDOR (CA-07)**: rúbrica del coach (404), alumnos role USER (404), ambos inscritos al curso (404) — validado en create y re-validado en publish (defensa en profundidad).
+- **Endpoints nuevos (3)**: `POST /api/evaluations/pair` (create), `PUT /api/evaluations/pair` (save), `POST /api/evaluations/pair/publish` (publish). Todos `guardAdmin` + Zod.
+- **Página**: `app/(app)/evaluar/pareja/page.tsx` con entrada desde `course-detail.tsx` (botón "Evaluar en Pareja").
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/db/queries/padel/pair.ts` | ✨ Nuevo — queries transaccionales (create/save/publish pareja) |
+| `lib/padel/pair.ts` | ✨ Nuevo — lógica pura (SHARED/INDIVIDUAL_CATEGORIES, applySharedSelection, syncPairScores, computePairTotals, validatePairPublish, computePairAuditCounts, buildPairAuditPayload) |
+| `app/api/evaluations/pair/route.ts` | ✨ Nuevo — POST create + PUT save |
+| `app/api/evaluations/pair/publish/route.ts` | ✨ Nuevo — POST publish |
+| `components/padel/pair-student-picker.tsx` | ✨ Nuevo — selector de dupla |
+| `components/padel/pair-scoring-canvas.tsx` | ✨ Nuevo — canvas 2 columnas + toggle por criterio |
+| `app/(app)/evaluar/pareja/page.tsx` | ✨ Nuevo — página de evaluación en pareja |
+| `lib/db/queries/padel/evaluations.ts` | 🔧 Modificado — extracción `saveEvaluationScoresTx` + `countMissingCriteria` (refactor puro, 1v1 intacto) |
+| `lib/db/queries/padel/index.ts` | 🔧 Modificado — export de `pair` |
+| `lib/validations/padel.ts` | 🔧 Modificado — +`pairEvaluationCreateSchema` (A===B → 400), `pairEvaluationSaveSchema`, `pairEvaluationPublishSchema` |
+| `components/padel/course-detail.tsx` | 🔧 Modificado — +botón "Evaluar en Pareja" |
+| `lib/audit/helpers.ts` | 🔧 Modificado — +constante `PAIR_EVALUATION_PUBLISHED` + helper `auditPairEvaluationPublished` |
+| `lib/api-docs/paths/padel.ts` | 🔧 Modificado — +3 paths de pareja |
+| `lib/api-docs/schemas/padel.ts` | 🔧 Modificado — +4 schemas (Create/Save/Publish/Response) |
+
+### Tests
+
+- Unit: `tests/unit/padel/pair.test.ts` (20 tests, sync/desync/totals/audit), `tests/unit/db/pair-queries.test.ts` (12 tests, rollback + versionado + audit en tx), `tests/unit/validations/padel.test.ts` (extendido, A===B → 400).
+- API happy-path SQL real: `tests/api/padel/pair-evaluations-happy.spec.ts` (2 filas, versiones, auditoría payload, independencia alumno CA-03, re-publish 400).
+- API guards: `tests/api/padel/pair-evaluations-guard.spec.ts` (401×3, 403×3, 400 A===B, 404 CA-07/rúbrica ajena/publish inexistente).
+- E2E: `tests/e2e/pair-evaluation.spec.ts` (curso → pareja → 2 alumnos → rúbrica → toggle compartido → guardar → publicar → /evaluaciones).
+- Validación: `pnpm run test:unit` 609/609 ✅, `npx tsc --noEmit` 0 errores ✅. API tests requieren NeonDB + servidor (CI).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+### Referencias
+
+- `production_artifacts/2026-09-28-pair-evaluation-2v2/feature-spec.md`
+- `production_artifacts/2026-09-28-pair-evaluation-2v2/release-report.md`
+- `production_artifacts/2026-09-28-pair-evaluation-2v2/test-matrix.md`
+- `production_artifacts/2026-09-28-pair-evaluation-2v2/acceptance-criteria.md`
+- `production_artifacts/2026-09-28-pair-evaluation-2v2/release-scope.md`
+
+## ✨ Soft-delete de evaluaciones — G16 (2026-09-28)
+
+> status: released
+> release: v0.7
+> date: 2026-09-28
+> change_id: evaluation-soft-delete
+> module: dashboard
+> tags: [padel, evaluation, soft-delete, api, db, migration]
+
+### Problema
+
+No había forma de retirar una evaluación publicada errónea sin borrarla permanentemente. El coach necesita archivar evaluaciones mientras conserva el historial y las versiones.
+
+### Solución Implementada
+
+- **`lib/db/schema.ts`**: columna `deletedAt: timestamp("deleted_at")` nullable en `evaluations` (mismo patrón que `notifications.deletedAt`). Migración `0010_hard_wrecker.sql` generada con `db:generate` (nunca SQL a mano).
+- **`lib/db/queries/padel/evaluations.ts`**: helper reusable `isNotDeleted = isNull(evaluations.deletedAt)` aplicado a todas las queries de coach/alumno: `getEvaluationById`, `getStudentEvaluationById`, `listEvaluations`, `listStudentEvaluations`, `saveEvaluationScores`, `publishEvaluation`, `listEvaluationSeries`, `listStudentEvaluationSeries`, `listStudentEvolution`, `markEvaluationRead`. Las queries de admin/super-admin NO filtran (el super admin ve todo). El cómputo de `version` en `publishEvaluation` NO excluye archivadas → no se reutilizan versiones.
+- **`lib/db/queries/padel/history.ts`**: `listHistory` excluye archivadas vía `isNotDeleted`.
+- **`app/api/evaluations/[id]/route.ts`**: nuevo handler `DELETE` — `guardAdmin`, anti-IDOR (404 si no pertenece al teacher), soft-delete (`UPDATE evaluations SET deletedAt = now()`), auditoría `auditDelete("evaluation", id, oldValues, context)`, retorna `{ success: true }`. DELETE repetido → 404.
+- **`lib/api-docs/paths/padel.ts`**: path `delete` documentado en `/api/evaluations/{id}` (G16).
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/db/schema.ts` | 🔧 Modificado — `evaluations.deletedAt` |
+| `drizzle/0010_hard_wrecker.sql` | ➕ Nuevo — migración |
+| `lib/db/queries/padel/evaluations.ts` | 🔧 Modificado — `isNotDeleted` + filtros |
+| `lib/db/queries/padel/history.ts` | 🔧 Modificado — filtro deleted |
+| `app/api/evaluations/[id]/route.ts` | 🔧 Modificado — handler DELETE |
+| `lib/api-docs/paths/padel.ts` | 🔧 Modificado — docs DELETE |
+| `tests/api/padel/evaluation-delete.spec.ts` | ➕ Nuevo — guards + happy-path SQL real |
+| `tests/unit/db/evaluations.test.ts` | 🔧 Modificado — tests G16 |
+
+### Tests
+
+- Unit (Jest): `tests/unit/db/evaluations.test.ts` — 11 tests G16: `isNotDeleted` reusable, todas las queries incluyen `deleted_at` en el where (vía `sqlColumns` sobre `queryChunks`), `saveEvaluationScores`/`publishEvaluation`/`markEvaluationRead` retornan null/not_found sobre archivadas.
+- API (Playwright): `tests/api/padel/evaluation-delete.spec.ts` — 401 sin sesión, 403 USER, 404 inexistente, happy-path con SQL real (deleted_at persistido, oculta de GET/lista coach y alumno, PUT/publish → 404, auditoría DELETE registrada, DELETE repetido → 404).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Dashboard de métricas globales para SUPER_ADMIN (2026-09-28)
+
+> status: released
+> release: v0.7
+> date: 2026-09-28
+> change_id: platform-metrics-dashboard
+> module: admin
+> tags: [admin, super-admin, metrics, dashboard, ui, read-only]
+
+### Problema
+
+`/admin/platform` solo mostraba 4 counts básicos (admins, super admins, academias, activas). Un super admin necesita ver tendencias, actividad reciente y breakdown por academia para operar la plataforma.
+
+### Solución Implementada
+
+- **`lib/db/queries/padel/super-admin.ts`**: nueva query `getPlatformMetrics()` que reutiliza `getPlatformStats()` y agrega: rúbricas (total + scope personal/institutional), últimos 10 `audit_logs` con usuario (leftJoin users), y breakdown por academia con `memberCount` (miembros activos) y `evaluationCount` (evaluaciones vía join rubrics.academyId). Se carga server-side — sin endpoint nuevo.
+- **`app/admin/platform/page.tsx`**: reescrita con UI rica — sección Resumen (5 cards: Usuarios, Academias, Evaluaciones, Cursos, Rúbricas), sección Rúbricas con barras de distribución por scope, sección Actividad reciente (tabla usuario/acción/entidad/fecha) y sección Academias (tabla nombre/owner/miembros/evaluaciones/estado). Guard `validateSuperAdmin` intacto. Responsive: grid mobile → desktop, tablas con overflow-x.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/db/queries/padel/super-admin.ts` | 🔧 Modificado — `getPlatformMetrics()` |
+| `app/admin/platform/page.tsx` | 🔧 Modificado — UI rica read-only |
+| `tests/unit/db/super-admin.test.ts` | 🔧 Modificado — tests de `getPlatformMetrics` |
+
+### Tests
+
+- Unit (Jest): `tests/unit/db/super-admin.test.ts` — `getPlatformMetrics` con db mockeado: stats existentes + rubrics + actividad reciente + breakdown (2 passed: happy-path y arrays vacíos).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Template picker para rúbricas — G14 (2026-09-28)
+
+> status: released
+> release: v0.7
+> date: 2026-09-28
+> change_id: rubric-template-picker
+> module: dashboard
+> tags: [padel, rubric, template, ui, client-only]
+
+### Problema
+
+El coach tenía que crear rúbricas desde cero cada vez. La plantilla `RUBRICA_INTEGRAL_TEMPLATE` (6 dimensiones × 4 niveles × 1 criterio) existía en `lib/padel/rubric-templates.ts` pero solo como seed manual/API — sin UI. Identificado como gap G14 en `production_artifacts/2026-09-28-roadmap/roadmap.md`.
+
+### Solución Implementada
+
+- **`components/padel/rubric-editor.tsx`**: botón "Usar plantilla" (icono Wand2) en el header de Criterios, visible solo cuando el editor está vacío (0 criterios o 1 criterio en blanco). Abre un `AlertDialog` de confirmación ("Esto reemplazará los criterios actuales. ¿Continuar?") y al confirmar hidrata el state del editor con el template: `title`, `category` y los 6 criterios con sus 4 descriptores (copias mutables vía spread para no mutar la constante `as const`).
+- **Sin API nueva ni tabla nueva** — todo client-side; el template se importa como constante.
+- **Tipos**: `RUBRICA_INTEGRAL_TEMPLATE` ya era compatible con `CriterionDraft` del editor (name + descriptors[4]); solo se adaptó la hidratación con `[...c.descriptors]` para convertir readonly tuples en arrays mutables.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `components/padel/rubric-editor.tsx` | 🔧 Modificado — botón "Usar plantilla" + AlertDialog + `applyTemplate` |
+| `tests/unit/padel/rubric-templates.test.ts` | ✨ Nuevo — unit tests del template |
+
+### Tests
+
+- Unit (Jest): `tests/unit/padel/rubric-templates.test.ts` — 6 criterios, 4 niveles por criterio, scores 4/3/2/1, descriptores completos, categoría válida, título no vacío (6 passed).
+- Manual: el botón hidrata el form (título, categoría y 6 criterios con descriptores visibles en el editor).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
 ## ✨ Rate limiting en invitaciones de academia (2026-09-28)
 
 > status: released
@@ -1684,6 +1991,46 @@ Ninguna nueva.
 - `npx tsc --noEmit` sin errores.
 - `npx playwright test tests/e2e/evaluation-version.spec.ts --list` parsea (1 test).
 - Happy-path `evaluation-series-happy.spec.ts` sigue el patrón de `evaluations-happy.spec.ts` (SQL real contra NeonDB; skip graceful sin `DATABASE_URL`). Guard tests 401/403 añadidos.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ G13 — Trigger evaluation.read para Métrica Pádel (2026-09-28)
+
+> status: released
+> release: v0.4
+> date: 2026-09-28
+> change_id: g13-evaluation-read-trigger-2026-09-28
+> module: dashboard
+> tags: [api, notifications, g13, trigger, padel]
+
+### Problema
+
+Cuando un alumno lee una evaluación publicada, el coach no recibía notificación. El engine de notificaciones ya existía pero no había trigger para el evento `evaluation.read`.
+
+### Solución Implementada
+
+- `lib/notifications/triggers.ts`: nuevo `triggerEvaluationRead(teacherId, evaluationId)` — category `system`, priority `P2` (informativa), type `info`, `groupId = evaluationId` para dedup 1h del engine (re-leer no duplica).
+- `lib/db/queries/padel/evaluations.ts`: `markEvaluationRead` ahora retorna `{ evaluation, firstRead } | null`. Detecta la primera lectura de forma atómica (UPDATE condicionado a `readAt IS NULL` + fallback SELECT para re-lectura idempotente sin romper el 404).
+- `app/api/student/evaluations/[id]/read/route.ts`: tras `markEvaluationRead`, si `firstRead` y existe `teacherId`, dispara `triggerEvaluationRead`. La respuesta al alumno no cambia.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/notifications/triggers.ts` | 🔧 Modificado — +`triggerEvaluationRead` |
+| `lib/db/queries/padel/evaluations.ts` | 🔧 Modificado — `markEvaluationRead` retorna `{ evaluation, firstRead }` |
+| `app/api/student/evaluations/[id]/read/route.ts` | 🔧 Modificado — trigger en primera lectura |
+| `tests/unit/notifications/triggers.test.ts` | 🔧 Modificado — +2 tests `triggerEvaluationRead` |
+| `tests/unit/db/evaluations.test.ts` | 🔧 Modificado — tests `markEvaluationRead` adaptados a `firstRead` |
+| `tests/api/padel/evaluation-read-happy.spec.ts` | ✨ Nuevo — happy-path SQL real (notificación al coach + dedup re-lectura) |
+
+### Tests
+
+- Unit: `triggerEvaluationRead` verifica payload P2/system + groupId; `markEvaluationRead` cubre firstRead=true/false/null.
+- API happy-path con SQL real: crear rúbrica → evaluación → publish → leer como alumno → verifica notificación `info/P2/system` para el coach con `group_id = evaluationId`; re-leer no duplica (dedup).
+- `npx tsc --noEmit` y `pnpm run test:unit` pasan.
 
 ### Variables de Entorno
 

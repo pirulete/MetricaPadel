@@ -7,6 +7,14 @@
       "gates_failed": 0,
       "loop_duration_ms": 5400000,
       "module": "admin"
+    },
+    {
+      "change_id": "pair-evaluation-2v2",
+      "timestamp": "2026-09-28T23:09:23.575Z",
+      "iterations": 1,
+      "gates_failed": 1,
+      "loop_duration_ms": 0,
+      "module": "dashboard"
     }
   ]
 }

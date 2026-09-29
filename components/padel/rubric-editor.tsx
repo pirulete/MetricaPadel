@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { PlusIcon, Trash2Icon } from "lucide-react"
+import { PlusIcon, Trash2Icon, Wand2Icon } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { RUBRICA_INTEGRAL_TEMPLATE } from "@/lib/padel/rubric-templates"
 
 const CATEGORIES = [
   { value: "reglas", label: "Reglas" },
@@ -99,6 +111,23 @@ export function RubricEditor({ rubricId }: RubricEditorProps) {
   const addCriterion = () => setCriteria((prev) => [...prev, emptyCriterion()])
   const removeCriterion = (index: number) =>
     setCriteria((prev) => prev.filter((_, i) => i !== index))
+
+  const isEmptyEditor =
+    criteria.length === 0 ||
+    (criteria.length === 1 &&
+      !criteria[0].name.trim() &&
+      criteria[0].descriptors.every((d) => !d.trim()))
+
+  const applyTemplate = () => {
+    setTitle(RUBRICA_INTEGRAL_TEMPLATE.title)
+    setCategory(RUBRICA_INTEGRAL_TEMPLATE.category)
+    setCriteria(
+      RUBRICA_INTEGRAL_TEMPLATE.criteria.map((c) => ({
+        name: c.name,
+        descriptors: [...c.descriptors],
+      }))
+    )
+  }
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -191,10 +220,38 @@ export function RubricEditor({ rubricId }: RubricEditorProps) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Criterios</h2>
-          <Button type="button" variant="outline" size="sm" onClick={addCriterion}>
-            <PlusIcon className="size-4" />
-            Añadir criterio
-          </Button>
+          <div className="flex items-center gap-2">
+            {isEmptyEditor && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button type="button" variant="secondary" size="sm">
+                    <Wand2Icon className="size-4" />
+                    Usar plantilla
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Usar plantilla de rúbrica</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Se cargará la plantilla "Rúbrica Integral de Pádel" con 6
+                      dimensiones × 4 niveles. Esto reemplazará los criterios
+                      actuales. ¿Continuar?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={applyTemplate}>
+                      Usar plantilla
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <Button type="button" variant="outline" size="sm" onClick={addCriterion}>
+              <PlusIcon className="size-4" />
+              Añadir criterio
+            </Button>
+          </div>
         </div>
 
         {criteria.map((criterion, cIndex) => (

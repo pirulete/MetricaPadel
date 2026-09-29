@@ -123,7 +123,7 @@ version_bump() {
   echo "🔢  Verificando versión de release..."
 
   local FEATURES_VERSION CURRENT_VERSION TODAY
-  FEATURES_VERSION=$(grep -m1 'Release' FEATURES.md | grep -o 'v[0-9]\+\.[0-9]\+' | head -1 | sed 's/^v//')
+  FEATURES_VERSION=$(grep -m1 -i 'release:' FEATURES.md | grep -o 'v[0-9]\+\.[0-9]\+' | head -1 | sed 's/^v//')
   CURRENT_VERSION=$(grep "APP_VERSION" lib/constants/version.ts | sed "s/.*'v\(.*\)'.*/\1/")
 
   if [ -z "$FEATURES_VERSION" ]; then

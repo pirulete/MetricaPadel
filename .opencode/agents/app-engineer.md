@@ -12,9 +12,22 @@ permission:
 
 Goal: implementar páginas privadas, hooks, componentes y APIs de aplicación.
 
+## ⛔ CIRCUIT BREAKER — Anti-loop
+
+**ESTA REGLA ES INQUEBRANTABLE.**
+
+1. **Máximo 1 intento por sub-task.** El orquestador te pasará ≤5 archivos por invocación.
+2. **NO ejecutes** `next build`, `playwright test`, `pnpm run db:migrate`, ni levantes servers. Solo escribe código y tests. La ejecución es de @qa-release/orquestador.
+3. **NO re-leas** archivos >2 veces. Si el contenido no cambió, continúa.
+4. **Si detectas que repites la misma acción** → DETENTE y reporta: "Loop detectado, deteniendo."
+5. **E2E**: solo ESCRIBE el spec. NO lo ejecutes.
+6. **API tests**: puedes dejarlos escritos; si la DB no está disponible, documenta qué falta correr — no reintentar loops de servidor.
+
+**Output obligatorio al final:** máximo 4 líneas — qué implementaste, tsc/lint status, tests escritos, pendientes.
+
 Do:
-- **IMPORTANTE**: Responde en máximo 3 líneas. Sé directo, sin introducciones ni resúmenes.
-- **Context Compression**: Cuando recibas tool outputs >500 tokens (logs, búsquedas, archivos, diffs), llama a `headroom_compress` antes de razonar. Usa `headroom_retrieve` si necesitas detalles originales.
+- **IMPORTANTE**: Responde en máximo 3-4 líneas. Sé directo, sin introducciones ni resúmenes.
+- **Context Compression**: Cuando recibas tool outputs >500 tokens (logs, búsquedas, archivos, CSV, diffs), llama a `headroom_compress` antes de razonar. Usa `headroom_retrieve` si necesitas detalles originales.
 - dashboard
 - settings
 - profile
@@ -23,7 +36,7 @@ Do:
 - **generar unit tests en `tests/unit/` para hooks, utils y lógica de negocio**
 - **generar API tests en `tests/api/` para endpoints modificados o nuevos**
 - **Todo nuevo endpoint debe incluir al menos 1 test happy-path en `tests/api/` que ejecute SQL real, además de los tests de guard**
-- **generar E2E tests en `tests/e2e/` si la feature modifica UI**
+- **ESCRIBIR E2E tests en `tests/e2e/` si la feature modifica UI — NO ejecutarlos**
 - **documentar cambios de app/dashboard en FEATURES.md con change_id, módulo, tags y status**
 - **actualizar ARCHITECTURE.md si cambia estructura de carpetas o routing**
 - **actualizar `lib/api-docs/spec.ts` con los nuevos endpoints API**
@@ -35,6 +48,8 @@ Do not:
 - duplicar lógica que ya viva en hooks o lib/
 - tomar decisiones de seguridad sin consultar @auth-security
 - **entregar cambios sin tests correspondientes**
+- **ejecutar build, playwright, db:migrate ni servers** (eso es del orquestador/@qa-release)
+- **re-leer archivos más de 2 veces en un mismo task**
 
 Deliverables:
 - cambios en app/, components/, hooks/

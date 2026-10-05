@@ -4,7 +4,7 @@
  * Todas requieren guardSuperAdmin en el API (nunca se exponen a roles inferiores).
  */
 import { db } from "@/lib/db";
-import { and, count as drizzleCount, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count as drizzleCount, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
 import { academies, auditLogs, evaluations, courses, rubrics, users } from "@/lib/db/schema";
 import { assertNotLastSuperAdmin } from "@/lib/padel/super-admin";
 
@@ -180,6 +180,22 @@ export async function listAllAcademies() {
     .from(academies)
     .leftJoin(users, eq(users.id, academies.ownerId))
     .orderBy(desc(academies.createdAt));
+}
+
+/**
+ * Lista academias ACTIVAS (id, name, slug) para el selector del modal de
+ * solicitud join (GET /api/academy-requests/available-academies, guardAdmin).
+ */
+export async function listActiveAcademies() {
+  return await db
+    .select({
+      id: academies.id,
+      name: academies.name,
+      slug: academies.slug,
+    })
+    .from(academies)
+    .where(eq(academies.status, "active"))
+    .orderBy(asc(academies.name));
 }
 
 /**

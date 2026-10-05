@@ -15,6 +15,8 @@ const OWNER_EMAIL = `rubric-owner-${Date.now()}@test.local`;
 const OWNER_PASSWORD = "TestPass123!";
 const COACH_EMAIL = `rubric-coach-${Date.now()}@test.local`;
 const COACH_PASSWORD = "TestPass123!";
+const SUPER_ADMIN_EMAIL = `rubric-sa-${Date.now()}@test.local`;
+const SUPER_ADMIN_PASSWORD = "TestPass123!";
 
 let serverProbe: Promise<boolean> | null = null;
 
@@ -38,6 +40,8 @@ test.describe("Institutional rubrics — happy-path (SQL real)", () => {
   test.beforeAll(async () => {
     await createUser({ role: "ADMIN", email: OWNER_EMAIL, password: OWNER_PASSWORD });
     await createUser({ role: "ADMIN", email: COACH_EMAIL, password: COACH_PASSWORD });
+    // v0.9: POST /api/academies requiere SUPER_ADMIN (guardSuperAdmin).
+    await createUser({ role: "SUPER_ADMIN", email: SUPER_ADMIN_EMAIL, password: SUPER_ADMIN_PASSWORD });
   });
 
   test.afterAll(async () => {
@@ -66,19 +70,23 @@ test.describe("Institutional rubrics — happy-path (SQL real)", () => {
       `DELETE FROM academies WHERE owner_id IN (SELECT id FROM users WHERE email = $1)`,
       [OWNER_EMAIL]
     );
-    await pool.query(`DELETE FROM users WHERE email = ANY($1)`, [[OWNER_EMAIL, COACH_EMAIL]]);
+    await pool.query(`DELETE FROM users WHERE email = ANY($1)`, [[OWNER_EMAIL, COACH_EMAIL, SUPER_ADMIN_EMAIL]]);
   });
 
   test("OWNER crea institucional → COACH lee pero 403 PUT/DELETE", async () => {
     test.skip(!(await serverUp()), `Servidor no disponible en ${BASE_URL}`);
     const ownerCtx = await createAuthedContext(OWNER_EMAIL, OWNER_PASSWORD);
     const coachCtx = await createAuthedContext(COACH_EMAIL, COACH_PASSWORD);
+    const saCtx = await createAuthedContext(SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD);
     const pool = getPool();
     const slug = `rubric-academy-${Date.now()}`;
     try {
-      // OWNER crea academia
-      const post = await ownerCtx.post("/api/academies", {
-        data: { name: "Academia Rúbricas", slug },
+      // SUPER_ADMIN crea academia con ownerId = coach (OWNER)
+      const ownerId = (
+        await pool.query(`SELECT id FROM users WHERE email = $1`, [OWNER_EMAIL])
+      ).rows[0].id as string;
+      const post = await saCtx.post("/api/academies", {
+        data: { name: "Academia Rúbricas", slug, ownerId },
         headers: { "Content-Type": "application/json" },
       });
       const academyId = (await post.json()).academy.id;
@@ -121,7 +129,7 @@ test.describe("Institutional rubrics — happy-path (SQL real)", () => {
       const list = await coachCtx.get(`/api/academies/${academyId}/rubrics`);
       expect(list.status()).toBe(200);
       const listBody = await list.json();
-      expect(listBody.items.find((r: { id: string }) => r.id === rubricId)).toBeTruthy();
+      expect(listBody.rubrics.find((r: { id: string }) => r.id === rubricId)).toBeTruthy();
 
       // COACH puede leer el detalle de la rúbrica institucional (GET /api/rubrics/[id])
       const detail = await coachCtx.get(`/api/rubrics/${rubricId}`);

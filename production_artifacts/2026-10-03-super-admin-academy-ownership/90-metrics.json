@@ -1,0 +1,11 @@
+{
+  "change_id": "2026-10-03-super-admin-academy-ownership",
+  "change_class": "feature",
+  "timestamp": "2026-10-05T00:13:08.357Z",
+  "files_changed": 53,
+  "tests_added": 9,
+  "tests_updated": 5,
+  "test_coverage_delta": null,
+  "gates_passed": 10,
+  "gates_failed": 0
+}

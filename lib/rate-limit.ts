@@ -231,6 +231,13 @@ const publicRequestCounts = new Map<string, { count: number; resetTime: number }
 export const ACADEMY_INVITE_MAX = isTestEnv ? 10000 : 10;
 export const ACADEMY_INVITE_WINDOW_MS = 60_000;
 
+// ── Academy Access Request Rate Limiting ───────────────────────
+// Límite de solicitudes de acceso a academia (join/create): 10 por IP por
+// minuto (ventana 60s). Key `academy-request:{ip}` (patrón academy-invite).
+// En test: límite alto para no interferir con API tests.
+export const ACADEMY_REQUEST_MAX = isTestEnv ? 10000 : 10;
+export const ACADEMY_REQUEST_WINDOW_MS = 60_000;
+
 export function checkPublicRateLimit(
   ip: string,
   options?: { windowMs?: number; max?: number }

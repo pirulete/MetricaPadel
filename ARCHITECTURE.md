@@ -163,6 +163,16 @@ Principio: **NUNCA permitir LOCKED** en rutas privadas. TEMPORARY solo si explí
 - **UI**: botón "Cargar más" en `history-list.tsx`, `rubric-library.tsx`, `cursos/page.tsx` (rama ADMIN usa `/api/courses` paginado; alumno sigue con `/api/dashboard/student` sin paginar) y `evaluaciones/page.tsx`.
 - **Migración**: ninguna (sin cambios de schema).
 
+## Padel Evaluativo — Ownership SUPER_ADMIN Academias + Solicitudes (v0.9)
+
+- **Roles**: ADMIN∪SUPER_ADMIN = coach; solo SUPER_ADMIN crea/opera academias de plataforma. Coach (ADMIN global) envía solicitudes `join_academy`/`create_academy`; SUPER_ADMIN aprueba/rechaza.
+- **DB**: enums `academy_request_type`, `academy_request_status`; tabla `academy_access_requests` (userId, type, academyId nullable, requestedRole, payload jsonb, status, reviewedBy/reviewedAt) + índices parciales UNIQUE pending. Data migration ownership en `0011_*` (ownerId → SA; OWNER previo → ADMIN). Fail-closed sin SA activo.
+- **Guards**: `guardSuperAdminOrAcademyRole` (+ Owner/Admin/Coach wrappers) — SA verifica existencia academia (404, permite archivadas); no-SA delega membresía. `guardSuperAdmin` puro: crear, transfer, restore, solicitudes.
+- **Endpoints nuevos**: `POST/GET /api/academy-requests`, `approve`, `reject`, `available-academies`, `POST /api/academies/[id]/transfer-ownership`, `POST .../restore`, `PUT .../members/[userId]` (role). `POST /api/academies` → guardSuperAdmin.
+- **Lógica pura**: `lib/padel/academy-requests.ts` (`canAssignAcademyRole`), `lib/padel/academy-migration.ts`.
+- **UI**: `/academias` (Solicitar acceso para ADMIN); `/admin/platform/academias` y `/solicitudes` (SA); nav condicional.
+- **Anti-loop workflow**: chunking obligatorio >5 archivos, implementadores no corren build/playwright/E2E, circuit breaker en agentes, task-worksheet, `.agents/patterns/admin-crud-conventions.md`.
+
 ## Convenciones de Migraciones
 
 - **Siempre usar `pnpm run db:generate` tras modificar `lib/db/schema.ts`** — nunca crear SQL a mano.

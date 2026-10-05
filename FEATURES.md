@@ -1,5 +1,79 @@
 # FEATURES — Registro de Cambios
 
+## ✨ Academias — Ownership SUPER_ADMIN + Solicitudes de Acceso (2026-10-03)
+
+> status: released
+> release: v0.9
+> date: 2026-10-03
+> change_id: 2026-10-03-super-admin-academy-ownership
+> module: admin+academy
+> tags: [academy, super-admin, rbac, ownership, requests, migration]
+
+### Problema
+
+Cualquier ADMIN global podía crear academias y quedaba como OWNER. Se requería modelo de plataforma centralizado: solo SUPER_ADMIN crea/opera academias; coaches (ADMIN) solicitan acceso (join o create) con aprobación de SUPER_ADMIN. No existían transferencia de ownership, solicitudes, desarchivar ni asignación de roles vía API.
+
+### Solución Implementada
+
+- **Creación solo SUPER_ADMIN**: `POST /api/academies` → `guardSuperAdmin` + `ownerId` opcional. UI oculta "Crear academia" para ADMIN; botón "Solicitar acceso" en `/academias`.
+- **Migración ownership** (`0011_dazzling_makkari`): data migration idempotente — `academies.owner_id` → único SUPER_ADMIN activo; membresías OWNER previas → ADMIN; upsert OWNER del SA. Fail-closed sin SUPER_ADMIN activo.
+- **Solicitudes** (`academy_access_requests`): `join_academy` (academia + rol ADMIN/COACH) y `create_academy` (payload name/slug → OWNER al aprobar). Endpoints POST/GET + approve/reject + available-academies. Rate limit `academy-request:{ip}`.
+- **SUPER_ADMIN CRUD**: transfer-ownership (target→OWNER, previo→ADMIN), restore/unarchive, asignar roles (OWNER solo SA), rúbricas institucionales de cualquier academia.
+- **Guards**: `guardSuperAdminOrAcademyRole` + wrappers en `academy-guard.ts` (SA bypass con 404 anti-IDOR; no-SA delega membresía).
+- **UI SUPER_ADMIN**: `/admin/platform/academias` (tabla + crear/archivar/restaurar/transferir/roles) y `/admin/platform/solicitudes` (aprobar/rechazar); nav solo SA.
+- **Auditoría**: REQUEST_CREATED/APPROVED/REJECTED, OWNERSHIP_TRANSFERRED, ACADEMY_RESTORED, MEMBER_ROLE_ASSIGNED en `lib/audit/academy.ts`.
+
+### Archivos Modificados
+
+Ver `production_artifacts/2026-10-03-super-admin-academy-ownership/change-map.md` (40+ archivos: schema, queries, guards, 9 endpoints, hooks, UI coach+admin, api-docs, tests).
+
+### Tests
+
+- Unit: `tests/unit/padel/academy-requests.test.ts`, `academy-ownership.test.ts`, `tests/unit/auth/academy-super-admin-guard.test.ts`, `tests/unit/db/academy-*`
+- API: `tests/api/padel/academy-requests-*.spec.ts`, `academy-ownership-*.spec.ts` + mods en academies/pdf/members/institutional-rubrics (setup con SUPER_ADMIN)
+- E2E: `tests/e2e/academy-super-admin.spec.ts` (spec; ejecución @qa-release)
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Harness — loop_metrics warning no bloqueante + fix gates_failed (2026-10-03)
+
+> status: released
+> release: v0.8
+> date: 2026-10-03
+> change_id: harness-loop-metrics-2026-10-03
+> module: infra
+> tags: [harness, validation, loop-metrics, bugfix]
+
+### Problema
+
+El gate `loop_metrics` del harness trataba el rework rate > threshold como **fail duro**, bloqueando workflows. `AGENTS.md` lo documenta como *"warning no bloqueante"*. Además `checkLoopMetrics` leía `e.gatesFailed` (camelCase) pero `.validation/loop-metrics.json` guarda `gates_failed` (snake_case), por lo que los gates_failed siempre se leían como 0.
+
+### Solución Implementada
+
+- **`lib/modules/harness/validate.js`**: extraída `computeLoopMetrics(events, threshold)` (pura, exportada para tests). Lee `gates_failed ?? gatesFailed`. El caller ahora trata el exceso de rework como **warning** (no failed), alineado con AGENTS.md y con el patrón de `file_size`/`features_check`.
+- **`tests/unit/harness-loop-metrics.test.ts`** (nuevo): 8 tests — empty events, pass/fail por threshold, snake_case, camelCase legado, iterations default, escalaciones, data histórica real del repo.
+- **`.validation/status.json` / `evidence.json`**: loop_metrics re clasificado fail→warning; overall status → `pass`.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/modules/harness/validate.js` | 🔧 Modificado — `computeLoopMetrics` + severity warning |
+| `tests/unit/harness-loop-metrics.test.ts` | ✨ Nuevo — unit tests del gate |
+| `.validation/status.json` | 🔧 Modificado — status pass, loop_metrics en warnings |
+| `.validation/evidence.json` | 🔧 Modificado — gatesRun.loop_metrics → warning |
+
+### Tests
+
+- Unit: `tests/unit/harness-loop-metrics.test.ts` — 8/8 passing.
+- Gate: `node scripts/validate-harness.js --loop-metrics` → PASS (warning non-blocking), exit 0.
+
+### Variables de Entorno
+
+Ninguna nueva. `LOOP_REWORK_THRESHOLD` (default 1.5) y `LOOP_METRICS_FILE` ya existían.
+
 ## ✨ G2 — Exportación CSV del historial de evaluaciones (2026-09-28)
 
 > status: released
@@ -2031,6 +2105,127 @@ Cuando un alumno lee una evaluación publicada, el coach no recibía notificaci�
 - Unit: `triggerEvaluationRead` verifica payload P2/system + groupId; `markEvaluationRead` cubre firstRead=true/false/null.
 - API happy-path con SQL real: crear rúbrica → evaluación → publish → leer como alumno → verifica notificación `info/P2/system` para el coach con `group_id = evaluationId`; re-leer no duplica (dedup).
 - `npx tsc --noEmit` y `pnpm run test:unit` pasan.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Academias — Ownership SUPER_ADMIN + Solicitudes de Acceso: DB (2026-10-03)
+
+> status: in-progress
+> release: v0.9
+> date: 2026-10-03
+> change_id: 2026-10-03-super-admin-academy-ownership
+> module: admin+academy
+> tags: [db, migration, academy, super-admin, ownership]
+
+### Problema
+
+Las academias quedaban huérfanas de ownership a nivel plataforma: el coach (ADMIN global) creaba academias y era OWNER, sin que SUPER_ADMIN tuviera visibilidad/control. Se requiere centralizar el ownership en SUPER_ADMIN y permitir solicitudes de acceso (join/create) de coaches.
+
+### Solución Implementada
+
+- **Schema** (`lib/db/schema.ts`): 2 enums (`academy_request_type`, `academy_request_status`) + tabla `academy_access_requests` (userId/type/academyId/requestedRole/payload/status/reviewedBy/reviewedAt) + 5 índices (3 btree + 2 UNIQUE parciales para duplicados pendientes → 409).
+- **Migración** `drizzle/0011_dazzling_makkari.sql`: DDL + DO block data migration (ownerId de academias → único SUPER_ADMIN activo; membresías OWNER previas → ADMIN; upsert membresía OWNER del SA). Fail-closed: sin SUPER_ADMIN activo → EXCEPTION.
+- **Queries** `lib/db/queries/padel/academy-requests.ts` (nuevo): createAccessRequest (23505 → duplicate_pending), listAccessRequests, getAccessRequestById, approveJoinRequest (tx), approveCreateRequest (tx, lógica espejo de createAcademy con tx client), rejectRequest. Uniones discriminadas estilo RemoveMemberResult.
+- **Queries** `lib/db/queries/padel/academies.ts`: transferOwnership (tx, 404 target inexistente/no miembro, 400 self-transfer), assignMemberRole (last_owner), restoreAcademy (already_active).
+- **Lógica pura** `lib/padel/academy-migration.ts`: buildOwnershipMigrationPlan (espejo del DO block, AC-02).
+- **Rubrics access** `lib/db/queries/padel/rubrics.ts`: canAccessRubric/canMutateRubric permiten SUPER_ADMIN global.
+- **Fix infra** `scripts/migrate.ts`: splitStatements descartaba DO blocks con comentario encima → data migration se saltaba silenciosamente. Filtro corregido (conserva chunks con SQL real).
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/db/schema.ts` | 🔧 Modificado — enums + tabla academy_access_requests + relations + tipos |
+| `drizzle/0011_dazzling_makkari.sql` | ✨ Nuevo — DDL + DO block data migration |
+| `lib/db/queries/padel/academy-requests.ts` | ✨ Nuevo — queries de solicitudes |
+| `lib/db/queries/padel/academies.ts` | 🔧 Modificado — transferOwnership, assignMemberRole, restoreAcademy |
+| `lib/db/queries/padel/rubrics.ts` | 🔧 Modificado — SUPER_ADMIN en canAccessRubric/canMutateRubric |
+| `lib/padel/academy-migration.ts` | ✨ Nuevo — buildOwnershipMigrationPlan |
+| `scripts/migrate.ts` | 🔧 Modificado — fix splitStatements (DO blocks) |
+| `tests/unit/db/academy-requests-queries.test.ts` | ✨ Nuevo |
+| `tests/unit/db/academy-migration.test.ts` | ✨ Nuevo |
+| `tests/unit/db/academy-ownership-queries.test.ts` | ✨ Nuevo |
+
+### Tests
+
+- Unit: 308/308 pasan (db + padel). Nuevos: academy-requests-queries (19), academy-migration (4), academy-ownership-queries (9).
+- Typecheck: 0 errores. Lint: 0 errores (32 warnings de `any` en mocks).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+### Migración
+
+- `0011_dazzling_makkari` aplicada en local (DDL verificado: 11 columnas en academy_access_requests).
+- DO block verificado end-to-end con datos temporales (owner→SA, coach→ADMIN, membresía SA, idempotente, fail-closed) y limpiado.
+- En local no quedó aplicado el DO block por diseño (no hay SUPER_ADMIN activo → fail-closed). En producción correrá al migrar.
+
+## ✨ Academias — Ownership SUPER_ADMIN + Solicitudes de Acceso (2026-10-03)
+
+> status: in-progress
+> release: v0.9
+> date: 2026-10-03
+> change_id: 2026-10-03-super-admin-academy-ownership
+> module: admin+academy
+> tags: [academy, super-admin, rbac, requests, api, ui]
+
+### Problema
+
+El ADMIN global (coach) podía crear academias y quedar como OWNER, sin supervisión de plataforma. Se requiere que solo SUPER_ADMIN cree/transfiera/archive academias, y que los coaches soliciten acceso (join/create) que SUPER_ADMIN aprueba o rechaza.
+
+### Solución Implementada
+
+- **Guard compuesto** (`lib/auth/academy-guard.ts`): `guardSuperAdminOrAcademyRole` + wrappers Owner/Admin/Coach — SUPER_ADMIN ve academias archivadas (plataforma), no-SA delega en membresía activa. Anti-IDOR 404.
+- **Endpoints modificados**: `POST /api/academies` → `guardSuperAdmin` + `ownerId` opcional (default session.user.id, validado en users); guards SuperAdminOr en `[id]` GET/PUT/DELETE, logo, members GET, invite, rubrics GET/POST; `PUT /api/academies/[id]/members/[userId]` nuevo (role assign, OWNER solo SUPER_ADMIN vía `canAssignAcademyRole`).
+- **Endpoints nuevos**: `POST /api/academies/[id]/transfer-ownership` (guardSuperAdmin, target no miembro → 404 anti-IDOR, self → 400), `POST /api/academies/[id]/restore` (guardSuperAdmin, ya activa → 400), `POST/GET /api/academy-requests` (POST guardAdmin + rate limit `academy-request:{ip}` 10/min + auditoría; GET guardSuperAdmin con filtros status/type), `POST /api/academy-requests/[id]/approve|reject` (guardSuperAdmin), `GET /api/academy-requests/available-academies` (guardAdmin).
+- **Lógica pura**: `lib/padel/academy-requests.ts` — `canAssignAcademyRole`, `validateRequestPayload`, `buildRequestAuditPayload`.
+- **Rate limit**: `ACADEMY_REQUEST_MAX`/`ACADEMY_REQUEST_WINDOW_MS` en `lib/rate-limit.ts` (patrón invite).
+- **Hooks**: `use-academies.ts` +transferOwnership/assignRole/restore; `use-academy-requests.ts` nuevo (create/list/approve/reject/available).
+- **UI coach**: `app/(app)/academias/page.tsx` — role desde `/api/auth/session` (no probe teacher, SUPER_ADMIN no ve "Solicitar acceso"); `AcademyForm` reemplazado por `AcademyRequestForm` (modal 2 tabs join/create + Sonner); EmptyState copy actualizado.
+- **API docs**: `lib/api-docs/paths/academy-requests.ts` + `schemas/academy-requests.ts` nuevos; `paths/academies.ts` actualizado (POST guardSuperAdmin+ownerId, transfer, restore, PUT role); wire en `spec.ts`.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/validations/academy.ts` | 🔧 Modificado — schemas createWithOwner/request/query/roleAssign/transfer |
+| `lib/padel/academy-requests.ts` | ✨ Nuevo — lógica pura |
+| `lib/rate-limit.ts` | 🔧 Modificado — ACADEMY_REQUEST_* |
+| `app/api/academies/route.ts` | 🔧 Modificado — POST guardSuperAdmin + ownerId |
+| `app/api/academies/[id]/route.ts` | 🔧 Modificado — guards SuperAdminOr |
+| `app/api/academies/[id]/logo/route.ts` | 🔧 Modificado — guard SuperAdminOr |
+| `app/api/academies/[id]/members/route.ts` | 🔧 Modificado — guard SuperAdminOr |
+| `app/api/academies/[id]/members/invite/route.ts` | 🔧 Modificado — guard SuperAdminOr |
+| `app/api/academies/[id]/members/[userId]/route.ts` | 🔧 Modificado — guard SuperAdminOr + PUT role |
+| `app/api/academies/[id]/rubrics/route.ts` | 🔧 Modificado — guards SuperAdminOr |
+| `app/api/academies/[id]/transfer-ownership/route.ts` | ✨ Nuevo |
+| `app/api/academies/[id]/restore/route.ts` | ✨ Nuevo |
+| `app/api/academy-requests/route.ts` | ✨ Nuevo |
+| `app/api/academy-requests/[id]/approve/route.ts` | ✨ Nuevo |
+| `app/api/academy-requests/[id]/reject/route.ts` | ✨ Nuevo |
+| `app/api/academy-requests/available-academies/route.ts` | ✨ Nuevo |
+| `hooks/use-academies.ts` | 🔧 Modificado — transfer/assign/restore |
+| `hooks/use-academy-requests.ts` | ✨ Nuevo |
+| `app/(app)/academias/page.tsx` | 🔧 Modificado — role session + request form |
+| `components/padel/academy-request-form.tsx` | ✨ Nuevo |
+| `lib/api-docs/paths/academy-requests.ts` | ✨ Nuevo |
+| `lib/api-docs/schemas/academy-requests.ts` | ✨ Nuevo |
+| `lib/api-docs/paths/academies.ts` | 🔧 Modificado |
+| `lib/api-docs/schemas/academies.ts` | 🔧 Modificado |
+| `lib/api-docs/spec.ts` | 🔧 Modificado — wire |
+| `lib/db/queries/padel/super-admin.ts` | 🔧 Modificado — listActiveAcademies |
+| `lib/db/queries/padel/academy-requests.ts` | 🔧 Modificado — fix payload sql (bug db-engineer) |
+
+### Tests
+
+- Unit: `tests/unit/padel/academy-requests.test.ts`, `tests/unit/padel/academy-ownership.test.ts` — 18 tests.
+- API happy (SQL real): `tests/api/padel/academy-requests-happy.spec.ts`, `tests/api/padel/academy-ownership-happy.spec.ts`.
+- API guard: `tests/api/padel/academy-requests-guard.spec.ts`, `tests/api/padel/academy-ownership-guard.spec.ts`.
+- Modificados: `academies-guard.spec.ts` (ADMIN → 403), `academies-happy.spec.ts`, `members-happy.spec.ts`, `institutional-rubrics-happy.spec.ts`, `pdf-happy.spec.ts` (setup con SUPER_ADMIN + ownerId).
+- E2E `tests/e2e/academy-super-admin.spec.ts` asignado a @admin-engineer.
 
 ### Variables de Entorno
 

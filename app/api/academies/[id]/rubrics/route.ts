@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { guardAcademyAdmin, guardAcademyCoach } from "@/lib/auth/academy-guard";
+import { guardSuperAdminOrAcademyAdmin, guardSuperAdminOrAcademyCoach } from "@/lib/auth/academy-guard";
 import { auditCreate, extractRequestContext } from "@/lib/audit/helpers";
 import {
   createInstitutionalRubric,
@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 
 /**
  * GET /api/academies/[id]/rubrics
- * Lista rúbricas institucionales de la academia (guardAcademyCoach).
+ * Lista rúbricas institucionales de la academia (guardSuperAdminOrAcademyCoach).
  * Solo scope=institutional de esa academia.
  */
 export async function GET(
@@ -24,7 +24,7 @@ export async function GET(
   try {
     const session = await auth();
     const { id } = padelIdParamsSchema.parse(await params);
-    const guardError = await guardAcademyCoach(session, id);
+    const guardError = await guardSuperAdminOrAcademyCoach(session, id);
     if (guardError) return guardError;
 
     const rubrics = await listInstitutionalRubrics(id);
@@ -40,7 +40,7 @@ export async function GET(
 
 /**
  * POST /api/academies/[id]/rubrics
- * Crea rúbrica institucional (guardAcademyAdmin). El handler fuerza
+ * Crea rúbrica institucional (guardSuperAdminOrAcademyAdmin). El handler fuerza
  * scope=institutional y academyId=ruta. Audita CREATE.
  */
 export async function POST(
@@ -50,7 +50,7 @@ export async function POST(
   try {
     const session = await auth();
     const { id } = padelIdParamsSchema.parse(await params);
-    const guardError = await guardAcademyAdmin(session, id);
+    const guardError = await guardSuperAdminOrAcademyAdmin(session, id);
     if (guardError) return guardError;
 
     const body = await request.json();

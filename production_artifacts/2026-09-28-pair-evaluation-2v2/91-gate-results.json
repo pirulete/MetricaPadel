@@ -1,0 +1,20 @@
+{
+  "change_id": "pair-evaluation-2v2",
+  "change_class": "feature",
+  "validated_at": "2026-09-28T20:09:01.056Z",
+  "typecheck": "pass",
+  "lint": "fail",
+  "unit_tests": "pass",
+  "api_tests": "skipped",
+  "features_check": "pass",
+  "artifact_completeness": "pass",
+  "build": "pass",
+  "migrations_check": "pass",
+  "docs_check": "pass",
+  "security_check": "pass",
+  "evidence_check": "pass",
+  "gates_passed": 18,
+  "gates_failed": 1,
+  "overall": "fail",
+  "notes": "lint fails on pre-existing errors in scripts/loop-metrics.js (not in this change's diff). API tests require NeonDB + server (CI only)."
+}

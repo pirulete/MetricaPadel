@@ -3,9 +3,9 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import {
   getAcademyMembership,
-  guardAcademyAdmin,
-  guardAcademyCoach,
-  guardAcademyOwner,
+  guardSuperAdminOrAcademyAdmin,
+  guardSuperAdminOrAcademyCoach,
+  guardSuperAdminOrAcademyOwner,
 } from "@/lib/auth/academy-guard";
 import { auditAcademyArchived, auditAcademyUpdated, extractRequestContext } from "@/lib/audit/helpers";
 import { archiveAcademy, getAcademyById, updateAcademy } from "@/lib/db/queries/padel/academies";
@@ -16,8 +16,9 @@ export const runtime = "nodejs";
 
 /**
  * GET /api/academies/[id]
- * Detalle de academia + rol del caller (myRole). guardAcademyCoach: miembro
- * activo (OWNER/ADMIN/COACH). 404 anti-IDOR si no es miembro o está archivada.
+ * Detalle de academia + rol del caller (myRole). guardSuperAdminOrAcademyCoach:
+ * miembro activo (OWNER/ADMIN/COACH) o SUPER_ADMIN (visibilidad plataforma).
+ * 404 anti-IDOR si no es miembro o está archivada (path no-SA).
  */
 export async function GET(
   _request: NextRequest,
@@ -26,7 +27,7 @@ export async function GET(
   try {
     const session = await auth();
     const { id } = padelIdParamsSchema.parse(await params);
-    const guardError = await guardAcademyCoach(session, id);
+    const guardError = await guardSuperAdminOrAcademyCoach(session, id);
     if (guardError) return guardError;
 
     const academy = await getAcademyById(id);
@@ -47,8 +48,8 @@ export async function GET(
 
 /**
  * PUT /api/academies/[id]
- * Actualiza branding (name/slug/primaryColor). guardAcademyAdmin: OWNER/ADMIN.
- * 409 si el slug nuevo ya existe. Audita UPDATE.
+ * Actualiza branding (name/slug/primaryColor). guardSuperAdminOrAcademyAdmin:
+ * OWNER/ADMIN o SUPER_ADMIN. 409 si el slug nuevo ya existe. Audita UPDATE.
  */
 export async function PUT(
   request: NextRequest,
@@ -57,7 +58,7 @@ export async function PUT(
   try {
     const session = await auth();
     const { id } = padelIdParamsSchema.parse(await params);
-    const guardError = await guardAcademyAdmin(session, id);
+    const guardError = await guardSuperAdminOrAcademyAdmin(session, id);
     if (guardError) return guardError;
 
     const body = await request.json();
@@ -95,8 +96,8 @@ export async function PUT(
 
 /**
  * DELETE /api/academies/[id]
- * Archiva academia (soft, status=archived). guardAcademyOwner: solo OWNER.
- * Audita DELETE.
+ * Archiva academia (soft, status=archived). guardSuperAdminOrAcademyOwner:
+ * solo OWNER o SUPER_ADMIN. Audita DELETE.
  */
 export async function DELETE(
   request: NextRequest,
@@ -105,7 +106,7 @@ export async function DELETE(
   try {
     const session = await auth();
     const { id } = padelIdParamsSchema.parse(await params);
-    const guardError = await guardAcademyOwner(session, id);
+    const guardError = await guardSuperAdminOrAcademyOwner(session, id);
     if (guardError) return guardError;
 
     const previous = await getAcademyById(id);

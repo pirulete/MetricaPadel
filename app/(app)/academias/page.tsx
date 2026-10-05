@@ -4,13 +4,17 @@ import * as React from "react"
 import { Section, SectionHeader } from "@/components/ui/section"
 import { EmptyState } from "@/components/padel/empty-state"
 import { AcademyCard } from "@/components/padel/academy-card"
-import { AcademyForm } from "@/components/padel/academy-form"
+import { AcademyRequestForm } from "@/components/padel/academy-request-form"
 import { BottomNav } from "@/components/padel/bottom-nav"
 import { useAcademies } from "@/hooks/use-academies"
 
 /**
  * /academias — lista de academias del usuario (SPEC-EPIC-01 Fase E).
  * GET /api/academies (guardUser): academias donde es miembro activo.
+ * v0.9: el ADMIN global ya NO crea academias (guardSuperAdmin) — solicita
+ * acceso (join/create) vía AcademyRequestForm. El role se lee de
+ * /api/auth/session (el probe a /api/dashboard/teacher también pasa para
+ * SUPER_ADMIN, que NO debe ver "Solicitar acceso").
  */
 export default function AcademiasPage() {
   const { academies, loading, error, reload } = useAcademies()
@@ -20,9 +24,12 @@ export default function AcademiasPage() {
     let cancelled = false
     const load = async () => {
       try {
-        const res = await fetch("/api/dashboard/teacher", { cache: "no-store" })
-        if (res.ok && !cancelled) setRole("ADMIN")
-        else if (!cancelled) setRole("USER")
+        const res = await fetch("/api/auth/session", { cache: "no-store" })
+        const session = await res.json()
+        if (!cancelled) {
+          // SUPER_ADMIN es ADMIN global pero no solicita acceso (es quien aprueba).
+          setRole(session?.user?.role === "ADMIN" ? "ADMIN" : "USER")
+        }
       } catch {
         if (!cancelled) setRole("USER")
       }
@@ -41,7 +48,7 @@ export default function AcademiasPage() {
           subtitle="Gestiona tus academias, branding institucional y rúbricas compartidas"
         />
         <div className="mb-6 flex justify-end">
-          {role === "ADMIN" && <AcademyForm onSaved={() => void reload()} />}
+          {role === "ADMIN" && <AcademyRequestForm onSaved={() => void reload()} />}
         </div>
         {loading ? (
           <p className="text-sm text-muted-foreground">Cargando academias…</p>
@@ -52,10 +59,10 @@ export default function AcademiasPage() {
             title="No estás en ninguna academia"
             description={
               role === "ADMIN"
-                ? "Crea tu primera academia para estandarizar rúbricas y emitir informes con tu branding."
+                ? "Solicita acceso a una academia o pide que se cree una para ti."
                 : "Pídele a tu coach una invitación para unirte a su academia."
             }
-            action={role === "ADMIN" ? <AcademyForm onSaved={() => void reload()} /> : undefined}
+            action={role === "ADMIN" ? <AcademyRequestForm onSaved={() => void reload()} /> : undefined}
           />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

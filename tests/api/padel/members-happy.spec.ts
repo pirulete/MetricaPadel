@@ -15,6 +15,8 @@ const OWNER_EMAIL = `member-owner-${Date.now()}@test.local`;
 const OWNER_PASSWORD = "TestPass123!";
 const INVITED_EMAIL = `member-invited-${Date.now()}@test.local`;
 const INVITED_PASSWORD = "TestPass123!";
+const SUPER_ADMIN_EMAIL = `member-sa-${Date.now()}@test.local`;
+const SUPER_ADMIN_PASSWORD = "TestPass123!";
 
 let serverProbe: Promise<boolean> | null = null;
 
@@ -38,6 +40,8 @@ test.describe("Academy members — happy-path (SQL real)", () => {
   test.beforeAll(async () => {
     await createUser({ role: "ADMIN", email: OWNER_EMAIL, password: OWNER_PASSWORD });
     await createUser({ role: "ADMIN", email: INVITED_EMAIL, password: INVITED_PASSWORD });
+    // v0.9: POST /api/academies requiere SUPER_ADMIN (guardSuperAdmin).
+    await createUser({ role: "SUPER_ADMIN", email: SUPER_ADMIN_EMAIL, password: SUPER_ADMIN_PASSWORD });
   });
 
   test.afterAll(async () => {
@@ -50,19 +54,23 @@ test.describe("Academy members — happy-path (SQL real)", () => {
       `DELETE FROM academies WHERE owner_id IN (SELECT id FROM users WHERE email = $1)`,
       [OWNER_EMAIL]
     );
-    await pool.query(`DELETE FROM users WHERE email = ANY($1)`, [[OWNER_EMAIL, INVITED_EMAIL]]);
+    await pool.query(`DELETE FROM users WHERE email = ANY($1)`, [[OWNER_EMAIL, INVITED_EMAIL, SUPER_ADMIN_EMAIL]]);
   });
 
   test("invite → accept → list → remove + último OWNER 400", async () => {
     test.skip(!(await serverUp()), `Servidor no disponible en ${BASE_URL}`);
     const ownerCtx = await createAuthedContext(OWNER_EMAIL, OWNER_PASSWORD);
     const invitedCtx = await createAuthedContext(INVITED_EMAIL, INVITED_PASSWORD);
+    const saCtx = await createAuthedContext(SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD);
     const pool = getPool();
     const slug = `member-academy-${Date.now()}`;
     try {
-      // OWNER crea academia
-      const post = await ownerCtx.post("/api/academies", {
-        data: { name: "Academia Miembros", slug },
+      // SUPER_ADMIN crea academia con ownerId = coach (OWNER)
+      const ownerId = (
+        await pool.query(`SELECT id FROM users WHERE email = $1`, [OWNER_EMAIL])
+      ).rows[0].id as string;
+      const post = await saCtx.post("/api/academies", {
+        data: { name: "Academia Miembros", slug, ownerId },
         headers: { "Content-Type": "application/json" },
       });
       expect(post.status()).toBe(201);
@@ -160,12 +168,16 @@ test.describe("Academy members — happy-path (SQL real)", () => {
   test("invite crea usuario TEMPORARY si el email no existe", async () => {
     test.skip(!(await serverUp()), `Servidor no disponible en ${BASE_URL}`);
     const ownerCtx = await createAuthedContext(OWNER_EMAIL, OWNER_PASSWORD);
+    const saCtx = await createAuthedContext(SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD);
     const pool = getPool();
     const slug = `member-new-${Date.now()}`;
     const newEmail = `brand-new-${Date.now()}@test.local`;
     try {
-      const post = await ownerCtx.post("/api/academies", {
-        data: { name: "Academia Nueva", slug },
+      const ownerId = (
+        await pool.query(`SELECT id FROM users WHERE email = $1`, [OWNER_EMAIL])
+      ).rows[0].id as string;
+      const post = await saCtx.post("/api/academies", {
+        data: { name: "Academia Nueva", slug, ownerId },
         headers: { "Content-Type": "application/json" },
       });
       const academyId = (await post.json()).academy.id;

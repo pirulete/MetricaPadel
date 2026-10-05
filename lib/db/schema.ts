@@ -1,5 +1,5 @@
 import { pgTable, text, timestamp, uuid, varchar, json, jsonb, integer, numeric, boolean, pgEnum, index, uniqueIndex } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 export const userRoleEnum = pgEnum('user_role', ['USER', 'ADMIN', 'SUPER_ADMIN']);
 
@@ -424,11 +424,17 @@ export const rubricScopeEnum = pgEnum('rubric_scope', [
   'personal', 'institutional',
 ]);
 
+export const academyRequestTypeEnum = pgEnum('academy_request_type', ['join_academy', 'create_academy']);
+
+export const academyRequestStatusEnum = pgEnum('academy_request_status', ['pending', 'approved', 'rejected']);
+
 export type CourseLevel = (typeof courseLevelEnum.enumValues)[number];
 export type CourseStatus = (typeof courseStatusEnum.enumValues)[number];
 export type AcademyMembershipRole = (typeof academyMembershipRoleEnum.enumValues)[number];
 export type AcademyStatus = (typeof academyStatusEnum.enumValues)[number];
 export type RubricScope = (typeof rubricScopeEnum.enumValues)[number];
+export type AcademyRequestType = (typeof academyRequestTypeEnum.enumValues)[number];
+export type AcademyRequestStatus = (typeof academyRequestStatusEnum.enumValues)[number];
 
 // Rúbrica del coach (ADMIN). ownerId = coach. Archivar = soft (status=archived),
 // nunca hard delete: las evaluaciones referencian la rúbrica.
@@ -596,6 +602,37 @@ export const academyMemberships = pgTable("academy_memberships", {
   index("academy_memberships_user_idx").on(table.userId),
 ]);
 
+// Solicitud de acceso a academia (v0.9): join_academy (unirse a academia
+// existente) o create_academy (que SUPER_ADMIN cree una academia para el
+// solicitante). Los índices parciales UNIQUE son la fuente del 409: un mismo
+// usuario no puede tener 2 solicitudes pendientes del mismo tipo (Postgres
+// trata NULLs como distintos, por eso create_academy usa su propio índice).
+export const academyAccessRequests = pgTable("academy_access_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "no action" }),
+  type: academyRequestTypeEnum("type").notNull(),
+  academyId: uuid("academy_id").references(() => academies.id, { onDelete: "set null" }), // join_academy; null en create_academy
+  requestedRole: academyMembershipRoleEnum("requested_role").notNull().default('COACH'),
+  payload: jsonb("payload").notNull().default({}), // create_academy: {name, slug, primaryColor?}
+  status: academyRequestStatusEnum("status").notNull().default('pending'),
+  reviewedBy: uuid("reviewed_by").references(() => users.id, { onDelete: "no action" }),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("academy_requests_user_idx").on(table.userId),
+  index("academy_requests_status_idx").on(table.status),
+  index("academy_requests_academy_idx").on(table.academyId),
+  // Duplicado pendiente join: mismo usuario + type + academia → 409
+  uniqueIndex("academy_requests_pending_join_idx")
+    .on(table.userId, table.type, table.academyId)
+    .where(sql`${table.status} = 'pending' AND ${table.type} = 'join_academy'`),
+  // Duplicado pendiente create: mismo usuario + type (academyId null) → 409
+  uniqueIndex("academy_requests_pending_create_idx")
+    .on(table.userId, table.type)
+    .where(sql`${table.status} = 'pending' AND ${table.type} = 'create_academy'`),
+]);
+
 export const rubricsRelations = relations(rubrics, ({ one, many }) => ({
   owner: one(users, {
     fields: [rubrics.ownerId],
@@ -736,6 +773,22 @@ export const academyMembershipsRelations = relations(academyMemberships, ({ one 
   }),
 }));
 
+export const academyAccessRequestsRelations = relations(academyAccessRequests, ({ one }) => ({
+  user: one(users, {
+    fields: [academyAccessRequests.userId],
+    references: [users.id],
+  }),
+  academy: one(academies, {
+    fields: [academyAccessRequests.academyId],
+    references: [academies.id],
+  }),
+  reviewer: one(users, {
+    relationName: "reviewedBy",
+    fields: [academyAccessRequests.reviewedBy],
+    references: [users.id],
+  }),
+}));
+
 export type Rubric = typeof rubrics.$inferSelect;
 export type NewRubric = typeof rubrics.$inferInsert;
 export type RubricLevel = typeof rubricLevels.$inferSelect;
@@ -758,3 +811,5 @@ export type Academy = typeof academies.$inferSelect;
 export type NewAcademy = typeof academies.$inferInsert;
 export type AcademyMembership = typeof academyMemberships.$inferSelect;
 export type NewAcademyMembership = typeof academyMemberships.$inferInsert;
+export type AcademyAccessRequest = typeof academyAccessRequests.$inferSelect;
+export type NewAcademyAccessRequest = typeof academyAccessRequests.$inferInsert;

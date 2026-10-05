@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { guardAdmin, guardUser } from "@/lib/auth/admin-guard";
+import { guardSuperAdmin, guardUser } from "@/lib/auth/admin-guard";
 import { auditAcademyCreated, extractRequestContext } from "@/lib/audit/helpers";
 import { createAcademy, listUserAcademies } from "@/lib/db/queries/padel/academies";
-import { academyCreateSchema } from "@/lib/validations/academy";
+import { academyCreateWithOwnerSchema } from "@/lib/validations/academy";
+import { db } from "@/lib/db";
+import { eq } from "drizzle-orm";
+import { users } from "@/lib/db/schema";
 
 export const runtime = "nodejs";
 
@@ -30,20 +33,30 @@ export async function GET() {
 
 /**
  * POST /api/academies
- * Crea academia (guardAdmin = coach) + inserta membresía OWNER activa en la
- * misma transacción. 409 si el slug ya existe (UNIQUE). Audita CREATE.
+ * Crea academia (guardSuperAdmin, v0.9) + inserta membresía OWNER activa en la
+ * misma transacción. ownerId opcional: default = session.user.id; permite al
+ * SUPER_ADMIN asignar OWNER a otro miembro (validado que exista en users).
+ * 409 si el slug ya existe (UNIQUE). Audita CREATE.
  */
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    const guardError = guardAdmin(session);
+    const guardError = guardSuperAdmin(session);
     if (guardError) return guardError;
 
     const body = await request.json();
-    const validated = academyCreateSchema.parse(body);
+    const validated = academyCreateWithOwnerSchema.parse(body);
+
+    const ownerId = validated.ownerId ?? (session!.user.id as string);
+    if (validated.ownerId) {
+      const owner = await db.query.users.findFirst({ where: eq(users.id, validated.ownerId) });
+      if (!owner) {
+        return NextResponse.json({ error: "ownerId no existe en users" }, { status: 400 });
+      }
+    }
 
     const academy = await createAcademy({
-      ownerId: session!.user.id as string,
+      ownerId,
       name: validated.name,
       slug: validated.slug,
       primaryColor: validated.primaryColor,

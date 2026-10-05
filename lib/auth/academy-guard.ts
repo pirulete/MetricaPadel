@@ -19,8 +19,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { and, eq } from "drizzle-orm";
-import { academyMemberships } from "@/lib/db/schema";
+import { academyMemberships, academies } from "@/lib/db/schema";
 import type { AcademyMembershipRole } from "@/lib/db/schema";
+import { isSuperAdminRole } from "@/lib/auth/role-utils";
 
 export interface AcademyMembershipResult {
   membership: typeof academyMemberships.$inferSelect;
@@ -108,3 +109,37 @@ export const guardAcademyAdmin = (s: any, id: string) => guardAcademyRole(s, id,
 
 /** OWNER/ADMIN/COACH activos. Uso: lectura de academia, operaciones de coach. */
 export const guardAcademyCoach = (s: any, id: string) => guardAcademyRole(s, id, [OWNER, ADMIN, COACH]);
+
+/**
+ * Guard compuesto: SUPER_ADMIN (global, plataforma) O rol de academia (v0.9).
+ * - Path SUPER_ADMIN: verifica que la academia EXISTE (404 anti-IDOR si no);
+ *   permite academias archivadas (visibilidad plataforma, D4).
+ * - Path no-SA: delega en guardAcademyRole (membresía activa + academia activa).
+ *
+ * sessionGate corre primero: 401 sin sesión, 403 LOCKED/TEMPORARY — el bypass
+ * SUPER_ADMIN NUNCA opera sin verificar la existencia del recurso (404).
+ */
+async function guardSuperAdminOrAcademyRole(
+  session: any,
+  academyId: string,
+  allowedRoles: AcademyMembershipRole[]
+): Promise<NextResponse | null> {
+  const gate = sessionGate(session);
+  if (gate) return gate;
+
+  if (isSuperAdminRole(session.user.role) && session.user.status === 'ACTIVE') {
+    const academy = await db.query.academies.findFirst({ where: eq(academies.id, academyId) });
+    if (!academy) return notFound();
+    return null;
+  }
+  return guardAcademyRole(session, academyId, allowedRoles);
+}
+
+/** SUPER_ADMIN o OWNER. Uso: archivar academia, transferir ownership, remover miembros. */
+export const guardSuperAdminOrAcademyOwner = (s: any, id: string) => guardSuperAdminOrAcademyRole(s, id, [OWNER]);
+
+/** SUPER_ADMIN o OWNER/ADMIN. Uso: branding, invitar, gestionar rúbricas institucionales. */
+export const guardSuperAdminOrAcademyAdmin = (s: any, id: string) => guardSuperAdminOrAcademyRole(s, id, [OWNER, ADMIN]);
+
+/** SUPER_ADMIN o OWNER/ADMIN/COACH activos. Uso: lectura de academia. */
+export const guardSuperAdminOrAcademyCoach = (s: any, id: string) => guardSuperAdminOrAcademyRole(s, id, [OWNER, ADMIN, COACH]);

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { guardAcademyAdmin } from "@/lib/auth/academy-guard";
+import { guardSuperAdminOrAcademyAdmin } from "@/lib/auth/academy-guard";
 import { auditMemberInvited, extractRequestContext } from "@/lib/audit/helpers";
 import { getAcademyById, inviteMember } from "@/lib/db/queries/padel/academies";
 import { triggerAcademyInvite } from "@/lib/notifications/triggers";
@@ -41,7 +41,7 @@ export async function POST(
 
     const session = await auth();
     const { id } = padelIdParamsSchema.parse(await params);
-    const guardError = await guardAcademyAdmin(session, id);
+    const guardError = await guardSuperAdminOrAcademyAdmin(session, id);
     if (guardError) return guardError;
 
     const academy = await getAcademyById(id);

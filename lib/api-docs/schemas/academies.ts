@@ -10,6 +10,21 @@ export const academiesSchemas = {
       name: { type: 'string', minLength: 1, maxLength: 200 },
       slug: { type: 'string', pattern: '^[a-z0-9-]{3,50}$', description: 'Minúsculas, dígitos y guiones' },
       primaryColor: { type: 'string', pattern: '^#[0-9A-Fa-f]{6}$', description: 'HEX #RRGGBB' },
+      ownerId: { type: 'string', format: 'uuid', description: 'Opcional (v0.9): OWNER de la academia. Default = session.user.id. Solo SUPER_ADMIN.' },
+    },
+  },
+  TransferOwnershipInput: {
+    type: 'object',
+    required: ['targetUserId'],
+    properties: {
+      targetUserId: { type: 'string', format: 'uuid', description: 'Nuevo OWNER (debe ser miembro activo)' },
+    },
+  },
+  RoleAssignInput: {
+    type: 'object',
+    required: ['role'],
+    properties: {
+      role: { type: 'string', enum: ['OWNER', 'ADMIN', 'COACH'], description: 'OWNER solo asignable por SUPER_ADMIN' },
     },
   },
   AcademyDto: {

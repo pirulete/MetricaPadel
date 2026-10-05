@@ -348,6 +348,16 @@ Si un artifact NO pasa el gate → se devuelve al agente anterior con feedback e
 | Iteraciones globales | 5 | Detener workflow completo, escalar al humano |
 | Fix > 5 archivos | - | Escalar a @pm para re-evaluar alcance |
 | Problema sistémico | - | Detener workflow, recomendar `/ship-feature` |
+| Task de subagente >15 min sin output o cancelado por runtime | 1 retry | Dividir en chunks ≤5 archivos, reintentar UNA vez; si falla → escalar al humano |
+| Archivos asignados a un solo agente en feature | >5 o >400 líneas | @architect marca `split` en change-map; orquestador invoca en sub-tasks ≤5 archivos |
+| Re-lecturas de un mismo archivo en un task | 2 máx | Si el contenido no cambió, continuar; detectar loop → detener y reportar |
+
+### Anti-loop (obligatorio para implementadores)
+
+- @app-engineer y @admin-engineer **NO ejecutan** `next build`, `playwright test`, `db:migrate` ni servers — solo escriben código/tests.
+- E2E: los implementadores **escriben** el spec; @qa-release/orquestador lo **ejecutan**.
+- Cada implementador aplica circuit breaker (ver `.opencode/agents/admin-engineer.md` y `app-engineer.md`): 1 intento por sub-task, output ≤4 líneas, detener si detecta repetición.
+- Al inicio de cada fase de workflow: crear `task-worksheet.md` (`.agents/templates/task-worksheet.md`) para retomar sin re-explorar.
 
 ## Escalamiento al Humano
 

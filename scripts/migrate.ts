@@ -80,7 +80,13 @@ function splitStatements(sqlContent: string): string[] {
   return sqlContent
     .split('--> statement-breakpoint')
     .map(s => s.trim())
-    .filter(s => s.length > 0 && !s.startsWith('--'))
+    .filter(s => {
+      if (s.length === 0) return false;
+      // Chunk comment-only → skip. Chunks que empiezan con comentario pero
+      // contienen SQL real (ej: DO $$ blocks con comentario encima) se conservan.
+      const lines = s.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      return lines.some(l => !l.startsWith('--'));
+    })
 }
 
 function errorMessage(e: unknown): string {

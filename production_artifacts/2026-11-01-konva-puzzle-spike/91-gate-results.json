@@ -1,0 +1,27 @@
+{
+  "change_id": "2026-11-01-konva-puzzle-spike",
+  "change_class": "feature",
+  "validated_at": "2026-11-01T15:14:59Z",
+  "typecheck": "pass",
+  "lint": "pass",
+  "unit_tests": "pass",
+  "api_tests": "skipped",
+  "build": "pass",
+  "features_check": "pass",
+  "migrations_check": "pass",
+  "docs_check": "pass",
+  "artifact_completeness": "pass",
+  "security_check": "pass",
+  "coverage_check": "pass",
+  "evidence_check": "pass",
+  "gates_passed": 11,
+  "gates_failed": 0,
+  "notes": {
+    "api_tests": "skipped - spike sin endpoints (excepcion AC-13 documentada en technical-design.md §7); no cuenta como fail",
+    "migrations_check": "pass - sin migraciones nuevas; migrate.ts reporta 12 migrations up to date",
+    "security_check": "pass - 0 hallazgos nuevos (sin secretos, sin superficie nueva de riesgo)",
+    "coverage_check": "pass - lib/padel/court/* con 100% de cobertura; sin regresion >3%",
+    "artifact_completeness": "pass - 9/9 artifacts md presentes; artifacts de ui-designer/db-engineer/auth-security no aplican (pasos no ejecutados)"
+  },
+  "overall": "pass"
+}

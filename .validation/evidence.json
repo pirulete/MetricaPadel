@@ -1,24 +1,24 @@
 {
-  "timestamp": "2026-10-03T23:16:21.343Z",
-  "sha": "751bfe9358fb1f70c5d4e785b12ab984e8c92d1f",
+  "timestamp": "2026-11-01T15:18:52.602Z",
+  "sha": "5417f88ef630b79de13656b8526106e39c341e77",
   "env": "local",
   "riskLevel": "HIGH",
-  "most_sensitive_file": "drizzle/0010_hard_wrecker.sql",
-  "completionClaim": false,
+  "most_sensitive_file": "drizzle/0011_dazzling_makkari.sql",
+  "completionClaim": true,
   "gatesRun": {
     "typecheck": {
       "status": "pass",
       "command": "npx tsc --noEmit",
       "exitCode": 0,
-      "durationMs": 4162,
+      "durationMs": 16657,
       "testCount": null,
       "testDelta": null
     },
     "lint": {
-      "status": "fail",
+      "status": "pass",
       "command": "pnpm run lint",
-      "exitCode": 1,
-      "durationMs": 11869,
+      "exitCode": 0,
+      "durationMs": 16152,
       "testCount": null,
       "testDelta": null
     },
@@ -26,15 +26,15 @@
       "status": "pass",
       "command": "bash -c 'set -o pipefail; pnpm run test:unit 2>&1 | tail -40'",
       "exitCode": 0,
-      "durationMs": 5620,
-      "testCount": 609,
-      "testDelta": 65
+      "durationMs": 6479,
+      "testCount": 750,
+      "testDelta": 38
     },
     "api_tests": {
       "status": "pass",
       "command": "npx playwright test tests/api/ --reporter=list 2>&1 | tail -30",
       "exitCode": 0,
-      "durationMs": 13853,
+      "durationMs": 30573,
       "testCount": null,
       "testDelta": null
     },
@@ -42,7 +42,7 @@
       "status": "pass",
       "command": "npx playwright test tests/e2e/ --reporter=list 2>&1 | tail -30",
       "exitCode": 0,
-      "durationMs": 40644,
+      "durationMs": 28103,
       "testCount": null,
       "testDelta": null
     },
@@ -50,7 +50,7 @@
       "status": "pass",
       "command": "npx next build",
       "exitCode": 0,
-      "durationMs": 25673,
+      "durationMs": 34305,
       "testCount": null,
       "testDelta": null
     },
@@ -58,7 +58,7 @@
       "status": "pass",
       "command": "pnpm run security:secrets 2>&1 | tail -20",
       "exitCode": 0,
-      "durationMs": 992,
+      "durationMs": 1134,
       "testCount": null,
       "testDelta": null
     },
@@ -66,7 +66,7 @@
       "status": "pass",
       "command": "pnpm run security:sast 2>&1 && echo '---JSON-REPORT---' && cat .validation/semgrep-report.json",
       "exitCode": 0,
-      "durationMs": 19912,
+      "durationMs": 27446,
       "testCount": null,
       "testDelta": null
     },
@@ -74,7 +74,7 @@
       "status": "fail",
       "command": "node scripts/check-api-integration.js",
       "exitCode": 1,
-      "durationMs": 80,
+      "durationMs": 160,
       "testCount": null,
       "testDelta": null
     },
@@ -82,7 +82,7 @@
       "status": "pass",
       "command": "node scripts/ocr-review.js 2>&1",
       "exitCode": 0,
-      "durationMs": 74,
+      "durationMs": 141,
       "testCount": null,
       "testDelta": null
     },
@@ -90,7 +90,7 @@
       "status": "pass",
       "command": "pnpm run security:deps 2>&1 | tail -30",
       "exitCode": 0,
-      "durationMs": 4567,
+      "durationMs": 18003,
       "testCount": null,
       "testDelta": null
     },
@@ -98,7 +98,7 @@
       "status": "fail",
       "command": "node scripts/check-env-vars.js 2>&1",
       "exitCode": 1,
-      "durationMs": 146,
+      "durationMs": 776,
       "testCount": null,
       "testDelta": null
     },

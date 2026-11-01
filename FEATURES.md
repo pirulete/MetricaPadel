@@ -1,5 +1,49 @@
 # FEATURES — Registro de Cambios
 
+## ✨ Spike — Konva + Transición de Puzzle tipo PadelChess (2026-11-01)
+
+> status: in-progress (código y gates automatizados verdes; `released` sólo al cerrar go/no-go en D4)
+> release: spike (no productivo)
+> date: 2026-11-01
+> change_id: 2026-11-01-konva-puzzle-spike
+> module: padel
+> tags: [ui, spike, konva, canvas, padel]
+
+### Problema
+
+El repo no tiene librería de canvas ni animación (sin `konva`, `framer-motion` ni `anime.js`). Antes de comprometerse con un módulo de puzzles de padel se necesita validar que Konva + `react-konva` integra en Next 16.1.6 / React 19.2.0 sin romper SSR ni rendimiento, animando jugadores y trayectorias sobre una cancha.
+
+### Solución Implementada
+
+**Spike de validación (2-4 días) — no producción.** Demo interactiva en `app/(app)/puzzle-demo` (ruta privada, `ACTIVE` + `ADMIN`) con: cancha proporcional en 3 capas (cancha/actores/anotaciones), puzzle de 2+ pasos en unidades de cancha (data serializable), transición forward (300-600ms, easing in-out) + flecha con `strokeDashoffset` progresivo, rewind determinista, nitidez DPR y resize sin recrear escena. Animación por refs a nodos Konva (`stop()` antes de cada tween), nunca por estado de React por frame; import vía `next/dynamic` con `ssr: false`. Entregable real: **decisión go/no-go** (Konva/canvas vs SVG+anime.js). Sin endpoints, sin DB, sin migraciones.
+
+### Archivos Modificados
+
+Nuevos: `app/(app)/puzzle-demo/page.tsx` (Server Component, `validateUser` + `ACTIVE`), `components/court/{PuzzleDemo.tsx,CourtStage.tsx,CourtLayers.ts,useCourtConfig.ts}`, `lib/padel/court/{types,geometry,steps,annotation,demo-scenario}.ts`, `tests/unit/padel/court-{geometry,steps,annotation}.test.ts`, `tests/e2e/puzzle-demo.spec.ts`. Modificados: `package.json`/`pnpm-lock.yaml` (`konva@^10.9.1`, `react-konva@19.2.7` exacto, `-D @next/bundle-analyzer`), `next.config.mjs` (wrapper `ANALYZE` reversible), `.env.example` (1 comentario). Detalle en `production_artifacts/2026-11-01-konva-puzzle-spike/{technical-design.md,app-notes.md}`.
+
+### Tests
+
+- Unit: `tests/unit/padel/court-geometry.test.ts`, `court-steps.test.ts`, `court-annotation.test.ts` — lógica pura (`courtToPx`/escala/DPR, máquina de pasos N→M con clamp, `strokeDashoffset` forward/reverse). Sin rendering de Konva en jsdom (D8 de la spec).
+- E2E: `tests/e2e/puzzle-demo.spec.ts` — (a) sin sesión → `/login`; (b) usuario ACTIVE navega paso 1 → 2 → 1 con `aria-live` y "Paso anterior" deshabilitado en el extremo.
+- Bundle: `ANALYZE=true pnpm build` — verifica chunk separado de `court-stage` y konva ausente del entry (AC-05). ⚠️ El script `pnpm analyze` no existe (`package.json`), usar el comando directo (BUG-01 en el release report).
+
+### Excepción de Gates (AC-13)
+
+Spike **sin endpoints y sin DB**: no aplican `api-docs` (`lib/api-docs/spec.ts` intacto) ni happy-path con SQL (`api_integration` = N/A). Sin migraciones, sin cambios de auth/guards/auditoría. Los gates aplicables son `typecheck`, `lint`, `build`, `unit`, E2E, `coverage`, `secrets`/`sast` y `audit_deps`. `ARCHITECTURE.md`/`AGENTS.md` no se actualizan (D-T10: no hay decisión de adoptar Konva como stack).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+### Verificación de Release (@qa-release, 2026-11-01)
+
+- **Gates automatizados**: `tsc --noEmit` 0 errores · `lint` 0 errores (247 warnings preexistentes, 0 nuevos) · `test:unit` **750/750** (60 suites; **38 nuevos**, cobertura 100% de `lib/padel/court/`) · E2E `puzzle-demo.spec.ts` **2/2** · `next build` OK con `/puzzle-demo` presente · ponytail review **net zero**.
+- **AC**: 7 PASS (AC-07..AC-13) · 0 FAIL · **5 PENDING D4** (AC-01 fps, AC-02 retina visual, AC-04 20 toggles, AC-05 bundle, AC-06 Safari iOS) · 0 bloqueados.
+- **Regresión**: `components/padel/**` y `lib/api-docs/**` sin diff; `auth.ts`, `lib/auth/**`, `lib/db/**`, `drizzle/**` intactos. `lib/api-docs/spec.ts` **N/A justificado** (AC-13: sin endpoints, sin SQL happy-path).
+- **Bug abierto**: BUG-01 (Low) — falta el script `"analyze"` en `package.json`; workaround `ANALYZE=true pnpm build`.
+- **Decisión**: **GO preliminar**. `status: released` sólo cuando AC-05 (riesgo real de NO-GO) y los 4 AC manuales se validen en D4.
+- Artifacts: `production_artifacts/2026-11-01-konva-puzzle-spike/{release-report.md,test-matrix.md,acceptance-criteria.md}`.
+
 ## ✨ Academias — Ownership SUPER_ADMIN + Solicitudes de Acceso (2026-10-03)
 
 > status: released

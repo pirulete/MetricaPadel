@@ -19,7 +19,7 @@ import {
 import type { CourtPoint, CourtViewport } from "@/lib/padel/court/types"
 
 export type CourtConfig = {
-  /** Contenedor a medir (`aspect-[2/1]` en el markup). */
+  /** Contenedor a medir (`aspect-[1/2]` en el markup). */
   containerRef: RefObject<HTMLDivElement | null>
   /** `false` mientras el contenedor mide 0×0: el Stage no debe renderizarse (E5). */
   isReady: boolean

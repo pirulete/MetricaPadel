@@ -157,3 +157,23 @@ Notas técnicas:
 
 - @ponytail-reviewer: podar componentes según la escalera.
 - @qa-release: `pnpm analyze` (AC-05), `playwright test tests/e2e/puzzle-demo.spec.ts`, `next build` (AC-10), medición de bundle y go/no-go.
+
+---
+
+## Iteración 2 (2026-11-01) — cancha FIP norte-sur + figuras de persona
+
+Cambio directo del usuario tras revisar la demo v1 (validado con mockup ASCII en TUI antes de codificar).
+
+### Qué cambió
+- `lib/padel/court/types.ts`: constantes ahora `COURT_WIDTH_M=10` / `COURT_DEPTH_M=20` (vertical norte→sur) + `NET_Y_M=10`, `SERVICE_LINE_OFFSET_M=6.95` (FIP), `SERVICE_LINE_OVERSHOOT_M=0.2`. Nuevo tipo `Shot`; `Paso.trajectory` reemplazado por `Paso.shot` (el tiro de la pelota; la pelota NO se dibuja). Nuevo tipo `MovementArrow` (derivado, no persistido).
+- `lib/padel/court/annotation.ts`: +`deriveMovementArrows(from, to, order)` — flechas negras derivadas de posiciones con epsilon 0.01 m y orden estable A,B,C,D.
+- `lib/padel/court/geometry.ts`: sólo docs (aspect 1:2); la lógica ya era genérica por constantes.
+- `lib/padel/court/demo-scenario.ts`: escenario nuevo "globo al noreste y cruzado al fondo" (3 pasos, norte A/B vs sur C/D).
+- `components/court/CourtLayers.ts`: `COURT_COLORS` (piso `#4169E1`, líneas `#F8FAFC`, red `#0F172A`, norte blanco, sur `#F59E0B`, mov. `#000000`, tiro `#4ADE80`); `buildFloor` (rect azul); líneas FIP (servicio a 6.95 m, central red→servicio+0.2); `buildPlayerFigures` (figuras persona, altura 1.5 m proporcional acotada 16..110 px); `buildMovementArrow`/`buildShotArrow` con `progress` paramétrico. Se eliminó el perímetro pintado (FIP: las paredes son el límite).
+- `components/court/CourtStage.tsx`: componente `PlayerFigure` (cabeza/torso/brazos con pala/piernas, pivotes en hombro/cadera); caminata con `Konva.Animation` sobre la capa de actores, activa sólo durante tweens de movimiento (se detiene a los TWEEN+100ms y resetea la pose); N flechas negras + 1 verde animadas por `dashOffset`; flechas en data de cancha (estado) con px derivado en render (firma `step|viewport` → re-animan en resize); **fix E3**: resize con tween activo hace snap determinista al paso activo en vez de congelar a medio camino.
+- `components/court/PuzzleDemo.tsx`: contenedor `aspect-[1/2] max-w-sm` (portrait), copy "10×20 m (norte → sur)", leyenda de 4 items fuera del canvas.
+- Tests: `court-geometry.test.ts` reescrito (viewports portrait, aspect 1:2); `court-annotation.test.ts` +6 tests de `deriveMovementArrows` y round-trip por `shot`; total 44 tests del spike (38→44).
+
+### Verificación Iteración 2
+- `tsc --noEmit` 0 errores · `eslint` área 0 errores/0 warnings · unit **756/756** (60 suites) · E2E `puzzle-demo.spec.ts` **2/2** · `next build` OK.
+- Screenshots Playwright de los 3 pasos inspeccionados: orientación, colores, líneas FIP, figuras y flechas correctos.

@@ -1,22 +1,31 @@
 /**
  * Unit tests de anotaciones de la cancha (lib/padel/court/annotation.ts, AC-07/AC-08).
- * Sólo lógica pura: geometría de flecha y progreso del trazo.
+ * Sólo lógica pura: geometría de flecha, progreso del trazo y derivación de
+ * flechas de movimiento de jugadores.
  * @jest-environment node
  */
 import {
   computeArrowGeometry,
   computeDashProgress,
+  deriveMovementArrows,
 } from "@/lib/padel/court/annotation";
 import { DEMO_SCENARIO } from "@/lib/padel/court/demo-scenario";
-import type { CourtScenario, CourtViewport, Trajectory } from "@/lib/padel/court/types";
+import type {
+  CourtScenario,
+  CourtViewport,
+  PlayerPositions,
+  Shot,
+} from "@/lib/padel/court/types";
 
-const VIEWPORT: CourtViewport = { width: 800, height: 400, dpr: 1 };
+/** Viewport con el mismo aspect que la cancha (10×20 → 1:2), escala 40 px/m. */
+const VIEWPORT: CourtViewport = { width: 400, height: 800, dpr: 1 };
 const TOTAL_LENGTH = 500;
+const PLAYER_ORDER = ["A", "B", "C", "D"] as const;
 
-function trajectoryAt(index: number): Trajectory {
-  const trajectory = DEMO_SCENARIO.steps[index].trajectory;
-  if (!trajectory) throw new Error(`el paso ${index} no define trayectoria`);
-  return trajectory;
+function shotAt(index: number): Shot {
+  const shot = DEMO_SCENARIO.steps[index].shot;
+  if (!shot) throw new Error(`el paso ${index} no define tiro`);
+  return shot;
 }
 
 describe("computeDashProgress — trazo progresivo", () => {
@@ -78,19 +87,19 @@ describe("computeDashProgress — trazo progresivo", () => {
 
 describe("computeArrowGeometry — determinista (AC-07)", () => {
   it("convierte los extremos a píxeles y calcula la longitud", () => {
-    const arrow = computeArrowGeometry({ x: 0, y: 0 }, { x: 20, y: 0 }, VIEWPORT);
-    expect(arrow).toEqual({ x1: 0, y1: 0, x2: 800, y2: 0, length: 800 });
+    const arrow = computeArrowGeometry({ x: 0, y: 0 }, { x: 10, y: 0 }, VIEWPORT);
+    expect(arrow).toEqual({ x1: 0, y1: 0, x2: 400, y2: 0, length: 400 });
   });
 
   it("calcula la longitud euclídea de un tramo diagonal", () => {
-    const from = { x: 16.5, y: 8.5 };
-    const to = { x: 15.5, y: 4.2 };
+    const from = { x: 3, y: 15 };
+    const to = { x: 8.5, y: 2 };
     const arrow = computeArrowGeometry(from, to, VIEWPORT);
-    expect(arrow.x1).toBeCloseTo(660, 10);
-    expect(arrow.y1).toBeCloseTo(340, 10);
-    expect(arrow.x2).toBeCloseTo(620, 10);
-    expect(arrow.y2).toBeCloseTo(168, 10);
-    expect(arrow.length).toBeCloseTo(Math.hypot(40, 172), 10);
+    expect(arrow.x1).toBeCloseTo(120, 10);
+    expect(arrow.y1).toBeCloseTo(600, 10);
+    expect(arrow.x2).toBeCloseTo(340, 10);
+    expect(arrow.y2).toBeCloseTo(80, 10);
+    expect(arrow.length).toBeCloseTo(Math.hypot(220, 520), 10);
   });
 
   it("misma cancha + mismo viewport → mismo resultado (repetible)", () => {
@@ -101,12 +110,12 @@ describe("computeArrowGeometry — determinista (AC-07)", () => {
     );
   });
 
-  it("el escenario es serializable: el round-trip JSON no cambia la flecha", () => {
+  it("el escenario es serializable: el round-trip JSON no cambia el tiro", () => {
     const roundTrip = JSON.parse(JSON.stringify(DEMO_SCENARIO)) as CourtScenario;
-    const original = trajectoryAt(1);
-    const restored = roundTrip.steps[1].trajectory;
+    const original = shotAt(1);
+    const restored = roundTrip.steps[1].shot;
     expect(restored).not.toBeNull();
-    if (!restored) throw new Error("la trayectoria no sobrevivió al round-trip");
+    if (!restored) throw new Error("el tiro no sobrevivió al round-trip");
 
     expect(computeArrowGeometry(restored.from, restored.to, VIEWPORT)).toEqual(
       computeArrowGeometry(original.from, original.to, VIEWPORT)
@@ -119,5 +128,49 @@ describe("computeArrowGeometry — determinista (AC-07)", () => {
       expect(Number.isFinite(value)).toBe(true);
     }
     expect(arrow.length).toBe(0);
+  });
+});
+
+describe("deriveMovementArrows — flechas negras derivadas de posiciones", () => {
+  const step1 = DEMO_SCENARIO.steps[0].positions;
+  const step2 = DEMO_SCENARIO.steps[1].positions;
+
+  it("el paso inicial no genera flechas (nadie se movió)", () => {
+    expect(deriveMovementArrows(step1, step1, PLAYER_ORDER)).toEqual([]);
+  });
+
+  it("paso 1 → 2: sólo los jugadores que se desplazaron (A y D)", () => {
+    const arrows = deriveMovementArrows(step1, step2, PLAYER_ORDER);
+    expect(arrows.map((arrow) => arrow.player)).toEqual(["A", "D"]);
+    expect(arrows[0].from).toEqual(step1.A);
+    expect(arrows[0].to).toEqual(step2.A);
+    expect(arrows[1].from).toEqual(step1.D);
+    expect(arrows[1].to).toEqual(step2.D);
+  });
+
+  it("respeta el orden estable A, B, C, D aunque se muevan al revés", () => {
+    const arrows = deriveMovementArrows(step2, step1, PLAYER_ORDER);
+    expect(arrows.map((arrow) => arrow.player)).toEqual(["A", "D"]);
+    expect(arrows[0].from).toEqual(step2.A);
+    expect(arrows[0].to).toEqual(step1.A);
+  });
+
+  it("desplazamientos por debajo del epsilon no cuentan como movimiento", () => {
+    const from: PlayerPositions = { ...step1 };
+    const to: PlayerPositions = { ...step1, A: { x: 3.005, y: 5 } };
+    expect(deriveMovementArrows(from, to, PLAYER_ORDER)).toEqual([]);
+  });
+
+  it("es determinista: mismas posiciones → mismas flechas", () => {
+    expect(deriveMovementArrows(step1, step2, PLAYER_ORDER)).toEqual(
+      deriveMovementArrows(step1, step2, PLAYER_ORDER)
+    );
+  });
+
+  it("sobrevive al round-trip JSON del escenario", () => {
+    const roundTrip = JSON.parse(JSON.stringify(DEMO_SCENARIO)) as CourtScenario;
+    expect(deriveMovementArrows(roundTrip.steps[0].positions, roundTrip.steps[1].positions, PLAYER_ORDER)).toEqual(
+      deriveMovementArrows(step1, step2, PLAYER_ORDER)
+    );
   });
 });

@@ -5,7 +5,8 @@
  * Archivo PURO: no lee `window`/`devicePixelRatio`; el viewport entra por
  * parámetro (lo mide `useCourtConfig`). Sin imports de `konva`/`react`.
  *
- * Aspect ratio de la cancha: COURT_WIDTH_M : COURT_DEPTH_M = 20:10 = 2:1.
+ * Aspect ratio de la cancha: COURT_WIDTH_M : COURT_DEPTH_M = 10:20 = 1:2
+ * (vertical, norte→sur).
  */
 
 import { COURT_DEPTH_M, COURT_WIDTH_M, type CourtPoint, type CourtViewport } from "./types";
@@ -25,7 +26,7 @@ function finiteOrZero(value: number): number {
 
 /**
  * Escala uniforme (px por metro) que encaja la cancha completa en el viewport
- * sin deformar el aspect 2:1 (letterboxing). Viewport 0×0 o inválido → 0
+ * sin deformar el aspect 1:2 (letterboxing). Viewport 0×0 o inválido → 0
  * (sin NaN/Infinity, E5); el caller no debe renderizar el Stage en ese estado.
  */
 export function computeScale(viewport: CourtViewport): CourtScale {

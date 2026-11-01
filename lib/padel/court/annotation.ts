@@ -8,7 +8,13 @@
  */
 
 import { courtToPx } from "./geometry";
-import type { CourtPoint, CourtViewport } from "./types";
+import type {
+  CourtPoint,
+  CourtViewport,
+  MovementArrow,
+  PlayerId,
+  PlayerPositions,
+} from "./types";
 
 /** Flecha ya convertida a píxeles del viewport. */
 export type ArrowGeometry = {
@@ -71,4 +77,30 @@ export function computeDashProgress(
   const length = Number.isFinite(totalLength) && totalLength > 0 ? totalLength : 0;
   const dashOffset = direction === "backward" ? p * length : (1 - p) * length;
   return { dashArray: [length, length], dashOffset };
+}
+
+/** Desplazamiento mínimo (m) para considerar que un jugador se movió. */
+const MOVE_EPSILON_M = 0.01;
+
+/**
+ * Deriva las flechas de MOVIMIENTO de jugadores (negras) entre el estado
+ * anterior y el actual del escenario. Sólo incluye a los que se desplazaron
+ * más de `MOVE_EPSILON_M` y conserva el orden estable de `PLAYER_IDS`
+ * (A, B, C, D). Determinista: mismas posiciones → mismas flechas (AC-07).
+ */
+export function deriveMovementArrows(
+  from: PlayerPositions,
+  to: PlayerPositions,
+  playerOrder: readonly PlayerId[]
+): MovementArrow[] {
+  const arrows: MovementArrow[] = [];
+  for (const player of playerOrder) {
+    const start = from[player];
+    const end = to[player];
+    if (!start || !end) continue;
+    const moved =
+      Math.abs(end.x - start.x) > MOVE_EPSILON_M || Math.abs(end.y - start.y) > MOVE_EPSILON_M;
+    if (moved) arrows.push({ player, from: start, to: end });
+  }
+  return arrows;
 }

@@ -17,6 +17,20 @@ El repo no tiene librería de canvas ni animación (sin `konva`, `framer-motion`
 
 **Spike de validación (2-4 días) — no producción.** Demo interactiva en `app/(app)/puzzle-demo` (ruta privada, `ACTIVE` + `ADMIN`) con: cancha proporcional en 3 capas (cancha/actores/anotaciones), puzzle de 2+ pasos en unidades de cancha (data serializable), transición forward (300-600ms, easing in-out) + flecha con `strokeDashoffset` progresivo, rewind determinista, nitidez DPR y resize sin recrear escena. Animación por refs a nodos Konva (`stop()` antes de cada tween), nunca por estado de React por frame; import vía `next/dynamic` con `ssr: false`. Entregable real: **decisión go/no-go** (Konva/canvas vs SVG+anime.js). Sin endpoints, sin DB, sin migraciones.
 
+#### Iteración 2 (2026-11-01) — cancha FIP norte-sur + figuras de persona
+
+Rediseño tras feedback del usuario, validado con mockup antes de codificar:
+
+- **Orientación norte→sur** (FIP): eje Y 0..20 m (Y=0 norte, Y=20 sur), ancho X 0..10 m, red horizontal en Y=10.
+- **Líneas reglamentarias FIP**: líneas de servicio paralelas a la red a **6,95 m** (Y=3.05 / Y=16.95) — el código anterior usaba 3.05 m, que es la distancia al fondo, no a la red; línea central de saque de la **red a la servicio + 20 cm** de prolongación (X=5). Sin perímetro pintado (las paredes son el límite).
+- **Piso azul rey** (`#4169E1`) con líneas blancas; **sin pelota dibujada**.
+- **Flechas de movimiento de jugadores en negro** (derivadas de positions paso anterior→actual, sin persistirlas) y **flecha del tiro de la pelota en verde** (`#4ADE80`) — antes ambas cosas eran una sola flecha roja.
+- **Figuras de persona** (cabeza, torso, brazos con pala, piernas) reemplazan a los círculos, con **caminata animada** (`Konva.Animation` sólo mientras hay tweens de movimiento activos).
+- Escenario demo nuevo: globo al noreste, cobertura y cruzado al fondo suroeste (3 pasos).
+- Teams: Norte (A, B) blanco · Sur (C, D) ámbar.
+- Resize con tween activo: snap determinista al paso activo (E3 mejorado).
+- Verificación: tsc 0 · lint 0 · unit **756/756** (+6 tests de `deriveMovementArrows`) · E2E 2/2 · build OK · screenshots visuales de los 3 pasos correctos.
+
 ### Archivos Modificados
 
 Nuevos: `app/(app)/puzzle-demo/page.tsx` (Server Component, `validateUser` + `ACTIVE`), `components/court/{PuzzleDemo.tsx,CourtStage.tsx,CourtLayers.ts,useCourtConfig.ts}`, `lib/padel/court/{types,geometry,steps,annotation,demo-scenario}.ts`, `tests/unit/padel/court-{geometry,steps,annotation}.test.ts`, `tests/e2e/puzzle-demo.spec.ts`. Modificados: `package.json`/`pnpm-lock.yaml` (`konva@^10.9.1`, `react-konva@19.2.7` exacto, `-D @next/bundle-analyzer`), `next.config.mjs` (wrapper `ANALYZE` reversible), `.env.example` (1 comentario). Detalle en `production_artifacts/2026-11-01-konva-puzzle-spike/{technical-design.md,app-notes.md}`.
@@ -25,7 +39,7 @@ Nuevos: `app/(app)/puzzle-demo/page.tsx` (Server Component, `validateUser` + `AC
 
 - Unit: `tests/unit/padel/court-geometry.test.ts`, `court-steps.test.ts`, `court-annotation.test.ts` — lógica pura (`courtToPx`/escala/DPR, máquina de pasos N→M con clamp, `strokeDashoffset` forward/reverse). Sin rendering de Konva en jsdom (D8 de la spec).
 - E2E: `tests/e2e/puzzle-demo.spec.ts` — (a) sin sesión → `/login`; (b) usuario ACTIVE navega paso 1 → 2 → 1 con `aria-live` y "Paso anterior" deshabilitado en el extremo.
-- Bundle: `ANALYZE=true pnpm build` — verifica chunk separado de `court-stage` y konva ausente del entry (AC-05). ⚠️ El script `pnpm analyze` no existe (`package.json`), usar el comando directo (BUG-01 en el release report).
+- Bundle: `pnpm analyze` (`ANALYZE=true next build`) — verifica chunk separado de `court-stage` y konva ausente del entry (AC-05, medido: 99KB gzip). BUG-01 fixeado: el script `analyze` ya existe en `package.json`.
 
 ### Excepción de Gates (AC-13)
 

@@ -5,16 +5,29 @@
  * Archivo PURO: sin imports de `konva`, `react` ni `server-only`, sin "use client".
  * Testeable en Jest con `testEnvironment: node`.
  *
- * Convención de unidades: el escenario se expresa SIEMPRE en metros de cancha
- * (eje X 0..COURT_WIDTH_M, eje Y 0..COURT_DEPTH_M). La conversión a píxeles vive
- * en `geometry.ts` para que el escenario completo sea serializable a JSON (AC-07).
+ * Orientación NORTE→SUR (reglamento FIP): eje Y 0..20 m con Y=0 en el norte y
+ * Y=20 en el sur, la red cruza en Y=10; eje X 0..10 m (oeste→este). El escenario
+ * se expresa SIEMPRE en metros de cancha; la conversión a píxeles vive en
+ * `geometry.ts` para que el escenario completo sea serializable a JSON (AC-07).
  */
 
-/** Ancho de la cancha de referencia en metros (eje X). */
-export const COURT_WIDTH_M = 20;
+/** Ancho de la cancha en metros (eje X, oeste→este). */
+export const COURT_WIDTH_M = 10;
 
-/** Fondo de la cancha de referencia en metros (eje Y). */
-export const COURT_DEPTH_M = 10;
+/** Largo de la cancha en metros (eje Y, norte→sur). */
+export const COURT_DEPTH_M = 20;
+
+/** Y de la red (mitad del largo). La red cruza todo el ancho. */
+export const NET_Y_M = 10;
+
+/** Distancia reglamentaria de la línea de servicio a la red (FIP: 6,95 m). */
+export const SERVICE_LINE_OFFSET_M = 6.95;
+
+/**
+ * Prolongación mínima de la línea central de saque más allá de la línea de
+ * servicio hacia el fondo (FIP: 0,20 m).
+ */
+export const SERVICE_LINE_OVERSHOOT_M = 0.2;
 
 /** Punto en unidades de cancha (metros), nunca píxeles. */
 export type CourtPoint = { x: number; y: number };
@@ -25,8 +38,14 @@ export type PlayerId = "A" | "B" | "C" | "D";
 /** Posición de cada jugador en un paso. */
 export type PlayerPositions = Record<PlayerId, CourtPoint>;
 
-/** Trayectoria del tiro de un paso (quién golpea y desde/hacia dónde). */
-export type Trajectory = { player: PlayerId; from: CourtPoint; to: CourtPoint };
+/** Tiro de la pelota en un paso: la pelota NO se dibuja, sólo su flecha (verde). */
+export type Shot = { from: CourtPoint; to: CourtPoint };
+
+/**
+ * Flecha de movimiento de UN jugador entre el paso anterior y el actual
+ * (negra). Se DERIVA de las posiciones, nunca se persiste en el escenario.
+ */
+export type MovementArrow = { player: PlayerId; from: CourtPoint; to: CourtPoint };
 
 /** Paso del puzzle: data plana y serializable (sin clases ni refs). */
 export type Paso = {
@@ -36,8 +55,8 @@ export type Paso = {
   label: string;
   /** Posiciones de los 4 jugadores en este paso. */
   positions: PlayerPositions;
-  /** Tiro a dibujar en este paso; `null` si el paso no traza trayectoria. */
-  trajectory: Trajectory | null;
+  /** Tiro de la pelota en este paso; `null` si no hay tiro. */
+  shot: Shot | null;
 };
 
 /** Escenario completo: paso inicial + lista ordenada de pasos. */

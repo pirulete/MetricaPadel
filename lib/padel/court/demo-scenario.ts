@@ -6,57 +6,58 @@
  * `konva`/`react` ni funciones. Es serializable a JSON sin pérdida (AC-07), de
  * modo que mañana podría cargarse desde backend sin tocar la escena.
  *
- * Cancha de referencia 20×10 m (X 0..20 de pared a pared, Y 0..10 de fondo a
- * fondo). `label` alimenta la región `aria-live` del paso activo (AC-12).
+ * Orientación NORTE→SUR (FIP): eje Y 0..20 (Y=0 norte, Y=20 sur), red en
+ * Y=10, ancho X 0..10. Equipo Norte = A, B; equipo Sur = C, D. Las flechas de
+ * MOVIMIENTO de jugadores (negras) se derivan de `positions` entre pasos; el
+ * campo `shot` sólo describe el tiro de la pelota (flecha verde — la pelota en
+ * sí no se dibuja). `label` alimenta la región `aria-live` (AC-12).
  */
 
 import type { CourtScenario } from "./types";
 
-/** Escenario demo: tapar la pared, subir a la red y cerrar con un cruzado. */
+/** Escenario demo: globo al noreste, cobertura y cruzado al fondo suroeste. */
 export const DEMO_SCENARIO: CourtScenario = {
-  id: "demo-tapar-pared",
-  title: "Demo: tapar la pared y subir a la red",
+  id: "demo-globo-y-cruzado",
+  title: "Demo: globo al noreste y cruzado al fondo",
   initialStepIndex: 0,
   steps: [
     {
       id: 1,
-      label: "Paso 1: el jugador A tapa la pared derecha y C espera el globo",
+      label: "Paso 1: equipos colocados, Norte (A, B) y Sur (C, D)",
       positions: {
-        A: { x: 16.5, y: 8.5 },
-        B: { x: 7, y: 8 },
-        C: { x: 4.5, y: 2.5 },
-        D: { x: 15, y: 2 },
+        A: { x: 3, y: 5 },
+        B: { x: 7, y: 5 },
+        C: { x: 3, y: 15 },
+        D: { x: 7, y: 15 },
       },
-      trajectory: null,
+      shot: null,
     },
     {
       id: 2,
-      label: "Paso 2: A sube a la red por la banda derecha y B cubre el centro",
+      label: "Paso 2: C lanza un globo al noreste; A corre a cubrir y D ajusta",
       positions: {
-        A: { x: 15.5, y: 4.2 },
-        B: { x: 9.5, y: 6.2 },
-        C: { x: 8.5, y: 2.2 },
-        D: { x: 14.2, y: 1.8 },
+        A: { x: 7.5, y: 2.5 },
+        B: { x: 7, y: 5 },
+        C: { x: 3, y: 15 },
+        D: { x: 6, y: 13 },
       },
-      trajectory: {
-        player: "A",
-        from: { x: 16.5, y: 8.5 },
-        to: { x: 15.5, y: 4.2 },
+      shot: {
+        from: { x: 3, y: 15 },
+        to: { x: 8.5, y: 2 },
       },
     },
     {
       id: 3,
-      label: "Paso 3: B cruza el tiro a la esquina izquierda y C queda fuera de posición",
+      label: "Paso 3: B cruza el tiro al fondo suroeste; C y D corren a defender",
       positions: {
-        A: { x: 15.5, y: 4.2 },
-        B: { x: 10.5, y: 5.2 },
-        C: { x: 3, y: 3.4 },
-        D: { x: 13, y: 1.6 },
+        A: { x: 7.5, y: 2.5 },
+        B: { x: 5, y: 8.5 },
+        C: { x: 2, y: 17.5 },
+        D: { x: 4, y: 15.5 },
       },
-      trajectory: {
-        player: "B",
-        from: { x: 10.5, y: 5.2 },
-        to: { x: 3, y: 3.4 },
+      shot: {
+        from: { x: 5, y: 8.5 },
+        to: { x: 1.5, y: 18 },
       },
     },
   ],

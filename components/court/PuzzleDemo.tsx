@@ -41,17 +41,38 @@ export function PuzzleDemo() {
       <CardHeader>
         <CardTitle>{DEMO_SCENARIO.title}</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Cancha 20×10 m · {STEPS.length} pasos · animación sobre refs de Konva (sin re-render por frame)
+          Cancha 10×20 m (norte → sur) · {STEPS.length} pasos · animación sobre refs de Konva
+          (sin re-render por frame)
         </p>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4">
         <div
           ref={containerRef}
-          className="aspect-[2/1] w-full overflow-hidden rounded-lg border bg-muted/30"
+          className="mx-auto aspect-[1/2] w-full max-w-sm overflow-hidden rounded-lg border bg-muted/30"
         >
           {isReady && <CourtStage step={activeStep} viewport={viewport} />}
         </div>
+
+        {/* Leyenda de la escena (fuera del canvas, legible por lectores de pantalla). */}
+        <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <li className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-full border border-slate-900 bg-white" aria-hidden />
+            Equipo norte (A, B)
+          </li>
+          <li className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-full border border-slate-900 bg-amber-500" aria-hidden />
+            Equipo sur (C, D)
+          </li>
+          <li className="flex items-center gap-1.5">
+            <span className="h-0.5 w-4 bg-black" aria-hidden />
+            Movimiento de jugador
+          </li>
+          <li className="flex items-center gap-1.5">
+            <span className="h-0.5 w-4 bg-green-400" aria-hidden />
+            Tiro de la pelota
+          </li>
+        </ul>
 
         {/* AC-12: texto alternativo del paso activo, fuera del canvas. */}
         <p aria-live="polite" className="text-sm text-muted-foreground">

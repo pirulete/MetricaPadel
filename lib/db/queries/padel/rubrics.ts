@@ -6,6 +6,7 @@ import {
   rubricCriteria,
   rubricDescriptors,
   academyMemberships,
+  users,
   rubricCategoryEnum,
   rubricStatusEnum,
   rubricScopeEnum,
@@ -104,7 +105,8 @@ export async function createRubric(data: CreateRubricInput): Promise<RubricWithD
 
 /**
  * Acceso de LECTURA a una rúbrica: personal → ownerId; institucional → membresía
- * activa (COACH+) en la academia. Retorna false → 404 (anti-IDOR).
+ * activa (COACH+) en la academia o SUPER_ADMIN global (v0.9). Retorna false →
+ * 404 (anti-IDOR).
  */
 async function canAccessRubric(
   userId: string,
@@ -118,14 +120,17 @@ async function canAccessRubric(
         eq(academyMemberships.status, 'active'),
       ),
     });
-    return Boolean(membership);
+    if (membership) return true;
+    const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    return user?.role === 'SUPER_ADMIN';
   }
   return rubric.ownerId === userId;
 }
 
 /**
  * Acceso de MUTACIÓN a una rúbrica: personal → ownerId (404 si ajeno);
- * institucional → OWNER/ADMIN de la academia (403 para COACH, 404 sin membresía).
+ * institucional → OWNER/ADMIN de la academia (403 para COACH, 404 sin membresía)
+ * o SUPER_ADMIN global (v0.9).
  */
 async function canMutateRubric(
   userId: string,
@@ -139,7 +144,10 @@ async function canMutateRubric(
         eq(academyMemberships.status, 'active'),
       ),
     });
-    if (!membership) return 'not_found';
+    if (!membership) {
+      const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+      return user?.role === 'SUPER_ADMIN' ? 'ok' : 'not_found';
+    }
     if (membership.role !== 'OWNER' && membership.role !== 'ADMIN') return 'forbidden';
     return 'ok';
   }

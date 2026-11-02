@@ -12,6 +12,8 @@ import {
 
 const ADMIN_EMAIL = `academy-happy-${Date.now()}@test.local`;
 const ADMIN_PASSWORD = "TestPass123!";
+const SUPER_ADMIN_EMAIL = `academy-happy-sa-${Date.now()}@test.local`;
+const SUPER_ADMIN_PASSWORD = "TestPass123!";
 
 let serverProbe: Promise<boolean> | null = null;
 
@@ -34,6 +36,8 @@ test.describe("Academias — happy-path (SQL real)", () => {
 
   test.beforeAll(async () => {
     await createUser({ role: "ADMIN", email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
+    // v0.9: POST /api/academies requiere SUPER_ADMIN (guardSuperAdmin).
+    await createUser({ role: "SUPER_ADMIN", email: SUPER_ADMIN_EMAIL, password: SUPER_ADMIN_PASSWORD });
   });
 
   test.afterAll(async () => {
@@ -46,18 +50,22 @@ test.describe("Academias — happy-path (SQL real)", () => {
       `DELETE FROM academies WHERE owner_id IN (SELECT id FROM users WHERE email = $1)`,
       [ADMIN_EMAIL]
     );
-    await pool.query(`DELETE FROM users WHERE email = $1`, [ADMIN_EMAIL]);
+    await pool.query(`DELETE FROM users WHERE email = ANY($1)`, [[ADMIN_EMAIL, SUPER_ADMIN_EMAIL]]);
   });
 
   test("POST crea academia + OWNER + GET lista + GET detalle + PUT + logo + DELETE archive", async () => {
     test.skip(!(await serverUp()), `Servidor no disponible en ${BASE_URL}`);
     const ctx = await createAuthedContext(ADMIN_EMAIL, ADMIN_PASSWORD);
+    const saCtx = await createAuthedContext(SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD);
     const pool = getPool();
     const slug = `academy-happy-${Date.now()}`;
     try {
-      // POST crea academia
-      const post = await ctx.post("/api/academies", {
-        data: { name: "Academia Happy", slug, primaryColor: "#16a34a" },
+      // POST crea academia (SUPER_ADMIN, ownerId = coach ADMIN)
+      const adminId = (
+        await pool.query(`SELECT id FROM users WHERE email = $1`, [ADMIN_EMAIL])
+      ).rows[0].id as string;
+      const post = await saCtx.post("/api/academies", {
+        data: { name: "Academia Happy", slug, primaryColor: "#16a34a", ownerId: adminId },
         headers: { "Content-Type": "application/json" },
       });
       expect(post.status()).toBe(201);
@@ -65,6 +73,7 @@ test.describe("Academias — happy-path (SQL real)", () => {
       const academyId = created.academy.id;
       expect(created.academy.slug).toBe(slug);
       expect(created.academy.primaryColor).toBe("#16a34a");
+      expect(created.academy.ownerId).toBe(adminId);
 
       // Verificación SQL real: academia + membresía OWNER activa
       const { rows: academyRows } = await pool.query(
@@ -158,16 +167,16 @@ test.describe("Academias — happy-path (SQL real)", () => {
 
   test("POST slug duplicado → 409", async () => {
     test.skip(!(await serverUp()), `Servidor no disponible en ${BASE_URL}`);
-    const ctx = await createAuthedContext(ADMIN_EMAIL, ADMIN_PASSWORD);
+    const saCtx = await createAuthedContext(SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD);
     const slug = `academy-dup-${Date.now()}`;
     try {
-      const first = await ctx.post("/api/academies", {
+      const first = await saCtx.post("/api/academies", {
         data: { name: "Primera", slug },
         headers: { "Content-Type": "application/json" },
       });
       expect(first.status()).toBe(201);
 
-      const second = await ctx.post("/api/academies", {
+      const second = await saCtx.post("/api/academies", {
         data: { name: "Segunda", slug },
         headers: { "Content-Type": "application/json" },
       });
@@ -176,11 +185,11 @@ test.describe("Academias — happy-path (SQL real)", () => {
       const pool = getPool();
       await pool.query(
         `DELETE FROM academy_memberships WHERE academy_id IN (SELECT id FROM academies WHERE owner_id IN (SELECT id FROM users WHERE email = $1))`,
-        [ADMIN_EMAIL]
+        [SUPER_ADMIN_EMAIL]
       );
       await pool.query(
         `DELETE FROM academies WHERE owner_id IN (SELECT id FROM users WHERE email = $1)`,
-        [ADMIN_EMAIL]
+        [SUPER_ADMIN_EMAIL]
       );
     }
   });

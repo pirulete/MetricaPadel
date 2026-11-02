@@ -52,9 +52,15 @@ export function TeacherDashboard() {
           <h1 className="text-2xl font-bold">Hola, coach</h1>
           <p className="text-sm text-muted-foreground">Resumen de tu actividad</p>
         </div>
-        <Button asChild>
-          <Link href="/evaluar">Evaluar ahora</Link>
-        </Button>
+        {/* Sólo ADMIN monta este componente (dashboard/page.tsx ramifica por rol) */}
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/transiciones">Transiciones</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/evaluar">Evaluar ahora</Link>
+          </Button>
+        </div>
       </div>
 
       {metrics && <DashboardMetrics metrics={metrics} />}

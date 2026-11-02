@@ -1,0 +1,21 @@
+{
+  "change_id": "2026-11-01-konva-puzzle-spike",
+  "change_class": "feature",
+  "timestamp": "2026-11-01T15:14:59Z",
+  "files_changed": 19,
+  "tests_added": 40,
+  "tests_updated": 0,
+  "test_coverage_delta": null,
+  "gates_passed": 11,
+  "gates_failed": 0,
+  "breakdown": {
+    "new_lib": 5,
+    "new_components": 4,
+    "new_page": 1,
+    "new_unit_tests": 3,
+    "new_e2e": 1,
+    "new_deps_files": 2,
+    "modified": [".env.example", "FEATURES.md", "next.config.mjs", "package.json", "pnpm-lock.yaml"]
+  },
+  "notes": "tests_added = 38 unit (court-geometry/steps/annotation) + 2 E2E (puzzle-demo.spec.ts)"
+}

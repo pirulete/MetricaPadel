@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * loop-metrics.js — Track loop engineering metrics for /fix-problems and /ship-feature workflows.
  *

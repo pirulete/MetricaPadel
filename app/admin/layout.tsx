@@ -30,6 +30,12 @@ export default async function AdminLayout({
                 <Link href="/admin/platform" className="text-muted-foreground transition-colors hover:text-foreground">
                   Plataforma
                 </Link>
+                <Link href="/admin/platform/academias" className="text-muted-foreground transition-colors hover:text-foreground">
+                  Academias
+                </Link>
+                <Link href="/admin/platform/solicitudes" className="text-muted-foreground transition-colors hover:text-foreground">
+                  Solicitudes
+                </Link>
               </>
             )}
             <Link href="/dashboard" className="text-muted-foreground transition-colors hover:text-foreground">

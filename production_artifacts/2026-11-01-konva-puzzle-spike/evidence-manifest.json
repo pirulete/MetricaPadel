@@ -1,0 +1,45 @@
+{
+  "change_id": "2026-11-01-konva-puzzle-spike",
+  "change_class": "feature",
+  "validated_at": "2026-11-01T15:14:59Z",
+  "sha": null,
+  "env": "local",
+  "risk_level": "LOW",
+  "completion_claim": true,
+  "gatesRun": {
+    "typecheck": { "status": "pass" },
+    "lint": { "status": "pass" },
+    "unit_tests": { "status": "pass", "testCount": 750 },
+    "api_tests": { "status": "skipped", "reason": "spike sin endpoints (AC-13)" },
+    "build": { "status": "pass" },
+    "secrets": { "status": "pass" },
+    "sast": { "status": "pass" },
+    "features_check": { "status": "pass" },
+    "migrations_check": { "status": "pass" },
+    "docs_check": { "status": "pass" },
+    "artifact_completeness": { "status": "pass" },
+    "security_check": { "status": "pass" },
+    "coverage_check": { "status": "pass" },
+    "evidence_check": { "status": "pass" }
+  },
+  "summary": {
+    "gates_passed": 11,
+    "gates_failed": 0,
+    "unit_test_count": 750,
+    "overall": "pass"
+  },
+  "artifacts": [
+    "acceptance-criteria.md",
+    "app-notes.md",
+    "change-map.md",
+    "feature-spec.md",
+    "ponytail-review-report.md",
+    "release-report.md",
+    "release-scope.md",
+    "technical-design.md",
+    "test-matrix.md",
+    "90-metrics.json",
+    "91-gate-results.json",
+    "evidence-manifest.json"
+  ]
+}

@@ -41,6 +41,23 @@ export type RemoveMemberResult =
   | { ok: true; membership: typeof academyMemberships.$inferSelect }
   | { ok: false; reason: "not_found" | "last_owner" };
 
+export type TransferOwnershipResult =
+  | {
+      ok: true;
+      academy: typeof academies.$inferSelect;
+      previousOwner: { userId: string; role: AcademyRole };
+      newOwner: { userId: string; role: AcademyRole };
+    }
+  | { ok: false; reason: "target_not_found" | "target_not_member" | "self_transfer" };
+
+export type AssignMemberRoleResult =
+  | { ok: true; membership: typeof academyMemberships.$inferSelect }
+  | { ok: false; reason: "not_found" | "last_owner" };
+
+export type RestoreAcademyResult =
+  | { ok: true; academy: typeof academies.$inferSelect }
+  | { ok: false; reason: "not_found" | "already_active" };
+
 /** Password placeholder para usuarios TEMPORARY invitados (patrón G4): no pueden
  *  loguearse hasta verificar email; si lo necesitan, usan forgot-password. */
 function generateRandomPassword(): string {
@@ -316,4 +333,110 @@ export async function resolveAcademyForEvaluation(
   });
   if (!membership || membership.academy.status !== "active") return null;
   return membership.academy;
+}
+
+/**
+ * Transfiere el ownership de una academia a otro miembro ACTIVO (solo
+ * SUPER_ADMIN). Tx: target → OWNER, previo OWNER → ADMIN, academies.ownerId →
+ * target. Distingue 404 (target inexistente o no miembro activo — anti-IDOR)
+ * de 400 (self-transfer).
+ */
+export async function transferOwnership(academyId: string, targetUserId: string): Promise<TransferOwnershipResult> {
+  return await db.transaction(async (tx) => {
+    const academy = await tx.query.academies.findFirst({ where: eq(academies.id, academyId) });
+    if (!academy) return { ok: false, reason: "target_not_found" as const };
+
+    const targetUser = await tx.query.users.findFirst({ where: eq(users.id, targetUserId) });
+    if (!targetUser) return { ok: false, reason: "target_not_found" as const };
+
+    if (academy.ownerId === targetUserId) return { ok: false, reason: "self_transfer" as const };
+
+    const targetMembership = await tx.query.academyMemberships.findFirst({
+      where: and(
+        eq(academyMemberships.academyId, academyId),
+        eq(academyMemberships.userId, targetUserId),
+        eq(academyMemberships.status, "active"),
+      ),
+    });
+    if (!targetMembership) return { ok: false, reason: "target_not_member" as const };
+
+    const [newOwner] = await tx.update(academyMemberships)
+      .set({ role: "OWNER", status: "active", updatedAt: new Date() })
+      .where(eq(academyMemberships.id, targetMembership.id))
+      .returning();
+
+    const previousMembership = await tx.query.academyMemberships.findFirst({
+      where: and(
+        eq(academyMemberships.academyId, academyId),
+        eq(academyMemberships.userId, academy.ownerId),
+        eq(academyMemberships.status, "active"),
+      ),
+    });
+    let previousOwner = { userId: academy.ownerId, role: "OWNER" as AcademyRole };
+    if (previousMembership) {
+      const [demoted] = await tx.update(academyMemberships)
+        .set({ role: "ADMIN", updatedAt: new Date() })
+        .where(eq(academyMemberships.id, previousMembership.id))
+        .returning();
+      previousOwner = { userId: demoted.userId, role: demoted.role };
+    }
+
+    const [updatedAcademy] = await tx.update(academies)
+      .set({ ownerId: targetUserId, updatedAt: new Date() })
+      .where(eq(academies.id, academyId))
+      .returning();
+
+    return {
+      ok: true,
+      academy: updatedAcademy,
+      previousOwner,
+      newOwner: { userId: newOwner.userId, role: newOwner.role },
+    };
+  });
+}
+
+/**
+ * Asigna rol a un miembro ACTIVO (guardSuperAdminOrAcademyAdmin + regla OWNER
+ * en handler). Nunca se puede demover al último OWNER activo (400 last_owner).
+ */
+export async function assignMemberRole(academyId: string, userId: string, role: AcademyRole): Promise<AssignMemberRoleResult> {
+  const membership = await db.query.academyMemberships.findFirst({
+    where: and(
+      eq(academyMemberships.academyId, academyId),
+      eq(academyMemberships.userId, userId),
+      eq(academyMemberships.status, "active"),
+    ),
+  });
+  if (!membership) return { ok: false, reason: "not_found" as const };
+
+  if (role !== "OWNER" && membership.role === "OWNER") {
+    const [{ count }] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(academyMemberships)
+      .where(and(
+        eq(academyMemberships.academyId, academyId),
+        eq(academyMemberships.role, "OWNER"),
+        eq(academyMemberships.status, "active"),
+      ));
+    if (count <= 1) return { ok: false, reason: "last_owner" as const };
+  }
+
+  const [updated] = await db.update(academyMemberships)
+    .set({ role, updatedAt: new Date() })
+    .where(eq(academyMemberships.id, membership.id))
+    .returning();
+  return { ok: true, membership: updated };
+}
+
+/** Restaura academia archivada → active. Ya activa → already_active (400). */
+export async function restoreAcademy(id: string): Promise<RestoreAcademyResult> {
+  const academy = await db.query.academies.findFirst({ where: eq(academies.id, id) });
+  if (!academy) return { ok: false, reason: "not_found" as const };
+  if (academy.status === "active") return { ok: false, reason: "already_active" as const };
+
+  const [updated] = await db.update(academies)
+    .set({ status: "active", updatedAt: new Date() })
+    .where(eq(academies.id, id))
+    .returning();
+  return { ok: true, academy: updated };
 }

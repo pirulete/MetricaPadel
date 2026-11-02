@@ -1,4 +1,5 @@
 import { withSentryConfig } from "@sentry/nextjs"
+import withBundleAnalyzer from "@next/bundle-analyzer"
 
 /** @type {import('next').NextConfig} */
 const securityHeaders = [
@@ -64,8 +65,12 @@ const nextConfig = {
   },
 }
 
+// Bundle analysis opt-in de build local (AC-05): `ANALYZE=true pnpm analyze`.
+// Reversible: sin la var `enabled` es false y el wrapper es no-op.
+const analyzedConfig = withBundleAnalyzer({ enabled: process.env.ANALYZE === "true" })(nextConfig)
+
 export default process.env.SENTRY_AUTH_TOKEN
-  ? withSentryConfig(nextConfig, {
+  ? withSentryConfig(analyzedConfig, {
       org: process.env.SENTRY_ORG,
       project: process.env.SENTRY_PROJECT,
       silent: !process.env.CI,
@@ -73,4 +78,4 @@ export default process.env.SENTRY_AUTH_TOKEN
       tunnelRoute: "/monitoring-tunnel",
       authToken: process.env.SENTRY_AUTH_TOKEN,
     })
-  : nextConfig
+  : analyzedConfig

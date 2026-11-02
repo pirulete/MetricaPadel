@@ -1,0 +1,19 @@
+{
+  "change_id": "2026-10-03-super-admin-academy-ownership",
+  "change_class": "feature",
+  "validated_at": "2026-10-05T00:13:08.356Z",
+  "typecheck": "pass",
+  "lint": "pass",
+  "unit_tests": "pass",
+  "api_tests": "skipped",
+  "features_check": "pass",
+  "artifact_completeness": "pass",
+  "build": "pass",
+  "migrations_check": "pass",
+  "docs_check": "pass",
+  "security_check": "pass",
+  "evidence_check": "pass",
+  "gates_passed": 10,
+  "gates_failed": 0,
+  "overall": "pass"
+}

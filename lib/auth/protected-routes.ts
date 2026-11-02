@@ -423,6 +423,43 @@ export const routeProtection = {
     description: 'Historial de evaluaciones del coach (teacherId=me; filtros courseId/studentId/status; anti-IDOR)',
   },
 
+  // ─── PADEL EVALUATIVO — Transiciones (coach/ADMIN) ─────────────
+  // Ownership por `coach_transitions.owner_id` (de sesión, nunca del cliente).
+  // Recurso ajeno o inexistente → 404 (anti-IDOR, sin oráculo de existencia).
+  'GET /api/transitions': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Lista transiciones del coach (ownerId=me, paginación por cursor updatedAt, anti-IDOR)',
+  },
+  'POST /api/transitions': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Crea transición (ownerId=me; scenario jsonb { initialStepIndex, steps })',
+    audit: 'auditCreate(coach_transition)',
+  },
+  'GET /api/transitions/[id]': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Lee transición completa (ownerId=me; 404 si ajena/inexistente)',
+  },
+  'PUT /api/transitions/[id]': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Reemplazo completo de title+scenario (ownerId=me; 404 si ajena; last-write-wins)',
+    audit: 'auditUpdate(coach_transition)',
+  },
+  'DELETE /api/transitions/[id]': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Hard delete por owner (ownerId=me; 404 si ajena/inexistente; audit_logs conserva el rastro)',
+    audit: 'auditDelete(coach_transition)',
+  },
+
   // ─── ACADEMIA (SPEC-EPIC-01, Fase B) — RBAC por academia ───────
   // Guards DB-backed: guardAcademyOwner / guardAcademyAdmin / guardAcademyCoach.
   // Anti-IDOR: membresía inexistente o academia archivada → 404 (no 403).

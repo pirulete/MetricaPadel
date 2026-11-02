@@ -21,6 +21,13 @@ After completion:
 
 - Crear directorio `production_artifacts/YYYY-MM-DD-short-slug/` (con sufijo -v2, -v3 si ya existe)
 - Inicializar contadores: `iteracion_grupo = 0`, `iteracion_global = 0`
+- Crear `production_artifacts/<slug>/task-worksheet.md` desde `.agents/templates/task-worksheet.md` (obligatorio — permite retomar sin re-explorar)
+
+### ⛔ Anti-loop (prevención de agentes stuck)
+
+- **Timeout de task**: si un task de subagente no retorna en ~15 min o el runtime lo cancela → cancelar, anotar en task-worksheet, dividir en chunks ≤5 archivos y reintentar UNA vez. Si vuelve a fallar → escalar al humano.
+- **Prohibido a implementadores** (@app-engineer, @admin-engineer): correr `next build`, `playwright test`, `db:migrate` o servers. Solo escribir código/tests. La ejecución es de @qa-release/orquestador.
+- **No re-leer** archivos >2 veces en un mismo task; si el contenido no cambió, continuar.
 
 ## 1. @pm
 
@@ -36,6 +43,7 @@ After completion:
 - leer feature-spec.md
 - generar production_artifacts definidos
 - definir: archivos probables a tocar, impacto en auth/db/ui/tests, si requiere @db-engineer, si requiere @auth-security, si corresponde @app-engineer o @admin-engineer
+- **change-map con gate de tamaño**: en change-map.md, cada tarea asignada a un agente debe marcarse `chunk` (≤5 archivos o ≤400 líneas) o `split` (>5 archivos o >400 líneas). Si es `split`, el orquestador DEBE dividirla en sub-tasks antes de invocar al agente.
 - Quality Gate: design debe tener lista de archivos, impacto, contratos API
 
 ## 3. @db-engineer
@@ -52,10 +60,12 @@ After completion:
 
 - implementar según dominio principal de la feature
 - priorizar reutilización de hooks, components y patterns existentes
+- **Chunking obligatorio**: si change-map marca `split` o el agente debe tocar >5 archivos → invocar en sub-tasks secuenciales de ≤5 archivos cada uno, con prompt acotado (lista exacta de archivos + referencias a artifacts ya generados + prohibición de build/playwright/E2E-exec)
 - Cross-Agent Review: si requiere >5 archivos, modificar contratos existentes, o romper compatibilidad → activar review con @architect antes de implementar
 - Validación post-implementación: build + lint, si errores y iteracion_global < 5: re-triage
 - si iteracion_global >= 5: generar escalation-report.md, detener, notificar
 - generar production_artifacts definidos
+- **Actualizar task-worksheet.md** al cierre de cada sub-task (qué quedó, qué falta)
 
 ## 6. @ponytail-reviewer
 
@@ -68,6 +78,7 @@ After completion:
 
 - validar acceptance criteria
 - correr regresión del dominio afectado
+- **ejecutar E2E tests** (los implementadores solo escriben el spec; @qa-release los corre)
 - validar artifact completeness (incluyendo ponytail-review-report.md y evidence-manifest.json)
 - generar production_artifacts definidos
 
@@ -89,3 +100,4 @@ Reglas:
 - toda acción admin debe auditarse
 - todo cambio sensible debe listar impacto en tests
 - iteration limits: 3 por grupo, 5 globales, luego escalamiento
+- **task >15 min sin output o cancelado por runtime → chunking + 1 retry máximo**

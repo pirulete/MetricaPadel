@@ -15,6 +15,8 @@ const COACH_EMAIL = `pdf-coach-${Date.now()}@test.local`;
 const COACH_PASSWORD = "TestPass123!";
 const STUDENT_EMAIL = `pdf-student-${Date.now()}@test.local`;
 const STUDENT_PASSWORD = "TestPass123!";
+const SUPER_ADMIN_EMAIL = `pdf-sa-${Date.now()}@test.local`;
+const SUPER_ADMIN_PASSWORD = "TestPass123!";
 
 let serverProbe: Promise<boolean> | null = null;
 
@@ -38,6 +40,8 @@ test.describe("Evaluation PDF — happy-path (SQL real)", () => {
   test.beforeAll(async () => {
     await createUser({ role: "ADMIN", email: COACH_EMAIL, password: COACH_PASSWORD });
     await createUser({ role: "USER", email: STUDENT_EMAIL, password: STUDENT_PASSWORD });
+    // v0.9: POST /api/academies requiere SUPER_ADMIN (guardSuperAdmin).
+    await createUser({ role: "SUPER_ADMIN", email: SUPER_ADMIN_EMAIL, password: SUPER_ADMIN_PASSWORD });
   });
 
   test.afterAll(async () => {
@@ -66,19 +70,31 @@ test.describe("Evaluation PDF — happy-path (SQL real)", () => {
       `DELETE FROM rubrics WHERE owner_id IN (SELECT id FROM users WHERE email = $1)`,
       [COACH_EMAIL]
     );
-    await pool.query(`DELETE FROM users WHERE email = ANY($1)`, [[COACH_EMAIL, STUDENT_EMAIL]]);
+    await pool.query(
+      `DELETE FROM academy_memberships WHERE academy_id IN (SELECT id FROM academies WHERE owner_id IN (SELECT id FROM users WHERE email = $1))`,
+      [COACH_EMAIL]
+    );
+    await pool.query(
+      `DELETE FROM academies WHERE owner_id IN (SELECT id FROM users WHERE email = $1)`,
+      [COACH_EMAIL]
+    );
+    await pool.query(`DELETE FROM users WHERE email = ANY($1)`, [[COACH_EMAIL, STUDENT_EMAIL, SUPER_ADMIN_EMAIL]]);
   });
 
   test("PDF válido con branding de academia + draft 400 + ajeno 404", async () => {
     test.skip(!(await serverUp()), `Servidor no disponible en ${BASE_URL}`);
     const coachCtx = await createAuthedContext(COACH_EMAIL, COACH_PASSWORD);
     const studentCtx = await createAuthedContext(STUDENT_EMAIL, STUDENT_PASSWORD);
+    const saCtx = await createAuthedContext(SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD);
     const pool = getPool();
     const slug = `pdf-academy-${Date.now()}`;
     try {
-      // Coach crea academia (branding para el PDF)
-      const academyRes = await coachCtx.post("/api/academies", {
-        data: { name: "Academia PDF", slug, primaryColor: "#7c3aed" },
+      // SUPER_ADMIN crea academia con ownerId = coach (branding para el PDF)
+      const coachId = (
+        await pool.query(`SELECT id FROM users WHERE email = $1`, [COACH_EMAIL])
+      ).rows[0].id as string;
+      const academyRes = await saCtx.post("/api/academies", {
+        data: { name: "Academia PDF", slug, primaryColor: "#7c3aed", ownerId: coachId },
         headers: { "Content-Type": "application/json" },
       });
       expect(academyRes.status()).toBe(201);

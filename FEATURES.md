@@ -1,5 +1,208 @@
 # FEATURES — Registro de Cambios
 
+## ✨ Editor de Transiciones de Pádel para Profesores (2026-11-02)
+
+> status: in-progress (QA: NO-GO condicionado — H-1 overflow 8.4 px en editor 375 px + H-2 spec E2E con login ADMIN, ver release-report.md)
+> release: v0.10 (pendiente de cierre)
+> date: 2026-11-02
+> change_id: 2026-11-02-coach-transition-editor
+> module: padel
+> tags: [ui, editor, canvas, mobile, db, api]
+
+### Problema
+
+El motor de transición tipo puzzle (spike `2026-11-01-konva-puzzle-spike`) sólo consume escenarios hardcodeados: el coach (ADMIN) no puede crear ni editar sus propias jugadas sin tocar código. Y el uso real ocurre en la pista, con el móvil en la mano.
+
+### Solución Implementada
+
+Editor mobile-first en ruta privada ADMIN (`app/(app)/transiciones`, `validateAdmin`): canvas Konva con selección y drag (jugadores A–D + pelota), toolbar flotante contextual (±0.5 m, fijar/borrar tiro), manija de arco arrastrable (dirigir = destino + arco, sin facing), filmstrip de pasos (añadir/duplicar/borrar/reordenar), undo/redo y **Preview reutilizando `components/court/`** (cero animación nueva). Persistencia en **una sola tabla** `coach_transitions` (`scenario` jsonb + `owner_id` + timestamps, migración `0012`) + API CRUD contract-first (`guardAdmin`, auditoría, anti-IDOR 404) documentada en `lib/api-docs/`.
+
+**Fuera de alcance**: visor para alumnos, editor desktop, poses/facing, plantillas/compartir, multi-profesor, exportación, versionado de transiciones.
+
+### Archivos Modificados
+
+- `app/(app)/transiciones/{page,nueva/page,[id]/page}.tsx` ✨ Nuevo
+- `app/api/transitions/{route.ts,[id]/route.ts}` ✨ Nuevo
+- `components/court/{EditorStage,ScenarioPreview}.tsx`, `components/padel/transition-editor/*` ✨ Nuevo
+- `lib/padel/court/{editor,history,transition}.ts`, `lib/db/queries/padel/transitions.ts` ✨ Nuevo
+- `lib/db/schema.ts`, `lib/validations/padel.ts`, `lib/auth/protected-routes.ts`, `lib/api-docs/{spec.ts,paths/transitions.ts,schemas/transitions.ts}`, `lib/padel/court/geometry.ts`, `components/layout/app-layout-client.tsx`, `components/padel/teacher-dashboard.tsx`, `hooks/use-transitions.ts` ✨ Nuevo
+- `drizzle/0012_young_betty_ross.sql` + `drizzle/meta/0012_snapshot.json` ✨ Nuevo
+
+### Tests
+
+- Unit (`tests/unit/`): `padel/transition-editor.test.ts` (28), `padel/transition-history.test.ts` (10), `padel/transition-serialization.test.ts` (13), `padel/transition-schemas.test.ts` (22), `padel/court-geometry.test.ts` (22, MOD), `db/transitions-queries.test.ts` (10) — suite completa **849/849 verde**.
+- API (`tests/api/`): `padel/transitions-happy.spec.ts` (CRUD SQL real + `audit_logs` + IDOR), `padel/transitions-guard.spec.ts` (401×5, USER 403, TEMPORARY 403, IDOR, 404) — **10/10 verde**.
+- E2E (`tests/e2e/`): `transition-editor.spec.ts` (flujo crear → paso → Probar → guardar → reabrir a 375×667 + USER 403) — 1/2; regresión motor `puzzle-demo.spec.ts` 2/2.
+- QA artifacts: `production_artifacts/2026-11-02-coach-transition-editor/{release-report,test-matrix,acceptance-criteria}.md`.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Spike — Konva + Transición de Puzzle tipo PadelChess (2026-11-01)
+
+> status: in-progress (código y gates automatizados verdes; `released` sólo al cerrar go/no-go en D4)
+> release: spike (no productivo)
+> date: 2026-11-01
+> change_id: 2026-11-01-konva-puzzle-spike
+> module: padel
+> tags: [ui, spike, konva, canvas, padel]
+
+### Problema
+
+El repo no tiene librería de canvas ni animación (sin `konva`, `framer-motion` ni `anime.js`). Antes de comprometerse con un módulo de puzzles de padel se necesita validar que Konva + `react-konva` integra en Next 16.1.6 / React 19.2.0 sin romper SSR ni rendimiento, animando jugadores y trayectorias sobre una cancha.
+
+### Solución Implementada
+
+**Spike de validación (2-4 días) — no producción.** Demo interactiva en `app/(app)/puzzle-demo` (ruta privada, `ACTIVE` + `ADMIN`) con: cancha proporcional en 3 capas (cancha/actores/anotaciones), puzzle de 2+ pasos en unidades de cancha (data serializable), transición forward (300-600ms, easing in-out) + flecha con `strokeDashoffset` progresivo, rewind determinista, nitidez DPR y resize sin recrear escena. Animación por refs a nodos Konva (`stop()` antes de cada tween), nunca por estado de React por frame; import vía `next/dynamic` con `ssr: false`. Entregable real: **decisión go/no-go** (Konva/canvas vs SVG+anime.js). Sin endpoints, sin DB, sin migraciones.
+
+#### Iteración 2 (2026-11-01) — cancha FIP norte-sur + figuras de persona
+
+Rediseño tras feedback del usuario, validado con mockup antes de codificar:
+
+- **Orientación norte→sur** (FIP): eje Y 0..20 m (Y=0 norte, Y=20 sur), ancho X 0..10 m, red horizontal en Y=10.
+- **Líneas reglamentarias FIP**: líneas de servicio paralelas a la red a **6,95 m** (Y=3.05 / Y=16.95) — el código anterior usaba 3.05 m, que es la distancia al fondo, no a la red; línea central de saque de la **red a la servicio + 20 cm** de prolongación (X=5). Sin perímetro pintado (las paredes son el límite).
+- **Piso azul rey** (`#4169E1`) con líneas blancas; **sin pelota dibujada**.
+- **Flechas de movimiento de jugadores en negro** (derivadas de positions paso anterior→actual, sin persistirlas) y **flecha del tiro de la pelota en verde** (`#4ADE80`) — antes ambas cosas eran una sola flecha roja.
+- **Figuras de persona** (cabeza, torso, brazos con pala, piernas) reemplazan a los círculos, con **caminata animada** (`Konva.Animation` sólo mientras hay tweens de movimiento activos).
+- Escenario demo nuevo: globo al noreste, cobertura y cruzado al fondo suroeste (3 pasos).
+- Teams: Norte (A, B) blanco · Sur (C, D) ámbar.
+- Resize con tween activo: snap determinista al paso activo (E3 mejorado).
+- Verificación: tsc 0 · lint 0 · unit **756/756** (+6 tests de `deriveMovementArrows`) · E2E 2/2 · build OK · screenshots visuales de los 3 pasos correctos.
+
+#### Iteración 3 (2026-11-01) — homologación total al look de PadelChess
+
+El usuario pidió olvidar los ajustes previos y replicar el estilo de PadelChess (`padelchess.me`, analizado vía sus chunks JS + screenshots reales), con mejoras opcionales. Comparativa → implementación:
+
+- **Tokens de color PadelChess**: piso `#3b82f6` (no azul rey), esquinas redondeadas (r=8), líneas blancas de 7 cm **con sombra suave** (`groundShadow`), línea central continua con **tramo atenuado bajo la red** (opacity .5), prolongación 0,4 m, servicio a 7 m de la red.
+- **Red estilo PadelChess**: banda translúcida con **malla dibujada**, **cinta superior con sag** (Path cuadrático), cinta inferior negra y **postes** a los extremos.
+- **Postes de pared** a lo largo de los laterales (los dashes negros de PadelChess).
+- **Jugadores con kit por equipo** (Norte = kit morado `#5b3fd9` vista frontal; Sur = kit blanco vista trasera), **sombra elíptica en el piso**, zapatillas y **pala** — destronando a los stickers/negro-verde previos. Se eliminaron las flechas negras de movimiento (PadelChess no las usa: el movimiento lo comunica la figura corriendo).
+- **Tiros = curvas Bézier cuadráticas** (`from`/`control`/`to` en el modelo, como el `controlPoint` de PadelChess) con **trazo discontinuo amarillo** `#ffff04` + punta.
+- **Pelota lima `#CCFF00`** con costuras que **vuela por la curva** (antes: no se dibujaba por spec propia — olvidada).
+- **Etiquetas en escena**: burbuja blanca con el tipo de tiro ("GLOBO", "CRUZADO", estilo Bebas/condensada) + **tag morado "HIT"** sobre quien golpea.
+- **Zona mint de aterrizaje** (`#68fec3`, fill .5 + borde) que aparece sincronizada con la llegada de la pelota (mejora sobre PadelChess, que la muestra estática).
+- **Reloj único de animación 1000 ms** (PadelChess `tweenMs`) con easing in-out: posiciones, cadencia de carrera (piernas/brazos en contrafase), vuelo de la pelota, trazo de la flecha y fades — todo derivado de `t`, sin `setState` por frame (AC-04 intacta). Determinismo E1/E7 conservado (origen = posición visual actual; destino = paso activo).
+- `CourtStage.tsx` dividido en `CourtParts.tsx` (figuras/burbujas/red — regla ponytail <500 líneas).
+- Verificación: tsc 0 · lint **0 errores y 0 warnings** · unit **754/754** (annotation tests reescritos para Bézier) · E2E 2/2 · build OK · screenshots de los 3 pasos inspeccionados (curva+pelota+GLOBO/HIT+zona correctos).
+
+#### Iteración 4 (2026-11-02) — cabeza visible, zancada, semántica de transición e hitador derivado
+
+4 correcciones pedidas por el usuario (la 4 incluye regla nueva de origen del tiro + identificadores):
+
+1. **Cabeza y sombra ahora se dibujan** (bug raíz probado contra Konva): `Circle` sólo reconoce `radius` — el código usaba `r` (pelo/cara/ojos → `attrs.r` ignorado, `sceneFunc` leía `attrs.radius || 0` → radio 0 → invisible) y `radiusX/radiusY` sobre `Circle` (props de `Ellipse` → sombra invisible). Fix: `radius` en los 4 `Circle` de la cabeza + sombra migrada a `Ellipse`.
+2. **Zancada visible**: `Konva.rotation` está en **GRADOS** (probado: `rotation(90)` → matriz de 90°); el ciclo usaba ±0.55 (interpretado como rad ≈31°, pero aplicado como **0.55°** → piernas inmóviles, los muñecos deslizaban). Fix: `STRIDE_DEG = 31` grados explícitos para piernas (brazos ±0.7×).
+3. **Semántica de transición homologada a PadelChess** (su `puzzleClipSequence`: golpe primero, movimiento después):
+   - **HIT + etiqueta del tiro visibles desde t=0** (antes aparecían al final, t>0.6 — al revés: el golpe precede).
+   - **Zona de aterrizaje aparece al final** (`(t-0.6)/0.4`, cuando la pelota llega — antes aparecía al inicio).
+   - **Tiro saliente se RETRAE** en vez de corte seco: nuevo estado `outgoing` en `CourtStage` conserva la vista del tiro anterior y su reloj la retraza hacia el origen (60% del tiempo, con fade de etiquetas/zona al 40%) mientras el entrante se dibuja.
+4. **Regla del hitador**: el tiro sale del **jugador más cercano al destino** — nueva función pura `resolveHitter(positions, target, order)` (desempate por orden estable A,B,C,D) y el `Shot` ya no guarda `from`: se deriva en `buildShotView` desde `originPositions` = posiciones del **paso anterior** (prop nueva `originPositions` en `CourtStage`, calculada en `PuzzleDemo`), de modo que la pelota despega de los pies del hitador en t=0. Escenario demo rehecho (remate de C desde la red + drop de B) con la regla verificada por test. **Etiquetas A–D** (badge sobre la cabeza) en cada figura (`PlayerFigure`).
+
+Tests: `court-annotation.test.ts` + `resolveHitter` (más cercano, desempate determinista, regla del escenario, origen = posición real) — total **758/758**.
+
+- Verificación Iteración 4: tsc 0 · lint 0/0 en el área · unit **758/758** · E2E 2/2 · build OK · screenshots: cabezas/sombras/identificadores en paso 1; HIT+REMATE desde t=0 y zona al aterrizar en la transición 1→2; retracción del REMATE mientras entra el DROP en 2→3; zancada visible en muestreo denso (40 ms).
+
+### Archivos Modificados
+
+Nuevos: `app/(app)/puzzle-demo/page.tsx` (Server Component, `validateUser` + `ACTIVE`), `components/court/{PuzzleDemo.tsx,CourtStage.tsx,CourtParts.tsx,CourtLayers.ts,useCourtConfig.ts}`, `lib/padel/court/{types,geometry,steps,annotation,demo-scenario}.ts`, `tests/unit/padel/court-{geometry,steps,annotation}.test.ts`, `tests/e2e/puzzle-demo.spec.ts`. Modificados: `package.json`/`pnpm-lock.yaml` (`konva@^10.9.1`, `react-konva@19.2.7` exacto, `-D @next/bundle-analyzer`), `next.config.mjs` (wrapper `ANALYZE` reversible), `.env.example` (1 comentario). Detalle en `production_artifacts/2026-11-01-konva-puzzle-spike/{technical-design.md,app-notes.md}`.
+
+### Tests
+
+- Unit: `tests/unit/padel/court-geometry.test.ts`, `court-steps.test.ts`, `court-annotation.test.ts` — lógica pura (`courtToPx`/escala/DPR, máquina de pasos N→M con clamp, `strokeDashoffset` forward/reverse). Sin rendering de Konva en jsdom (D8 de la spec).
+- E2E: `tests/e2e/puzzle-demo.spec.ts` — (a) sin sesión → `/login`; (b) usuario ACTIVE navega paso 1 → 2 → 1 con `aria-live` y "Paso anterior" deshabilitado en el extremo.
+- Bundle: `pnpm analyze` (`ANALYZE=true next build`) — verifica chunk separado de `court-stage` y konva ausente del entry (AC-05, medido: 99KB gzip). BUG-01 fixeado: el script `analyze` ya existe en `package.json`.
+
+### Excepción de Gates (AC-13)
+
+Spike **sin endpoints y sin DB**: no aplican `api-docs` (`lib/api-docs/spec.ts` intacto) ni happy-path con SQL (`api_integration` = N/A). Sin migraciones, sin cambios de auth/guards/auditoría. Los gates aplicables son `typecheck`, `lint`, `build`, `unit`, E2E, `coverage`, `secrets`/`sast` y `audit_deps`. `ARCHITECTURE.md`/`AGENTS.md` no se actualizan (D-T10: no hay decisión de adoptar Konva como stack).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+### Verificación de Release (@qa-release, 2026-11-01)
+
+- **Gates automatizados**: `tsc --noEmit` 0 errores · `lint` 0 errores (247 warnings preexistentes, 0 nuevos) · `test:unit` **750/750** (60 suites; **38 nuevos**, cobertura 100% de `lib/padel/court/`) · E2E `puzzle-demo.spec.ts` **2/2** · `next build` OK con `/puzzle-demo` presente · ponytail review **net zero**.
+- **AC**: 7 PASS (AC-07..AC-13) · 0 FAIL · **5 PENDING D4** (AC-01 fps, AC-02 retina visual, AC-04 20 toggles, AC-05 bundle, AC-06 Safari iOS) · 0 bloqueados.
+- **Regresión**: `components/padel/**` y `lib/api-docs/**` sin diff; `auth.ts`, `lib/auth/**`, `lib/db/**`, `drizzle/**` intactos. `lib/api-docs/spec.ts` **N/A justificado** (AC-13: sin endpoints, sin SQL happy-path).
+- **Bug abierto**: BUG-01 (Low) — falta el script `"analyze"` en `package.json`; workaround `ANALYZE=true pnpm build`.
+- **Decisión**: **GO preliminar**. `status: released` sólo cuando AC-05 (riesgo real de NO-GO) y los 4 AC manuales se validen en D4.
+- Artifacts: `production_artifacts/2026-11-01-konva-puzzle-spike/{release-report.md,test-matrix.md,acceptance-criteria.md}`.
+
+## ✨ Academias — Ownership SUPER_ADMIN + Solicitudes de Acceso (2026-10-03)
+
+> status: released
+> release: v0.9
+> date: 2026-10-03
+> change_id: 2026-10-03-super-admin-academy-ownership
+> module: admin+academy
+> tags: [academy, super-admin, rbac, ownership, requests, migration]
+
+### Problema
+
+Cualquier ADMIN global podía crear academias y quedaba como OWNER. Se requería modelo de plataforma centralizado: solo SUPER_ADMIN crea/opera academias; coaches (ADMIN) solicitan acceso (join o create) con aprobación de SUPER_ADMIN. No existían transferencia de ownership, solicitudes, desarchivar ni asignación de roles vía API.
+
+### Solución Implementada
+
+- **Creación solo SUPER_ADMIN**: `POST /api/academies` → `guardSuperAdmin` + `ownerId` opcional. UI oculta "Crear academia" para ADMIN; botón "Solicitar acceso" en `/academias`.
+- **Migración ownership** (`0011_dazzling_makkari`): data migration idempotente — `academies.owner_id` → único SUPER_ADMIN activo; membresías OWNER previas → ADMIN; upsert OWNER del SA. Fail-closed sin SUPER_ADMIN activo.
+- **Solicitudes** (`academy_access_requests`): `join_academy` (academia + rol ADMIN/COACH) y `create_academy` (payload name/slug → OWNER al aprobar). Endpoints POST/GET + approve/reject + available-academies. Rate limit `academy-request:{ip}`.
+- **SUPER_ADMIN CRUD**: transfer-ownership (target→OWNER, previo→ADMIN), restore/unarchive, asignar roles (OWNER solo SA), rúbricas institucionales de cualquier academia.
+- **Guards**: `guardSuperAdminOrAcademyRole` + wrappers en `academy-guard.ts` (SA bypass con 404 anti-IDOR; no-SA delega membresía).
+- **UI SUPER_ADMIN**: `/admin/platform/academias` (tabla + crear/archivar/restaurar/transferir/roles) y `/admin/platform/solicitudes` (aprobar/rechazar); nav solo SA.
+- **Auditoría**: REQUEST_CREATED/APPROVED/REJECTED, OWNERSHIP_TRANSFERRED, ACADEMY_RESTORED, MEMBER_ROLE_ASSIGNED en `lib/audit/academy.ts`.
+
+### Archivos Modificados
+
+Ver `production_artifacts/2026-10-03-super-admin-academy-ownership/change-map.md` (40+ archivos: schema, queries, guards, 9 endpoints, hooks, UI coach+admin, api-docs, tests).
+
+### Tests
+
+- Unit: `tests/unit/padel/academy-requests.test.ts`, `academy-ownership.test.ts`, `tests/unit/auth/academy-super-admin-guard.test.ts`, `tests/unit/db/academy-*`
+- API: `tests/api/padel/academy-requests-*.spec.ts`, `academy-ownership-*.spec.ts` + mods en academies/pdf/members/institutional-rubrics (setup con SUPER_ADMIN)
+- E2E: `tests/e2e/academy-super-admin.spec.ts` (spec; ejecución @qa-release)
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Harness — loop_metrics warning no bloqueante + fix gates_failed (2026-10-03)
+
+> status: released
+> release: v0.8
+> date: 2026-10-03
+> change_id: harness-loop-metrics-2026-10-03
+> module: infra
+> tags: [harness, validation, loop-metrics, bugfix]
+
+### Problema
+
+El gate `loop_metrics` del harness trataba el rework rate > threshold como **fail duro**, bloqueando workflows. `AGENTS.md` lo documenta como *"warning no bloqueante"*. Además `checkLoopMetrics` leía `e.gatesFailed` (camelCase) pero `.validation/loop-metrics.json` guarda `gates_failed` (snake_case), por lo que los gates_failed siempre se leían como 0.
+
+### Solución Implementada
+
+- **`lib/modules/harness/validate.js`**: extraída `computeLoopMetrics(events, threshold)` (pura, exportada para tests). Lee `gates_failed ?? gatesFailed`. El caller ahora trata el exceso de rework como **warning** (no failed), alineado con AGENTS.md y con el patrón de `file_size`/`features_check`.
+- **`tests/unit/harness-loop-metrics.test.ts`** (nuevo): 8 tests — empty events, pass/fail por threshold, snake_case, camelCase legado, iterations default, escalaciones, data histórica real del repo.
+- **`.validation/status.json` / `evidence.json`**: loop_metrics re clasificado fail→warning; overall status → `pass`.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/modules/harness/validate.js` | 🔧 Modificado — `computeLoopMetrics` + severity warning |
+| `tests/unit/harness-loop-metrics.test.ts` | ✨ Nuevo — unit tests del gate |
+| `.validation/status.json` | 🔧 Modificado — status pass, loop_metrics en warnings |
+| `.validation/evidence.json` | 🔧 Modificado — gatesRun.loop_metrics → warning |
+
+### Tests
+
+- Unit: `tests/unit/harness-loop-metrics.test.ts` — 8/8 passing.
+- Gate: `node scripts/validate-harness.js --loop-metrics` → PASS (warning non-blocking), exit 0.
+
+### Variables de Entorno
+
+Ninguna nueva. `LOOP_REWORK_THRESHOLD` (default 1.5) y `LOOP_METRICS_FILE` ya existían.
+
 ## ✨ G2 — Exportación CSV del historial de evaluaciones (2026-09-28)
 
 > status: released
@@ -2031,6 +2234,127 @@ Cuando un alumno lee una evaluación publicada, el coach no recibía notificaci�
 - Unit: `triggerEvaluationRead` verifica payload P2/system + groupId; `markEvaluationRead` cubre firstRead=true/false/null.
 - API happy-path con SQL real: crear rúbrica → evaluación → publish → leer como alumno → verifica notificación `info/P2/system` para el coach con `group_id = evaluationId`; re-leer no duplica (dedup).
 - `npx tsc --noEmit` y `pnpm run test:unit` pasan.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+## ✨ Academias — Ownership SUPER_ADMIN + Solicitudes de Acceso: DB (2026-10-03)
+
+> status: in-progress
+> release: v0.9
+> date: 2026-10-03
+> change_id: 2026-10-03-super-admin-academy-ownership
+> module: admin+academy
+> tags: [db, migration, academy, super-admin, ownership]
+
+### Problema
+
+Las academias quedaban huérfanas de ownership a nivel plataforma: el coach (ADMIN global) creaba academias y era OWNER, sin que SUPER_ADMIN tuviera visibilidad/control. Se requiere centralizar el ownership en SUPER_ADMIN y permitir solicitudes de acceso (join/create) de coaches.
+
+### Solución Implementada
+
+- **Schema** (`lib/db/schema.ts`): 2 enums (`academy_request_type`, `academy_request_status`) + tabla `academy_access_requests` (userId/type/academyId/requestedRole/payload/status/reviewedBy/reviewedAt) + 5 índices (3 btree + 2 UNIQUE parciales para duplicados pendientes → 409).
+- **Migración** `drizzle/0011_dazzling_makkari.sql`: DDL + DO block data migration (ownerId de academias → único SUPER_ADMIN activo; membresías OWNER previas → ADMIN; upsert membresía OWNER del SA). Fail-closed: sin SUPER_ADMIN activo → EXCEPTION.
+- **Queries** `lib/db/queries/padel/academy-requests.ts` (nuevo): createAccessRequest (23505 → duplicate_pending), listAccessRequests, getAccessRequestById, approveJoinRequest (tx), approveCreateRequest (tx, lógica espejo de createAcademy con tx client), rejectRequest. Uniones discriminadas estilo RemoveMemberResult.
+- **Queries** `lib/db/queries/padel/academies.ts`: transferOwnership (tx, 404 target inexistente/no miembro, 400 self-transfer), assignMemberRole (last_owner), restoreAcademy (already_active).
+- **Lógica pura** `lib/padel/academy-migration.ts`: buildOwnershipMigrationPlan (espejo del DO block, AC-02).
+- **Rubrics access** `lib/db/queries/padel/rubrics.ts`: canAccessRubric/canMutateRubric permiten SUPER_ADMIN global.
+- **Fix infra** `scripts/migrate.ts`: splitStatements descartaba DO blocks con comentario encima → data migration se saltaba silenciosamente. Filtro corregido (conserva chunks con SQL real).
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/db/schema.ts` | 🔧 Modificado — enums + tabla academy_access_requests + relations + tipos |
+| `drizzle/0011_dazzling_makkari.sql` | ✨ Nuevo — DDL + DO block data migration |
+| `lib/db/queries/padel/academy-requests.ts` | ✨ Nuevo — queries de solicitudes |
+| `lib/db/queries/padel/academies.ts` | 🔧 Modificado — transferOwnership, assignMemberRole, restoreAcademy |
+| `lib/db/queries/padel/rubrics.ts` | 🔧 Modificado — SUPER_ADMIN en canAccessRubric/canMutateRubric |
+| `lib/padel/academy-migration.ts` | ✨ Nuevo — buildOwnershipMigrationPlan |
+| `scripts/migrate.ts` | 🔧 Modificado — fix splitStatements (DO blocks) |
+| `tests/unit/db/academy-requests-queries.test.ts` | ✨ Nuevo |
+| `tests/unit/db/academy-migration.test.ts` | ✨ Nuevo |
+| `tests/unit/db/academy-ownership-queries.test.ts` | ✨ Nuevo |
+
+### Tests
+
+- Unit: 308/308 pasan (db + padel). Nuevos: academy-requests-queries (19), academy-migration (4), academy-ownership-queries (9).
+- Typecheck: 0 errores. Lint: 0 errores (32 warnings de `any` en mocks).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+### Migración
+
+- `0011_dazzling_makkari` aplicada en local (DDL verificado: 11 columnas en academy_access_requests).
+- DO block verificado end-to-end con datos temporales (owner→SA, coach→ADMIN, membresía SA, idempotente, fail-closed) y limpiado.
+- En local no quedó aplicado el DO block por diseño (no hay SUPER_ADMIN activo → fail-closed). En producción correrá al migrar.
+
+## ✨ Academias — Ownership SUPER_ADMIN + Solicitudes de Acceso (2026-10-03)
+
+> status: in-progress
+> release: v0.9
+> date: 2026-10-03
+> change_id: 2026-10-03-super-admin-academy-ownership
+> module: admin+academy
+> tags: [academy, super-admin, rbac, requests, api, ui]
+
+### Problema
+
+El ADMIN global (coach) podía crear academias y quedar como OWNER, sin supervisión de plataforma. Se requiere que solo SUPER_ADMIN cree/transfiera/archive academias, y que los coaches soliciten acceso (join/create) que SUPER_ADMIN aprueba o rechaza.
+
+### Solución Implementada
+
+- **Guard compuesto** (`lib/auth/academy-guard.ts`): `guardSuperAdminOrAcademyRole` + wrappers Owner/Admin/Coach — SUPER_ADMIN ve academias archivadas (plataforma), no-SA delega en membresía activa. Anti-IDOR 404.
+- **Endpoints modificados**: `POST /api/academies` → `guardSuperAdmin` + `ownerId` opcional (default session.user.id, validado en users); guards SuperAdminOr en `[id]` GET/PUT/DELETE, logo, members GET, invite, rubrics GET/POST; `PUT /api/academies/[id]/members/[userId]` nuevo (role assign, OWNER solo SUPER_ADMIN vía `canAssignAcademyRole`).
+- **Endpoints nuevos**: `POST /api/academies/[id]/transfer-ownership` (guardSuperAdmin, target no miembro → 404 anti-IDOR, self → 400), `POST /api/academies/[id]/restore` (guardSuperAdmin, ya activa → 400), `POST/GET /api/academy-requests` (POST guardAdmin + rate limit `academy-request:{ip}` 10/min + auditoría; GET guardSuperAdmin con filtros status/type), `POST /api/academy-requests/[id]/approve|reject` (guardSuperAdmin), `GET /api/academy-requests/available-academies` (guardAdmin).
+- **Lógica pura**: `lib/padel/academy-requests.ts` — `canAssignAcademyRole`, `validateRequestPayload`, `buildRequestAuditPayload`.
+- **Rate limit**: `ACADEMY_REQUEST_MAX`/`ACADEMY_REQUEST_WINDOW_MS` en `lib/rate-limit.ts` (patrón invite).
+- **Hooks**: `use-academies.ts` +transferOwnership/assignRole/restore; `use-academy-requests.ts` nuevo (create/list/approve/reject/available).
+- **UI coach**: `app/(app)/academias/page.tsx` — role desde `/api/auth/session` (no probe teacher, SUPER_ADMIN no ve "Solicitar acceso"); `AcademyForm` reemplazado por `AcademyRequestForm` (modal 2 tabs join/create + Sonner); EmptyState copy actualizado.
+- **API docs**: `lib/api-docs/paths/academy-requests.ts` + `schemas/academy-requests.ts` nuevos; `paths/academies.ts` actualizado (POST guardSuperAdmin+ownerId, transfer, restore, PUT role); wire en `spec.ts`.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/validations/academy.ts` | 🔧 Modificado — schemas createWithOwner/request/query/roleAssign/transfer |
+| `lib/padel/academy-requests.ts` | ✨ Nuevo — lógica pura |
+| `lib/rate-limit.ts` | 🔧 Modificado — ACADEMY_REQUEST_* |
+| `app/api/academies/route.ts` | 🔧 Modificado — POST guardSuperAdmin + ownerId |
+| `app/api/academies/[id]/route.ts` | 🔧 Modificado — guards SuperAdminOr |
+| `app/api/academies/[id]/logo/route.ts` | 🔧 Modificado — guard SuperAdminOr |
+| `app/api/academies/[id]/members/route.ts` | 🔧 Modificado — guard SuperAdminOr |
+| `app/api/academies/[id]/members/invite/route.ts` | 🔧 Modificado — guard SuperAdminOr |
+| `app/api/academies/[id]/members/[userId]/route.ts` | 🔧 Modificado — guard SuperAdminOr + PUT role |
+| `app/api/academies/[id]/rubrics/route.ts` | 🔧 Modificado — guards SuperAdminOr |
+| `app/api/academies/[id]/transfer-ownership/route.ts` | ✨ Nuevo |
+| `app/api/academies/[id]/restore/route.ts` | ✨ Nuevo |
+| `app/api/academy-requests/route.ts` | ✨ Nuevo |
+| `app/api/academy-requests/[id]/approve/route.ts` | ✨ Nuevo |
+| `app/api/academy-requests/[id]/reject/route.ts` | ✨ Nuevo |
+| `app/api/academy-requests/available-academies/route.ts` | ✨ Nuevo |
+| `hooks/use-academies.ts` | 🔧 Modificado — transfer/assign/restore |
+| `hooks/use-academy-requests.ts` | ✨ Nuevo |
+| `app/(app)/academias/page.tsx` | 🔧 Modificado — role session + request form |
+| `components/padel/academy-request-form.tsx` | ✨ Nuevo |
+| `lib/api-docs/paths/academy-requests.ts` | ✨ Nuevo |
+| `lib/api-docs/schemas/academy-requests.ts` | ✨ Nuevo |
+| `lib/api-docs/paths/academies.ts` | 🔧 Modificado |
+| `lib/api-docs/schemas/academies.ts` | 🔧 Modificado |
+| `lib/api-docs/spec.ts` | 🔧 Modificado — wire |
+| `lib/db/queries/padel/super-admin.ts` | 🔧 Modificado — listActiveAcademies |
+| `lib/db/queries/padel/academy-requests.ts` | 🔧 Modificado — fix payload sql (bug db-engineer) |
+
+### Tests
+
+- Unit: `tests/unit/padel/academy-requests.test.ts`, `tests/unit/padel/academy-ownership.test.ts` — 18 tests.
+- API happy (SQL real): `tests/api/padel/academy-requests-happy.spec.ts`, `tests/api/padel/academy-ownership-happy.spec.ts`.
+- API guard: `tests/api/padel/academy-requests-guard.spec.ts`, `tests/api/padel/academy-ownership-guard.spec.ts`.
+- Modificados: `academies-guard.spec.ts` (ADMIN → 403), `academies-happy.spec.ts`, `members-happy.spec.ts`, `institutional-rubrics-happy.spec.ts`, `pdf-happy.spec.ts` (setup con SUPER_ADMIN + ownerId).
+- E2E `tests/e2e/academy-super-admin.spec.ts` asignado a @admin-engineer.
 
 ### Variables de Entorno
 

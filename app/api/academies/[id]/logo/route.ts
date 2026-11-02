@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { guardAcademyAdmin } from "@/lib/auth/academy-guard";
+import { guardSuperAdminOrAcademyAdmin } from "@/lib/auth/academy-guard";
 import { auditAcademyUpdated, extractRequestContext } from "@/lib/audit/helpers";
 import { getAcademyById, updateAcademyLogo } from "@/lib/db/queries/padel/academies";
 import { validateLogoUpload } from "@/lib/padel/logo";
@@ -22,7 +22,7 @@ export async function POST(
   try {
     const session = await auth();
     const { id } = padelIdParamsSchema.parse(await params);
-    const guardError = await guardAcademyAdmin(session, id);
+    const guardError = await guardSuperAdminOrAcademyAdmin(session, id);
     if (guardError) return guardError;
 
     const previous = await getAcademyById(id);

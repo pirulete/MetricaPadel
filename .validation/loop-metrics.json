@@ -15,6 +15,38 @@
       "gates_failed": 1,
       "loop_duration_ms": 0,
       "module": "dashboard"
+    },
+    {
+      "change_id": "harness-loop-metrics-2026-10-03",
+      "timestamp": "2026-10-03T23:16:38.087Z",
+      "iterations": 1,
+      "gates_failed": 0,
+      "loop_duration_ms": 600000,
+      "module": "infra"
+    },
+    {
+      "change_id": "2026-10-03-super-admin-academy-ownership",
+      "timestamp": "2026-10-05T00:14:02.239Z",
+      "iterations": 2,
+      "gates_failed": 1,
+      "loop_duration_ms": 0,
+      "module": "admin"
+    },
+    {
+      "change_id": "2026-11-01-konva-puzzle-spike",
+      "timestamp": "2026-11-01T15:19:10.035Z",
+      "iterations": 1,
+      "gates_failed": 0,
+      "loop_duration_ms": 0,
+      "module": "infra"
+    },
+    {
+      "change_id": "2026-11-02-coach-transition-editor",
+      "timestamp": "2026-11-02T06:09:22.353Z",
+      "iterations": 1,
+      "gates_failed": 2,
+      "loop_duration_ms": 0,
+      "module": "padel"
     }
   ]
 }

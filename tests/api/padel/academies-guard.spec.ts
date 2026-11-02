@@ -16,6 +16,8 @@ const ADMIN_EMAIL = `academy-admin-${Date.now()}@test.local`;
 const ADMIN_PASSWORD = "TestPass123!";
 const USER_EMAIL = `academy-user-${Date.now()}@test.local`;
 const USER_PASSWORD = "TestPass123!";
+const SUPER_ADMIN_EMAIL = `academy-sa-${Date.now()}@test.local`;
+const SUPER_ADMIN_PASSWORD = "TestPass123!";
 
 let serverProbe: Promise<boolean> | null = null;
 
@@ -111,6 +113,7 @@ test.describe("Academias — 403/404 con SQL real", () => {
   test.beforeAll(async () => {
     await createUser({ role: "ADMIN", email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
     await createUser({ role: "USER", email: USER_EMAIL, password: USER_PASSWORD });
+    await createUser({ role: "SUPER_ADMIN", email: SUPER_ADMIN_EMAIL, password: SUPER_ADMIN_PASSWORD });
   });
 
   test.afterAll(async () => {
@@ -125,6 +128,7 @@ test.describe("Academias — 403/404 con SQL real", () => {
     );
     await deleteUserByEmail(ADMIN_EMAIL);
     await deleteUserByEmail(USER_EMAIL);
+    await deleteUserByEmail(SUPER_ADMIN_EMAIL);
   });
 
   test("POST /api/academies con USER → 403", async () => {
@@ -137,9 +141,19 @@ test.describe("Academias — 403/404 con SQL real", () => {
     expect(res.status()).toBe(403);
   });
 
-  test("POST /api/academies con slug inválido → 400", async () => {
+  test("POST /api/academies con ADMIN → 403 (v0.9: guardSuperAdmin)", async () => {
     test.skip(!(await serverUp()), `Servidor no disponible en ${BASE_URL}`);
     const ctx = await createAuthedContext(ADMIN_EMAIL, ADMIN_PASSWORD);
+    const res = await ctx.post("/api/academies", {
+      data: { name: "No permitido", slug: "no-permitido-admin" },
+      headers: { "Content-Type": "application/json" },
+    });
+    expect(res.status()).toBe(403);
+  });
+
+  test("POST /api/academies con slug inválido (SUPER_ADMIN) → 400", async () => {
+    test.skip(!(await serverUp()), `Servidor no disponible en ${BASE_URL}`);
+    const ctx = await createAuthedContext(SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD);
     const res = await ctx.post("/api/academies", {
       data: { name: "X", slug: "MAYÚSCULAS" },
       headers: { "Content-Type": "application/json" },

@@ -1,0 +1,11 @@
+{
+  "change_id": "2026-11-02-coach-transition-editor",
+  "change_class": "feature",
+  "timestamp": "2026-11-02T05:54:12Z",
+  "files_changed": 36,
+  "tests_added": 95,
+  "tests_updated": 1,
+  "test_coverage_delta": 0,
+  "gates_passed": 11,
+  "gates_failed": 0
+}

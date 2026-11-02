@@ -633,6 +633,20 @@ export const academyAccessRequests = pgTable("academy_access_requests", {
     .where(sql`${table.status} = 'pending' AND ${table.type} = 'create_academy'`),
 ]);
 
+// Transición (escenario táctico) del coach (ADMIN). ownerId = coach, sin cascade
+// (coherente con rubrics/courses). scenario JSONB guarda sólo { initialStepIndex, steps };
+// sin $type<> (schema.ts no importa dominio). Hard delete: audit_logs conserva el rastro.
+export const coachTransitions = pgTable("coach_transitions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  ownerId: uuid("owner_id").notNull().references(() => users.id, { onDelete: "no action" }),
+  title: varchar("title", { length: 200 }).notNull(),
+  scenario: jsonb("scenario").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("coach_transitions_owner_updated_idx").on(table.ownerId, table.updatedAt),
+]);
+
 export const rubricsRelations = relations(rubrics, ({ one, many }) => ({
   owner: one(users, {
     fields: [rubrics.ownerId],
@@ -789,6 +803,13 @@ export const academyAccessRequestsRelations = relations(academyAccessRequests, (
   }),
 }));
 
+export const coachTransitionsRelations = relations(coachTransitions, ({ one }) => ({
+  owner: one(users, {
+    fields: [coachTransitions.ownerId],
+    references: [users.id],
+  }),
+}));
+
 export type Rubric = typeof rubrics.$inferSelect;
 export type NewRubric = typeof rubrics.$inferInsert;
 export type RubricLevel = typeof rubricLevels.$inferSelect;
@@ -813,3 +834,5 @@ export type AcademyMembership = typeof academyMemberships.$inferSelect;
 export type NewAcademyMembership = typeof academyMemberships.$inferInsert;
 export type AcademyAccessRequest = typeof academyAccessRequests.$inferSelect;
 export type NewAcademyAccessRequest = typeof academyAccessRequests.$inferInsert;
+export type CoachTransition = typeof coachTransitions.$inferSelect;
+export type NewCoachTransition = typeof coachTransitions.$inferInsert;

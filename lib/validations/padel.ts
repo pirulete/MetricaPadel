@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { COURT_DEPTH_M, COURT_WIDTH_M } from "@/lib/padel/court/types";
 
 export const rubricCategoryValues = ["reglas", "tecnica_basica", "tecnica_especifica", "tactica", "fisica", "actitud_equipo"] as const;
 export const rubricStatusValues = ["draft", "active", "archived"] as const;
@@ -186,6 +187,74 @@ export const pairEvaluationPublishSchema = z.object({
     .min(0, "durationSeconds debe ser >= 0")
     .optional(),
 });
+
+// ---------------------------------------------------------------------------
+// Editor de transiciones del coach (`coach_transitions.scenario`)
+// Regla dura Zod 3 (F1): `.extend()` SÓLO sobre un `ZodObject` limpio; todo
+// `.refine()`/`.superRefine()` va AL FINAL de la cadena (devuelven ZodEffects).
+// ---------------------------------------------------------------------------
+
+/** Punto en metros de cancha (0..10 × 0..20). */
+export const transitionPointSchema = z.object({
+  x: z.number().min(0, "x fuera de la cancha").max(COURT_WIDTH_M, "x fuera de la cancha"),
+  y: z.number().min(0, "y fuera de la cancha").max(COURT_DEPTH_M, "y fuera de la cancha"),
+});
+
+/** Tiro Bézier del paso: `null` cuando el paso no tiene tiro. */
+export const transitionShotSchema = z
+  .object({
+    control: transitionPointSchema,
+    to: transitionPointSchema,
+    label: z.string().trim().min(1, "label es requerido").max(40, "label máximo 40 caracteres"),
+  })
+  .nullable();
+
+/** Paso del escenario: 4 jugadores + tiro opcional. */
+export const transitionStepSchema = z.object({
+  id: z.number().int("id debe ser un entero").min(1, "id mínimo 1"),
+  label: z.string().trim().min(1, "label es requerido").max(200, "label máximo 200 caracteres"),
+  positions: z.object({
+    A: transitionPointSchema,
+    B: transitionPointSchema,
+    C: transitionPointSchema,
+    D: transitionPointSchema,
+  }),
+  shot: transitionShotSchema,
+});
+
+/** Base ÚNICA (ZodObject) de la que se derivan los dos schemas del escenario. */
+const transitionScenarioObjectSchema = z.object({
+  initialStepIndex: z.number().int("initialStepIndex debe ser un entero").min(0, "initialStepIndex debe ser >= 0"),
+  steps: z
+    .array(transitionStepSchema)
+    .min(1, "mínimo 1 paso")
+    .max(50, "máximo 50 pasos"),
+});
+
+/** Refinamiento compartido (evita drift entre lectura DB y body de API). */
+const refineInitialStepIndex = (
+  value: { initialStepIndex: number; steps: unknown[] },
+  ctx: z.RefinementCtx,
+) => {
+  if (value.initialStepIndex >= value.steps.length) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["initialStepIndex"],
+      message: "initialStepIndex fuera de rango",
+    });
+  }
+};
+
+/** Escenario puro: `safeParse(row.scenario)` al leer de DB (F10/D-15). */
+export const transitionScenarioSchema = transitionScenarioObjectSchema.superRefine(refineInitialStepIndex);
+
+/** POST/PUT /api/transitions — extend PRIMERO, superRefine AL FINAL (F1). */
+export const transitionCreateSchema = transitionScenarioObjectSchema
+  .extend({ title: z.string().trim().min(1, "title es requerido").max(200, "title máximo 200 caracteres") })
+  .superRefine(refineInitialStepIndex);
+
+/** GET /api/transitions — paginación G15 (cursor `updatedAt`). */
+export const transitionListQuerySchema = paginationQuerySchema;
 
 export type AdminCreateUserInput = z.infer<typeof adminCreateUserSchema>;
 export type AdminUpdateUserInput = z.infer<typeof adminUpdateUserSchema>;

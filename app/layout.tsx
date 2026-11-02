@@ -27,7 +27,11 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${inter.variable} font-sans antialiased`}>
-        <Toaster position="top-right" richColors />
+        <Toaster
+          position="top-right"
+          richColors
+          toastOptions={{ className: "max-w-[calc(100vw-2rem)]" }}
+        />
         {children}
       </body>
     </html>

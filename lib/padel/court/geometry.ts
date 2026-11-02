@@ -1,12 +1,12 @@
 /**
- * Geometría de la cancha: escala, offsets y conversión cancha → píxeles.
- * SPIKE NO PRODUCTIVO — borrable tras el go/no-go.
+ * Geometría de la cancha: escala, offsets y conversión cancha ↔ píxeles.
+ * Módulo PRODUCTIVO (editor de transiciones del coach): ya no es un spike.
  *
  * Archivo PURO: no lee `window`/`devicePixelRatio`; el viewport entra por
  * parámetro (lo mide `useCourtConfig`). Sin imports de `konva`/`react`.
  *
  * Aspect ratio de la cancha: COURT_WIDTH_M : COURT_DEPTH_M = 10:20 = 1:2
- * (vertical, norte→sur).
+ * (vertical, norte→sur). `courtToPx` y `pxToCourt` son inversas (AC-06).
  */
 
 import { COURT_DEPTH_M, COURT_WIDTH_M, type CourtPoint, type CourtViewport } from "./types";
@@ -57,6 +57,35 @@ export function courtToPx(point: CourtPoint, viewport: CourtViewport): CourtPoin
   return {
     x: offsetX + finiteOrZero(point.x) * scale,
     y: offsetY + finiteOrZero(point.y) * scale,
+  };
+}
+
+/**
+ * Inversa de `courtToPx`: píxeles del viewport → metros de cancha.
+ * Viewport degenerado (escala 0) → `{0,0}` (sin NaN/Infinity); valores no
+ * finitos de entrada se normalizan a 0. Es una inversa pura: NO recorta, el
+ * caller aplica `clampCourtPoint` (drag/clamp de EC-10).
+ */
+export function pxToCourt(point: CourtPoint, viewport: CourtViewport): CourtPoint {
+  const scale = computeScale(viewport);
+  if (scale <= 0) return { x: 0, y: 0 };
+  const { offsetX, offsetY } = computeOffsets(viewport);
+  return {
+    x: (finiteOrZero(point.x) - offsetX) / scale,
+    y: (finiteOrZero(point.y) - offsetY) / scale,
+  };
+}
+
+function clampAxis(value: number, max: number): number {
+  const safe = finiteOrZero(value);
+  return Math.min(max, Math.max(0, safe));
+}
+
+/** Acota un punto de cancha al rectángulo [0..10] × [0..20] (EC-10). */
+export function clampCourtPoint(point: CourtPoint): CourtPoint {
+  return {
+    x: clampAxis(point.x, COURT_WIDTH_M),
+    y: clampAxis(point.y, COURT_DEPTH_M),
   };
 }
 

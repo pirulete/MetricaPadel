@@ -1,5 +1,44 @@
 # FEATURES — Registro de Cambios
 
+## ✨ Editor de Transiciones de Pádel para Profesores (2026-11-02)
+
+> status: in-progress (QA: NO-GO condicionado — H-1 overflow 8.4 px en editor 375 px + H-2 spec E2E con login ADMIN, ver release-report.md)
+> release: v0.10 (pendiente de cierre)
+> date: 2026-11-02
+> change_id: 2026-11-02-coach-transition-editor
+> module: padel
+> tags: [ui, editor, canvas, mobile, db, api]
+
+### Problema
+
+El motor de transición tipo puzzle (spike `2026-11-01-konva-puzzle-spike`) sólo consume escenarios hardcodeados: el coach (ADMIN) no puede crear ni editar sus propias jugadas sin tocar código. Y el uso real ocurre en la pista, con el móvil en la mano.
+
+### Solución Implementada
+
+Editor mobile-first en ruta privada ADMIN (`app/(app)/transiciones`, `validateAdmin`): canvas Konva con selección y drag (jugadores A–D + pelota), toolbar flotante contextual (±0.5 m, fijar/borrar tiro), manija de arco arrastrable (dirigir = destino + arco, sin facing), filmstrip de pasos (añadir/duplicar/borrar/reordenar), undo/redo y **Preview reutilizando `components/court/`** (cero animación nueva). Persistencia en **una sola tabla** `coach_transitions` (`scenario` jsonb + `owner_id` + timestamps, migración `0012`) + API CRUD contract-first (`guardAdmin`, auditoría, anti-IDOR 404) documentada en `lib/api-docs/`.
+
+**Fuera de alcance**: visor para alumnos, editor desktop, poses/facing, plantillas/compartir, multi-profesor, exportación, versionado de transiciones.
+
+### Archivos Modificados
+
+- `app/(app)/transiciones/{page,nueva/page,[id]/page}.tsx` ✨ Nuevo
+- `app/api/transitions/{route.ts,[id]/route.ts}` ✨ Nuevo
+- `components/court/{EditorStage,ScenarioPreview}.tsx`, `components/padel/transition-editor/*` ✨ Nuevo
+- `lib/padel/court/{editor,history,transition}.ts`, `lib/db/queries/padel/transitions.ts` ✨ Nuevo
+- `lib/db/schema.ts`, `lib/validations/padel.ts`, `lib/auth/protected-routes.ts`, `lib/api-docs/{spec.ts,paths/transitions.ts,schemas/transitions.ts}`, `lib/padel/court/geometry.ts`, `components/layout/app-layout-client.tsx`, `components/padel/teacher-dashboard.tsx`, `hooks/use-transitions.ts` ✨ Nuevo
+- `drizzle/0012_young_betty_ross.sql` + `drizzle/meta/0012_snapshot.json` ✨ Nuevo
+
+### Tests
+
+- Unit (`tests/unit/`): `padel/transition-editor.test.ts` (28), `padel/transition-history.test.ts` (10), `padel/transition-serialization.test.ts` (13), `padel/transition-schemas.test.ts` (22), `padel/court-geometry.test.ts` (22, MOD), `db/transitions-queries.test.ts` (10) — suite completa **849/849 verde**.
+- API (`tests/api/`): `padel/transitions-happy.spec.ts` (CRUD SQL real + `audit_logs` + IDOR), `padel/transitions-guard.spec.ts` (401×5, USER 403, TEMPORARY 403, IDOR, 404) — **10/10 verde**.
+- E2E (`tests/e2e/`): `transition-editor.spec.ts` (flujo crear → paso → Probar → guardar → reabrir a 375×667 + USER 403) — 1/2; regresión motor `puzzle-demo.spec.ts` 2/2.
+- QA artifacts: `production_artifacts/2026-11-02-coach-transition-editor/{release-report,test-matrix,acceptance-criteria}.md`.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
 ## ✨ Spike — Konva + Transición de Puzzle tipo PadelChess (2026-11-01)
 
 > status: in-progress (código y gates automatizados verdes; `released` sólo al cerrar go/no-go en D4)

@@ -39,6 +39,14 @@
       "gates_failed": 0,
       "loop_duration_ms": 0,
       "module": "infra"
+    },
+    {
+      "change_id": "2026-11-02-coach-transition-editor",
+      "timestamp": "2026-11-02T06:09:22.353Z",
+      "iterations": 1,
+      "gates_failed": 2,
+      "loop_duration_ms": 0,
+      "module": "padel"
     }
   ]
 }

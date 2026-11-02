@@ -46,6 +46,7 @@ Principio: **NUNCA permitir LOCKED** en rutas privadas. TEMPORARY solo si explí
     - `app/api/user/push/` — push subscriptions Web Push/VAPID (vapid-key, subscription, click)
     - `app/api/user/notifications/` — inbox (listado paginado, mark-read, soft-delete, unread-count, preferencias)
   - `app/api/public/` — endpoints públicos de marketing (lectura cacheada + contact con rate limit)
+  - `app/api/transitions/` — CRUD de transiciones del coach (guardAdmin + ownership, anti-IDOR 404)
   - `app/api/admin/` — endpoints admin (guard + auditoría obligatorios)
     - `app/api/admin/marketing/` — CRUD del CMS (pages, sections, blog, products, categories, settings, revalidate)
     - `app/api/admin/notifications/` — settings globales de notificaciones (pushEnabled/inboxEnabled)
@@ -172,6 +173,15 @@ Principio: **NUNCA permitir LOCKED** en rutas privadas. TEMPORARY solo si explí
 - **Lógica pura**: `lib/padel/academy-requests.ts` (`canAssignAcademyRole`), `lib/padel/academy-migration.ts`.
 - **UI**: `/academias` (Solicitar acceso para ADMIN); `/admin/platform/academias` y `/solicitudes` (SA); nav condicional.
 - **Anti-loop workflow**: chunking obligatorio >5 archivos, implementadores no corren build/playwright/E2E, circuit breaker en agentes, task-worksheet, `.agents/patterns/admin-crud-conventions.md`.
+
+## Padel Evaluativo — Editor de Transiciones (coach)
+
+- **Roles**: sin cambios. Editor y API exclusivos de `ADMIN`/`SUPER_ADMIN` + `ACTIVE` (`guardAdmin`); `USER`/`TEMPORARY` → 403 en API; `LOCKED` nunca.
+- **DB**: tabla `coach_transitions` (`ownerId` FK users sin cascade, `title` varchar(200), `scenario` jsonb, timestamps) + índice `coach_transitions_owner_updated_idx (ownerId, updatedAt)`. `scenario` guarda sólo `{ initialStepIndex, steps }`; `id`/`title` viven en columnas. **Hard delete** (sin FKs entrantes; `audit_logs` conserva el rastro). **Sin `version`**: EC-12 = last-write-wins.
+- **Endpoints** (2 route handlers / 5 endpoints): `GET/POST /api/transitions`, `GET/PUT/DELETE /api/transitions/[id]`. Zod en `lib/validations/padel.ts`, `PUT` = reemplazo completo, paginación por cursor G15 (`updatedAt`), auditoría genérica (`auditCreate/Update/Delete`, entidad `coach_transition`). Docs en `lib/api-docs/{paths,schemas}/transitions.ts`.
+- **Lógica pura**: `lib/padel/court/geometry.ts` (`pxToCourt` inversa de `courtToPx` + `clampCourtPoint`), `history.ts` (undo/redo por snapshots, límite 50), `editor.ts` (operaciones sobre pasos), `transition.ts` (`toCourtScenario`).
+- **UI**: `app/(app)/transiciones` (lista), `/nueva`, `/[id]` (editor mobile-first, `validateAdmin`). `components/court/EditorStage.tsx` (stage interactivo separado, Konva sólo por `dynamic({ssr:false})`), `components/court/ScenarioPreview.tsx` (reutiliza `CourtStage` sin lógica de animación nueva), `components/padel/transition-editor/*`, `hooks/use-transitions.ts`. `CourtStage` y el motor de animación **no se modifican**.
+- **Migración**: `0012_*` (1 tabla + 1 índice). Sin variables de entorno nuevas.
 
 ## Convenciones de Migraciones
 

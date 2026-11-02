@@ -9,3 +9,4 @@ export * from './history';
 export * from './academies';
 export * from './pair';
 export * from './super-admin';
+export * from './transitions';

@@ -1,29 +1,29 @@
 /**
- * Anotaciones: geometría de la flecha de trayectoria y progreso del trazo.
- * SPIKE NO PRODUCTIVO — borrable tras el go/no-go.
+ * Anotaciones: geometría de las flechas de tiro (curvas Bézier) y progreso
+ * del trazo. SPIKE NO PRODUCTIVO — borrable tras el go/no-go.
  *
  * Archivo PURO: recibe viewport/valores por parámetro, no lee `window` y no
  * importa `konva`/`react`. El renderer sólo aplica `points`, `strokeDasharray`
- * y `strokeDashoffset` a un nodo `Arrow`/`Line`.
+ * y `strokeDashoffset` a un nodo Konva.
+ *
+ * Homologación PadelChess: los tiros son curvas Bézier cuadráticas
+ * (startPoint / controlPoint / endPoint) muestreadas en polilíneas.
  */
 
 import { courtToPx } from "./geometry";
-import type {
-  CourtPoint,
-  CourtViewport,
-  MovementArrow,
-  PlayerId,
-  PlayerPositions,
-} from "./types";
+import type { CourtPoint, CourtViewport, Shot } from "./types";
 
-/** Flecha ya convertida a píxeles del viewport. */
-export type ArrowGeometry = {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  /** Longitud en píxeles (alimenta `strokeDasharray`, AC-07). */
+/** Número de segmentos de la polilínea que aproxima la curva. */
+const CURVE_SEGMENTS = 32;
+
+/** Geometría de la curva ya convertida a píxeles del viewport. */
+export type CurveGeometry = {
+  /** Polilínea plana `[x1,y1,x2,y2,...]` lista para `Line.points`. */
+  points: number[];
+  /** Longitud total en píxeles (alimenta `strokeDasharray`, AC-07). */
   length: number;
+  /** Punto medio de la curva en píxeles (ancla la etiqueta en escena). */
+  midpoint: { x: number; y: number };
 };
 
 /** Sentido de dibujo del trazo: avance o rebobinado. */
@@ -41,25 +41,37 @@ function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
-/**
- * Geometría de la flecha `from → to` en píxeles del viewport. Determinista:
- * mismas coordenadas de cancha + mismo viewport → mismo resultado, así que el
- * escenario serializable (AC-07) basta para redibujar la anotación.
- */
-export function computeArrowGeometry(
-  from: CourtPoint,
-  to: CourtPoint,
-  viewport: CourtViewport
-): ArrowGeometry {
-  const start = courtToPx(from, viewport);
-  const end = courtToPx(to, viewport);
+/** Punto de la cuadrática `B(t)` con t acotado a [0,1] (de Piel para Bezier). */
+export function quadraticPoint(from: CourtPoint, control: CourtPoint, to: CourtPoint, t: number): CourtPoint {
+  const s = clamp01(t);
+  const u = 1 - s;
   return {
-    x1: start.x,
-    y1: start.y,
-    x2: end.x,
-    y2: end.y,
-    length: Math.hypot(end.x - start.x, end.y - start.y),
+    x: u * u * from.x + 2 * u * s * control.x + s * s * to.x,
+    y: u * u * from.y + 2 * u * s * control.y + s * s * to.y,
   };
+}
+
+/**
+ * Geometría de la curva del tiro en píxeles: muestrea la cuadrática en
+ * `CURVE_SEGMENTS` segmentos, calcula la longitud poligonal y el punto medio
+ * (donde PadelChess coloca la etiqueta del tiro). Determinista: mismos
+ * puntos + mismo viewport → mismo resultado (AC-07).
+ */
+export function computeCurveGeometry(shot: Shot, viewport: CourtViewport): CurveGeometry {
+  const points: number[] = [];
+  let length = 0;
+  let previous: { x: number; y: number } | null = null;
+
+  for (let i = 0; i <= CURVE_SEGMENTS; i++) {
+    const courtPoint = quadraticPoint(shot.from, shot.control, shot.to, i / CURVE_SEGMENTS);
+    const pixel = courtToPx(courtPoint, viewport);
+    points.push(pixel.x, pixel.y);
+    if (previous) length += Math.hypot(pixel.x - previous.x, pixel.y - previous.y);
+    previous = pixel;
+  }
+
+  const midpointCourt = quadraticPoint(shot.from, shot.control, shot.to, 0.5);
+  return { points, length, midpoint: courtToPx(midpointCourt, viewport) };
 }
 
 /**
@@ -77,30 +89,4 @@ export function computeDashProgress(
   const length = Number.isFinite(totalLength) && totalLength > 0 ? totalLength : 0;
   const dashOffset = direction === "backward" ? p * length : (1 - p) * length;
   return { dashArray: [length, length], dashOffset };
-}
-
-/** Desplazamiento mínimo (m) para considerar que un jugador se movió. */
-const MOVE_EPSILON_M = 0.01;
-
-/**
- * Deriva las flechas de MOVIMIENTO de jugadores (negras) entre el estado
- * anterior y el actual del escenario. Sólo incluye a los que se desplazaron
- * más de `MOVE_EPSILON_M` y conserva el orden estable de `PLAYER_IDS`
- * (A, B, C, D). Determinista: mismas posiciones → mismas flechas (AC-07).
- */
-export function deriveMovementArrows(
-  from: PlayerPositions,
-  to: PlayerPositions,
-  playerOrder: readonly PlayerId[]
-): MovementArrow[] {
-  const arrows: MovementArrow[] = [];
-  for (const player of playerOrder) {
-    const start = from[player];
-    const end = to[player];
-    if (!start || !end) continue;
-    const moved =
-      Math.abs(end.x - start.x) > MOVE_EPSILON_M || Math.abs(end.y - start.y) > MOVE_EPSILON_M;
-    if (moved) arrows.push({ player, from: start, to: end });
-  }
-  return arrows;
 }

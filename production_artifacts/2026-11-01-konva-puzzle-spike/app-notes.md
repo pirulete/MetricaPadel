@@ -177,3 +177,29 @@ Cambio directo del usuario tras revisar la demo v1 (validado con mockup ASCII en
 ### Verificación Iteración 2
 - `tsc --noEmit` 0 errores · `eslint` área 0 errores/0 warnings · unit **756/756** (60 suites) · E2E `puzzle-demo.spec.ts` **2/2** · `next build` OK.
 - Screenshots Playwright de los 3 pasos inspeccionados: orientación, colores, líneas FIP, figuras y flechas correctos.
+
+---
+
+## Iteración 3 (2026-11-01) — homologación total al look de PadelChess
+
+Input del usuario: "olvida mi spec para este caso y homologa todo a lo que tiene PadelChess; si lo puedes mejorar, mejor". Análisis previo: HTML de padelchess.me + descarga de sus chunks JS (config `courtConfig`, sistema de sprites/poses, `tweenMs`, modelo de puzzles con `controlPoint`) + screenshots del home y `/puzzles?questionId=16`.
+
+### Qué cambió
+- `lib/padel/court/types.ts`: constantes de línea → estilo PadelChess (servicio a 7 m, overshoot 0,4 m). `Shot` ahora es Bézier cuadrática `{from, control, to, label}`. Eliminado `MovementArrow` (PadelChess no dibuja flechas de movimiento).
+- `lib/padel/court/annotation.ts`: eliminados `deriveMovementArrows` y `computeArrowGeometry`; nuevos `quadraticPoint` (B(t) con t acotado) y `computeCurveGeometry` (muestrea 32 segmentos → polilínea px + longitud + punto medio).
+- `lib/padel/court/demo-scenario.ts`: shots con `control` + `label` ("GLOBO", "CRUZADO").
+- `components/court/CourtLayers.ts`: `COURT_COLORS` homologado a los tokens de PadelChess (`court #3b82f6`, `yellow #ffff04`, `green #68fec3`, kits, piel/pelo/pala, sombras); `buildFloor` con radius 8; `buildCourtLines` con sombra + tramo de centro atenuado bajo la red (5 segmentos); nuevos `buildWallPosts` (dashes laterales), `buildNet` (banda+malla+cinta con sag+postes), `buildShotView` (curva+etiqueta al midpoint+zona+ruta pelota+tag HIT). Eliminados `buildMovementArrow(s)`.
+- `components/court/CourtParts.tsx` (nuevo): `PlayerFigure` (sombra elíptica, kit por equipo, cara/pelo, brazos con pala, piernas con zapatillas; pivotes cadera/hombro), `Bubble` (burbuja de etiqueta), `Net`. Extraído de CourtStage por la regla <500 líneas de ponytail.
+- `components/court/CourtStage.tsx`: UN solo reloj `requestAnimationFrame` de 1000 ms (padelchess `tweenMs`) con `easeInOut` propio: interpola posiciones, cadencia de carrera (sin fase, ±0.55 rad), vuelo de la pelota por la polilínea, `dashOffset` de la curva, fade de etiquetas/zona. Resize/montaje → snap sin animación (E3). Eliminados tweens `node.to()` y refs de flechas de movimiento. D-T4 intacto: todo Konva entra por CourtStage (CourtParts es importado por él).
+- `components/court/PuzzleDemo.tsx`: copy "estilo PadelChess" + leyenda nueva (kits, tiro con pelota, zona).
+- `tests/unit/padel/court-annotation.test.ts`: reescrito para `quadraticPoint`/`computeCurveGeometry` (endpoints, punto medio fuera de la cuerda, longitud > cuerda, round-trip JSON, E5) — 18 tests.
+
+### Bugs encontrados y corregidos en el camino
+1. `quadraticPoint` usaba `t` crudo tras acotar `u` → t fuera de rango extrapolaba; corregido acotando `s` primero.
+2. `Konva.Easings.EaseInOut(t)` exige 4 args (firma tween) → reemplazado por easing propio de 1 línea.
+3. Brazo derecho dibujado en la misma X que el izquierdo (error de refactor) → corregido con `±shoulderX`.
+4. `react-hooks/refs`: lectura de `drawnSigRef.current` en render → eliminado el estado `settled` (el snap del efecto cubre el caso).
+
+### Verificación Iteración 3
+- `tsc --noEmit` 0 errores · `eslint components/court lib/padel/court` **0 errores, 0 warnings** (max-lines resuelto con CourtParts) · unit **754/754** · E2E **2/2** · `next build` OK.
+- Screenshots Playwright de los 3 pasos inspeccionados: piso redondeado, red con malla/sag/postes, postes laterales, kits morado/blanco con sombra y pala, curva amarilla discontinua, pelota lima en destino, burbujas GLOBO/CRUZADO + HIT, zona mint.

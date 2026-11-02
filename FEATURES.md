@@ -31,9 +31,25 @@ Rediseño tras feedback del usuario, validado con mockup antes de codificar:
 - Resize con tween activo: snap determinista al paso activo (E3 mejorado).
 - Verificación: tsc 0 · lint 0 · unit **756/756** (+6 tests de `deriveMovementArrows`) · E2E 2/2 · build OK · screenshots visuales de los 3 pasos correctos.
 
+#### Iteración 3 (2026-11-01) — homologación total al look de PadelChess
+
+El usuario pidió olvidar los ajustes previos y replicar el estilo de PadelChess (`padelchess.me`, analizado vía sus chunks JS + screenshots reales), con mejoras opcionales. Comparativa → implementación:
+
+- **Tokens de color PadelChess**: piso `#3b82f6` (no azul rey), esquinas redondeadas (r=8), líneas blancas de 7 cm **con sombra suave** (`groundShadow`), línea central continua con **tramo atenuado bajo la red** (opacity .5), prolongación 0,4 m, servicio a 7 m de la red.
+- **Red estilo PadelChess**: banda translúcida con **malla dibujada**, **cinta superior con sag** (Path cuadrático), cinta inferior negra y **postes** a los extremos.
+- **Postes de pared** a lo largo de los laterales (los dashes negros de PadelChess).
+- **Jugadores con kit por equipo** (Norte = kit morado `#5b3fd9` vista frontal; Sur = kit blanco vista trasera), **sombra elíptica en el piso**, zapatillas y **pala** — destronando a los stickers/negro-verde previos. Se eliminaron las flechas negras de movimiento (PadelChess no las usa: el movimiento lo comunica la figura corriendo).
+- **Tiros = curvas Bézier cuadráticas** (`from`/`control`/`to` en el modelo, como el `controlPoint` de PadelChess) con **trazo discontinuo amarillo** `#ffff04` + punta.
+- **Pelota lima `#CCFF00`** con costuras que **vuela por la curva** (antes: no se dibujaba por spec propia — olvidada).
+- **Etiquetas en escena**: burbuja blanca con el tipo de tiro ("GLOBO", "CRUZADO", estilo Bebas/condensada) + **tag morado "HIT"** sobre quien golpea.
+- **Zona mint de aterrizaje** (`#68fec3`, fill .5 + borde) que aparece sincronizada con la llegada de la pelota (mejora sobre PadelChess, que la muestra estática).
+- **Reloj único de animación 1000 ms** (PadelChess `tweenMs`) con easing in-out: posiciones, cadencia de carrera (piernas/brazos en contrafase), vuelo de la pelota, trazo de la flecha y fades — todo derivado de `t`, sin `setState` por frame (AC-04 intacta). Determinismo E1/E7 conservado (origen = posición visual actual; destino = paso activo).
+- `CourtStage.tsx` dividido en `CourtParts.tsx` (figuras/burbujas/red — regla ponytail <500 líneas).
+- Verificación: tsc 0 · lint **0 errores y 0 warnings** · unit **754/754** (annotation tests reescritos para Bézier) · E2E 2/2 · build OK · screenshots de los 3 pasos inspeccionados (curva+pelota+GLOBO/HIT+zona correctos).
+
 ### Archivos Modificados
 
-Nuevos: `app/(app)/puzzle-demo/page.tsx` (Server Component, `validateUser` + `ACTIVE`), `components/court/{PuzzleDemo.tsx,CourtStage.tsx,CourtLayers.ts,useCourtConfig.ts}`, `lib/padel/court/{types,geometry,steps,annotation,demo-scenario}.ts`, `tests/unit/padel/court-{geometry,steps,annotation}.test.ts`, `tests/e2e/puzzle-demo.spec.ts`. Modificados: `package.json`/`pnpm-lock.yaml` (`konva@^10.9.1`, `react-konva@19.2.7` exacto, `-D @next/bundle-analyzer`), `next.config.mjs` (wrapper `ANALYZE` reversible), `.env.example` (1 comentario). Detalle en `production_artifacts/2026-11-01-konva-puzzle-spike/{technical-design.md,app-notes.md}`.
+Nuevos: `app/(app)/puzzle-demo/page.tsx` (Server Component, `validateUser` + `ACTIVE`), `components/court/{PuzzleDemo.tsx,CourtStage.tsx,CourtParts.tsx,CourtLayers.ts,useCourtConfig.ts}`, `lib/padel/court/{types,geometry,steps,annotation,demo-scenario}.ts`, `tests/unit/padel/court-{geometry,steps,annotation}.test.ts`, `tests/e2e/puzzle-demo.spec.ts`. Modificados: `package.json`/`pnpm-lock.yaml` (`konva@^10.9.1`, `react-konva@19.2.7` exacto, `-D @next/bundle-analyzer`), `next.config.mjs` (wrapper `ANALYZE` reversible), `.env.example` (1 comentario). Detalle en `production_artifacts/2026-11-01-konva-puzzle-spike/{technical-design.md,app-notes.md}`.
 
 ### Tests
 

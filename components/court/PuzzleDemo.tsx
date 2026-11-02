@@ -41,8 +41,8 @@ export function PuzzleDemo() {
       <CardHeader>
         <CardTitle>{DEMO_SCENARIO.title}</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Cancha 10×20 m (norte → sur) · {STEPS.length} pasos · animación sobre refs de Konva
-          (sin re-render por frame)
+          Cancha 10×20 m (norte → sur) · {STEPS.length} pasos · estilo PadelChess · animación
+          sobre un solo reloj Konva (sin re-render por frame)
         </p>
       </CardHeader>
 
@@ -57,20 +57,20 @@ export function PuzzleDemo() {
         {/* Leyenda de la escena (fuera del canvas, legible por lectores de pantalla). */}
         <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
           <li className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-full border border-slate-900 bg-white" aria-hidden />
-            Equipo norte (A, B)
+            <span className="size-2.5 rounded-full border border-slate-900 bg-violet-600" aria-hidden />
+            Norte — A, B
           </li>
           <li className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-full border border-slate-900 bg-amber-500" aria-hidden />
-            Equipo sur (C, D)
+            <span className="size-2.5 rounded-full border border-slate-300 bg-white" aria-hidden />
+            Sur — C, D
           </li>
           <li className="flex items-center gap-1.5">
-            <span className="h-0.5 w-4 bg-black" aria-hidden />
-            Movimiento de jugador
+            <span className="h-0.5 w-4 bg-yellow-300" aria-hidden />
+            Tiro (curva con pelota)
           </li>
           <li className="flex items-center gap-1.5">
-            <span className="h-0.5 w-4 bg-green-400" aria-hidden />
-            Tiro de la pelota
+            <span className="size-2.5 rounded-sm bg-emerald-300/70 ring-1 ring-emerald-300" aria-hidden />
+            Zona de aterrizaje
           </li>
         </ul>
 

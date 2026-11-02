@@ -3,14 +3,12 @@
  * SPIKE NO PRODUCTIVO — borrable tras el go/no-go.
  *
  * Archivo PURO de DATA: sólo objetos/strings/números planos, sin imports de
- * `konva`/`react` ni funciones. Es serializable a JSON sin pérdida (AC-07), de
- * modo que mañana podría cargarse desde backend sin tocar la escena.
+ * `konva`/`react` ni funciones. Es serializable a JSON sin pérdida (AC-07).
  *
- * Orientación NORTE→SUR (FIP): eje Y 0..20 (Y=0 norte, Y=20 sur), red en
- * Y=10, ancho X 0..10. Equipo Norte = A, B; equipo Sur = C, D. Las flechas de
- * MOVIMIENTO de jugadores (negras) se derivan de `positions` entre pasos; el
- * campo `shot` sólo describe el tiro de la pelota (flecha verde — la pelota en
- * sí no se dibuja). `label` alimenta la región `aria-live` (AC-12).
+ * Homologación PadelChess: eje Y 0..20 (Y=0 norte, Y=20 sur), red en Y=10.
+ * Equipo Norte = A, B (kit azul); equipo Sur = C, D (kit blanco). Los tiros
+ * son curvas Bézier (`from`/`control`/`to`) con etiqueta en escena. `label`
+ * alimenta la región `aria-live` (AC-12).
  */
 
 import type { CourtScenario } from "./types";
@@ -43,7 +41,9 @@ export const DEMO_SCENARIO: CourtScenario = {
       },
       shot: {
         from: { x: 3, y: 15 },
+        control: { x: 8.8, y: 9.5 },
         to: { x: 8.5, y: 2 },
+        label: "GLOBO",
       },
     },
     {
@@ -57,7 +57,9 @@ export const DEMO_SCENARIO: CourtScenario = {
       },
       shot: {
         from: { x: 5, y: 8.5 },
+        control: { x: 1.2, y: 11.5 },
         to: { x: 1.5, y: 18 },
+        label: "CRUZADO",
       },
     },
   ],

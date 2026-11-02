@@ -8,34 +8,35 @@
  * Sólo entra al bundle vía `dynamic(..., { ssr: false })` desde `PuzzleDemo`,
  * por eso necesita `export default`.
  *
- * Regla de render: React sólo posee el paso activo y el tamaño; las posiciones
- * se animan con `node.to()` sobre refs de Konva, sin `setState` por frame
- * (AC-04). La "caminata" de las figuras corre en un `Konva.Animation` sobre
- * la capa de actores y sólo mientras hay tweens de movimiento activos.
+ * Regla de render: React sólo posee el paso activo y el tamaño; posiciones,
+ * caminata, vuelo de la pelota y trazo de la flecha los mueve UN solo reloj
+ * `Konva.Animation` (1000 ms, como PadelChess) sobre refs — nunca `setState`
+ * por frame (AC-04).
  */
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef } from "react"
 import Konva from "konva"
-import { Arrow, Circle, Group, Layer, Line, Rect, Stage } from "react-konva"
+import { Arc, Arrow, Circle, Group, Layer, Line, Rect, Stage } from "react-konva"
 import {
   buildCourtLines,
   buildFloor,
-  buildMovementArrow,
+  buildNet,
   buildPlayerFigures,
-  buildShotArrow,
+  buildShotView,
+  buildWallPosts,
   COURT_COLORS,
   PLAYER_IDS,
-  type ArrowAnnotationProps,
   type CourtLineProps,
-  type PlayerFigureProps,
+  type PostProps,
 } from "./CourtLayers"
+import { Bubble, LIMB_SELECTORS, Net, PlayerFigure } from "./CourtParts"
 import { courtToPx } from "@/lib/padel/court/geometry"
-import { deriveMovementArrows } from "@/lib/padel/court/annotation"
 import type { CourtViewport, Paso, PlayerId, PlayerPositions } from "@/lib/padel/court/types"
 
-const TWEEN_SECONDS = 0.5
-/** Velocidad del ciclo de caminata (radianios por milisegundo). */
-const WALK_SPEED = 0.015
+/** Duración de la transición (PadelChess: `tweenMs` por defecto 1000). */
+const TWEEN_MS = 1000
+/** Ciclos de paso durante la carrera de 1 s (cadencia). */
+const STRIDE_CYCLES = 4
 
 export type CourtStageProps = {
   /** Paso activo (data serializable de `lib/padel/court`). */
@@ -44,123 +45,43 @@ export type CourtStageProps = {
   viewport: CourtViewport
 }
 
-/** Flechas de la transición activa, en unidades de cancha (serializables). */
-type ArrowData = {
-  stepId: number
-  movements: ReturnType<typeof deriveMovementArrows>
-  shot: Paso["shot"]
+/** Interpola un punto sobre la polilínea px de la curva en t ∈ [0,1]. */
+function pointOnPath(path: number[], t: number): { x: number; y: number } {
+  const segments = path.length / 2 - 1
+  if (segments < 1) return { x: path[0] ?? 0, y: path[1] ?? 0 }
+  const f = Math.min(1, Math.max(0, t)) * segments
+  const i = Math.min(segments - 1, Math.floor(f))
+  const frac = f - i
+  const x = path[i * 2] + (path[(i + 1) * 2] - path[i * 2]) * frac
+  const y = path[i * 2 + 1] + (path[(i + 1) * 2 + 1] - path[i * 2 + 1]) * frac
+  return { x, y }
+}
+
+/** Easing in-out (idéntico al `EaseInOut` de Konva, sin su firma de 4 args). */
+function easeInOut(t: number): number {
+  const s = Math.min(1, Math.max(0, t));
+  return s < 0.5 ? 2 * s * s : 1 - (-2 * s + 2) ** 2 / 2;
 }
 
 /**
- * Figura simple de jugador de pádel (cabeza, torso, brazos con pala y
- * piernas). Los brazos/piernas pivotan en hombro/cadera para poder animar la
- * caminata rotándolos. Los pies quedan en el origen del grupo.
+ * Figura simple de jugador de pádel (sombra, piernas con zapatillas, torso
+ * con kit, brazos con pala y cabeza con pelo). Piernas/brazos pivotan en
+ * cadera/hombro para poder animar la carrera rotándolos. Los pies quedan en
+ * el origen del grupo.
  */
-function PlayerFigure({
-  figure,
-  groupRef,
-}: {
-  figure: PlayerFigureProps
-  groupRef: (node: Konva.Group | null) => void
-}) {
-  const h = figure.height
-  const limb = Math.max(1.5, h * 0.09)
-  const thin = Math.max(1, h * 0.045)
-  const detail = Math.max(1, h * 0.03)
 
-  return (
-    <Group x={figure.x} y={figure.y} listening={false} ref={groupRef}>
-      {/* Cabeza */}
-      <Circle
-        x={0}
-        y={-h * 0.9}
-        r={h * 0.1}
-        fill={figure.fill}
-        stroke={figure.stroke}
-        strokeWidth={detail}
-      />
-      {/* Torso */}
-      <Line
-        points={[0, -h * 0.78, 0, -h * 0.45]}
-        stroke={figure.fill}
-        strokeWidth={limb}
-        lineCap="round"
-      />
-      {/* Brazo izquierdo (pivote en el hombro) */}
-      <Group x={0} y={-h * 0.74} name="arm-l">
-        <Line
-          points={[0, 0, -h * 0.2, h * 0.16]}
-          stroke={figure.fill}
-          strokeWidth={limb}
-          lineCap="round"
-        />
-      </Group>
-      {/* Brazo derecho con pala (pivote en el hombro) */}
-      <Group x={0} y={-h * 0.74} name="arm-r">
-        <Line
-          points={[0, 0, h * 0.2, h * 0.16]}
-          stroke={figure.fill}
-          strokeWidth={limb}
-          lineCap="round"
-        />
-        <Line
-          points={[h * 0.2, h * 0.16, h * 0.3, h * 0.04]}
-          stroke={figure.stroke}
-          strokeWidth={thin}
-          lineCap="round"
-        />
-        <Circle
-          x={h * 0.32}
-          y={-h * 0.02}
-          r={h * 0.07}
-          stroke={figure.stroke}
-          strokeWidth={thin}
-          fill="transparent"
-        />
-      </Group>
-      {/* Piernas (pivote en la cadera) */}
-      <Group x={0} y={-h * 0.45} name="leg-l">
-        <Line
-          points={[0, 0, -h * 0.12, h * 0.45]}
-          stroke={figure.fill}
-          strokeWidth={limb}
-          lineCap="round"
-        />
-      </Group>
-      <Group x={0} y={-h * 0.45} name="leg-r">
-        <Line
-          points={[0, 0, h * 0.12, h * 0.45]}
-          stroke={figure.fill}
-          strokeWidth={limb}
-          lineCap="round"
-        />
-      </Group>
-    </Group>
-  )
-}
-
-const LIMB_SELECTORS = [".arm-l", ".arm-r", ".leg-l", ".leg-r"] as const
-
+/** Etiqueta en escena (burbuja estilo PadelChess: "GLOBO", "HIT"). */
 export default function CourtStage({ step, viewport }: CourtStageProps) {
   const stageRef = useRef<Konva.Stage | null>(null)
   const actorsLayerRef = useRef<Konva.Layer | null>(null)
   const figureRefs = useRef<Partial<Record<PlayerId, Konva.Group | null>>>({})
-  const arrowRefs = useRef<Map<string, Konva.Arrow | null>>(new Map())
-  const tweensRef = useRef<Konva.Tween[]>([])
-
-  // Caminata: animación sobre la capa de actores, activa sólo durante tweens.
-  const walkAnimRef = useRef<Konva.Animation | null>(null)
-  const walkTimeoutRef = useRef<number | null>(null)
-  const movingIdsRef = useRef<Set<PlayerId>>(new Set())
-  const phaseRef = useRef(0)
-
-  // Flechas de la transición activa (unidad de cancha; el px se deriva en render).
-  const [arrowData, setArrowData] = useState<ArrowData>({
-    stepId: step.id,
-    movements: [],
-    shot: step.shot,
-  })
-  const animatedSigRef = useRef("")
+  const ballRef = useRef<Konva.Group | null>(null)
+  const curveRef = useRef<Konva.Arrow | null>(null)
+  const labelRef = useRef<Konva.Group | null>(null)
+  const hitRef = useRef<Konva.Group | null>(null)
+  const zoneRef = useRef<Konva.Rect | null>(null)
+  const visualPosRef = useRef<Partial<Record<PlayerId, { x: number; y: number }>>>({})
+  const animHandleRef = useRef<number | null>(null)
 
   // Memoria de la transición anterior (sólo se lee en efectos, nunca en render).
   const previousPositions = useRef<PlayerPositions>(step.positions)
@@ -168,10 +89,15 @@ export default function CourtStage({ step, viewport }: CourtStageProps) {
 
   const { width, height, dpr } = viewport
   const isReady = width > 0 && height > 0
+  const view = buildShotView(step, viewport, 0)
+  const signature = `${step.id}|${width}x${height}`
 
-  /** Detiene la caminata y devuelve las figuras a la pose de reposo. */
-  const stopWalk = () => {
-    walkAnimRef.current?.stop()
+  /** Detiene la animación activa y devuelve figuras a la pose de reposo. */
+  const stopAnimation = () => {
+    if (animHandleRef.current !== null) {
+      cancelAnimationFrame(animHandleRef.current)
+      animHandleRef.current = null
+    }
     for (const id of PLAYER_IDS) {
       const group = figureRefs.current[id]
       if (!group) continue
@@ -182,16 +108,8 @@ export default function CourtStage({ step, viewport }: CourtStageProps) {
     }
   }
 
-  // E2: al desmontar no queda ningún tween vivo ni timers colgados.
-  useEffect(() => {
-    return () => {
-      for (const tween of tweensRef.current) tween.destroy()
-      tweensRef.current = []
-      if (walkTimeoutRef.current) window.clearTimeout(walkTimeoutRef.current)
-      walkAnimRef.current?.stop()
-      walkAnimRef.current = null
-    }
-  }, [])
+  // E2: al desmontar no queda ninguna animación ni timers colgados.
+  useEffect(() => stopAnimation, [])
 
   // Nitidez retina (AC-02): cada capa redibuja a la densidad física real.
   useEffect(() => {
@@ -204,11 +122,11 @@ export default function CourtStage({ step, viewport }: CourtStageProps) {
   }, [dpr, width, height])
 
   /**
-   * Transición determinista (E1/E7). React ya dejó las figuras en el destino
-   * al re-renderizar; aquí se reposicionan en el origen anterior y se anima
-   * hasta el destino. Destruir los tweens previos antes de crear los nuevos
-   * hace que N toggles en ráfaga converjan siempre al paso activo. En resize
-   * no se anima: hay snap determinista al paso activo (E3).
+   * Transición determinista (E1/E7) con UN reloj: posiciones de figuras,
+   * cadencia de carrera, vuelo de la pelota por la curva, trazo de la flecha
+   * y fade de etiquetas/zona — todo derivado de `t ∈ [0,1]` con easing
+   * in-out y duración TWEEN_MS. Convergencia: el estado final sólo depende
+   * del paso destino. En resize (sin cambio de paso): snap instantáneo.
    */
   useLayoutEffect(() => {
     if (width <= 0 || height <= 0) return
@@ -218,130 +136,139 @@ export default function CourtStage({ step, viewport }: CourtStageProps) {
     const from = previousPositions.current
     previousPositions.current = step.positions
 
-    for (const tween of tweensRef.current) tween.destroy()
-    tweensRef.current = []
-    if (walkTimeoutRef.current) {
-      window.clearTimeout(walkTimeoutRef.current)
-      walkTimeoutRef.current = null
-    }
+    stopAnimation()
 
     const targetViewport: CourtViewport = { width, height, dpr }
+    const viewNow = buildShotView(step, targetViewport, 0)
+
+    const snap = () => {
+      for (const id of PLAYER_IDS) {
+        const node = figureRefs.current[id]
+        if (!node) continue
+        const target = courtToPx(step.positions[id], targetViewport)
+        node.position(target)
+        visualPosRef.current[id] = target
+      }
+      if (viewNow) {
+        ballRef.current?.position(viewNow.ball.to)
+        curveRef.current?.setAttr("dashOffset", 0)
+        labelRef.current?.opacity(1)
+        hitRef.current?.opacity(1)
+        zoneRef.current?.opacity(1)
+      }
+    }
 
     if (!stepChanged) {
-      // Resize (o montaje): snap sin animación al paso activo (E3/E5).
-      stopWalk()
-      movingIdsRef.current = new Set()
-      for (const id of PLAYER_IDS) {
-        figureRefs.current[id]?.position(courtToPx(step.positions[id], targetViewport))
-      }
+      snap() // Resize o montaje: sin animación (E3/E5).
       return
     }
 
-    const moving = new Set<PlayerId>()
+    // Orígenes: posición visual actual si había animación en curso; si no, el
+    // paso anterior del escenario.
+    const origins: Partial<Record<PlayerId, { x: number; y: number }>> = {}
+    const targets: Partial<Record<PlayerId, { x: number; y: number }>> = {}
+    const walking = new Set<PlayerId>()
     for (const id of PLAYER_IDS) {
-      const node = figureRefs.current[id]
-      if (!node) continue
-      const origin = courtToPx(from[id], targetViewport)
+      const visual = visualPosRef.current[id]
+      const origin = visual ?? courtToPx(from[id], targetViewport)
       const target = courtToPx(step.positions[id], targetViewport)
-      node.position(origin)
-      if (origin.x !== target.x || origin.y !== target.y) moving.add(id)
-      tweensRef.current.push(
-        node.to({
-          x: target.x,
-          y: target.y,
-          duration: TWEEN_SECONDS,
-          easing: Konva.Easings.EaseInOut,
-        })
-      )
+      origins[id] = origin
+      targets[id] = target
+      figureRefs.current[id]?.position(origin)
+      if (Math.hypot(target.x - origin.x, target.y - origin.y) > 1) walking.add(id)
     }
-    movingIdsRef.current = moving
 
-    setArrowData({
-      stepId: step.id,
-      movements: deriveMovementArrows(from, step.positions, PLAYER_IDS),
-      shot: step.shot,
-    })
+    // Estado inicial de la anotación del tiro.
+    if (viewNow) {
+      ballRef.current?.position(viewNow.ball.from)
+      curveRef.current?.setAttr("dashOffset", viewNow.curve.length)
+      labelRef.current?.opacity(0)
+      hitRef.current?.opacity(0)
+      zoneRef.current?.opacity(0)
+    }
 
-    if (moving.size > 0) {
-      phaseRef.current = 0
-      // La caminata se crea perezosamente: la capa ya existe tras el render.
-      if (!walkAnimRef.current && actorsLayerRef.current) {
-        walkAnimRef.current = new Konva.Animation((frame) => {
-          phaseRef.current += (frame.timeDiff ?? 16) * WALK_SPEED
-          const swing = Math.sin(phaseRef.current)
-          for (const id of movingIdsRef.current) {
-            const group = figureRefs.current[id]
-            if (!group) continue
-            const legL = group.find(".leg-l")[0]
-            const legR = group.find(".leg-r")[0]
-            const armL = group.find(".arm-l")[0]
-            const armR = group.find(".arm-r")[0]
-            if (legL) legL.rotation(swing * 0.5)
-            if (legR) legR.rotation(-swing * 0.5)
-            if (armL) armL.rotation(-swing * 0.35)
-            if (armR) armR.rotation(swing * 0.35)
-          }
-        }, actorsLayerRef.current)
+    const start = performance.now()
+    const tick = () => {
+      const elapsed = performance.now() - start
+      const raw = Math.min(1, elapsed / TWEEN_MS)
+      const t = easeInOut(raw)
+
+      for (const id of walking) {
+        const node = figureRefs.current[id]
+        const origin = origins[id]
+        const target = targets[id]
+        if (!node || !origin || !target) continue
+        node.position({
+          x: origin.x + (target.x - origin.x) * t,
+          y: origin.y + (target.y - origin.y) * t,
+        })
+        visualPosRef.current[id] = node.position()
+        // Cadencia de carrera: piernas y brazos en contrafase.
+        const swing = Math.sin(raw * Math.PI * STRIDE_CYCLES) * 0.55
+        const legL = node.find(".leg-l")[0]
+        const legR = node.find(".leg-r")[0]
+        const armL = node.find(".arm-l")[0]
+        const armR = node.find(".arm-r")[0]
+        if (legL) legL.rotation(swing)
+        if (legR) legR.rotation(-swing)
+        if (armL) armL.rotation(-swing * 0.7)
+        if (armR) armR.rotation(swing * 0.7)
       }
-      walkAnimRef.current?.start()
-      walkTimeoutRef.current = window.setTimeout(
-        () => {
-          stopWalk()
-          movingIdsRef.current = new Set()
-          walkTimeoutRef.current = null
-        },
-        (TWEEN_SECONDS + 0.1) * 1000
-      )
-    } else {
-      stopWalk()
+
+      if (viewNow) {
+        const ballPos = pointOnPath(viewNow.curve.points, t)
+        ballRef.current?.position(ballPos)
+        curveRef.current?.setAttr("dashOffset", viewNow.curve.length * (1 - t))
+        const fade = Math.max(0, (t - 0.6) / 0.4)
+        labelRef.current?.opacity(fade)
+        hitRef.current?.opacity(fade)
+        zoneRef.current?.opacity(Math.min(1, t * 3))
+      }
+
+      if (raw < 1) {
+        animHandleRef.current = requestAnimationFrame(tick)
+        return
+      }
+
+      // Estado final exacto (E1/E7): posiciones destino, pose de reposo.
+      animHandleRef.current = null
+      for (const id of PLAYER_IDS) {
+        const node = figureRefs.current[id]
+        if (!node) continue
+        node.position(targets[id] ?? node.position())
+        for (const selector of LIMB_SELECTORS) {
+          const limb = node.find(selector)[0]
+          if (limb) limb.rotation(0)
+        }
+      }
+      if (viewNow) {
+        ballRef.current?.position(viewNow.ball.to)
+        curveRef.current?.setAttr("dashOffset", 0)
+        labelRef.current?.opacity(1)
+        hitRef.current?.opacity(1)
+        zoneRef.current?.opacity(1)
+      }
     }
-  }, [step, width, height, dpr])
+    animHandleRef.current = requestAnimationFrame(tick)
 
-  // Flechas: trazo progresivo por tween una vez los nodos del paso nuevo ya
-  // están montados (este efecto corre después del render que las dibuja).
-  useLayoutEffect(() => {
-    if (width <= 0 || height <= 0) return
-    if (arrowData.stepId !== step.id) return // datos frescos aún no montados
-
-    const signature = `${step.id}|${width}x${height}`
-    if (animatedSigRef.current === signature) return
-    animatedSigRef.current = signature
-
-    const built = buildArrows()
-    for (const arrow of built) {
-      const node = arrowRefs.current.get(arrow.key)
-      if (!node || arrow.length <= 0) continue
-      node.setAttr("dashOffset", arrow.length)
-      tweensRef.current.push(
-        node.to({
-          dashOffset: 0,
-          duration: TWEEN_SECONDS,
-          easing: Konva.Easings.EaseInOut,
-        })
-      )
+    return () => {
+      if (animHandleRef.current !== null) {
+        cancelAnimationFrame(animHandleRef.current)
+        animHandleRef.current = null
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [arrowData, step.id, width, height, dpr])
+  }, [step, width, height, dpr, signature])
 
   // E5: un Stage 0×0 deja el canvas en estado inválido; mejor no renderizarlo.
   if (!isReady) return null
 
   const floor = buildFloor(viewport)
   const courtLines = buildCourtLines(viewport)
+  const wallPosts = buildWallPosts(viewport)
+  const net = buildNet(viewport)
   const figures = buildPlayerFigures(step.positions, viewport)
-
-  /** Flechas en píxeles: trazo al 0% si aún no se animaron, si no completas. */
-  function buildArrows(): ArrowAnnotationProps[] {
-    const signature = `${step.id}|${width}x${height}`
-    const progress = animatedSigRef.current === signature ? 1 : 0
-    const movements = arrowData.movements.map((arrow) =>
-      buildMovementArrow(arrow, viewport, progress)
-    )
-    const shot = buildShotArrow(step, viewport, progress)
-    return shot ? [...movements, shot] : movements
-  }
-
-  const arrows = buildArrows()
+  const shotView = view
+  const ballRadius = Math.max(5, ((figures[0]?.height ?? 30) / 1.85) * 0.26)
 
   return (
     <Stage
@@ -352,7 +279,7 @@ export default function CourtStage({ step, viewport }: CourtStageProps) {
       className="block"
       style={{ pointerEvents: "none" }} // no secuestra el scroll táctil (AC-06)
     >
-      {/* Capa 1 — piso azul rey + líneas FIP (estáticas, sólo dependen del viewport) */}
+      {/* Capa 1 — piso, líneas, postes de pared, red y zona de aterrizaje */}
       <Layer listening={false}>
         <Rect
           x={floor.x}
@@ -360,6 +287,7 @@ export default function CourtStage({ step, viewport }: CourtStageProps) {
           width={floor.width}
           height={floor.height}
           fill={COURT_COLORS.floor}
+          cornerRadius={floor.radius}
         />
         {courtLines.map((line: CourtLineProps) => (
           <Line
@@ -369,11 +297,40 @@ export default function CourtStage({ step, viewport }: CourtStageProps) {
             strokeWidth={line.strokeWidth}
             closed={line.closed}
             lineJoin="round"
+            opacity={line.opacity}
+            shadowEnabled={line.shadow}
+            shadowColor={COURT_COLORS.groundShadow}
+            shadowBlur={8}
           />
         ))}
+        {wallPosts.map((post: PostProps) => (
+          <Rect
+            key={post.key}
+            x={post.x}
+            y={post.y}
+            width={post.width}
+            height={post.height}
+            fill={post.fill}
+            cornerRadius={2}
+          />
+        ))}
+        <Net net={net} />
+        {shotView && (
+          <Rect
+            ref={zoneRef}
+            x={shotView.zone.x}
+            y={shotView.zone.y}
+            width={shotView.zone.width}
+            height={shotView.zone.height}
+            fill="rgba(104,254,195,0.5)"
+            cornerRadius={shotView.zone.radius}
+            stroke={COURT_COLORS.zone}
+            strokeWidth={2}
+          />
+        )}
       </Layer>
 
-      {/* Capa 2 — actores: 4 figuras de persona (las anima el tween + caminata) */}
+      {/* Capa 2 — actores: 4 figuras con kit por equipo */}
       <Layer listening={false} ref={actorsLayerRef}>
         {figures.map((figure) => (
           <PlayerFigure
@@ -386,25 +343,79 @@ export default function CourtStage({ step, viewport }: CourtStageProps) {
         ))}
       </Layer>
 
-      {/* Capa 3 — anotaciones: movimientos (negro) + tiro (verde) */}
+      {/* Capa 3 — anotaciones: curva del tiro, pelota y etiquetas en escena */}
       <Layer listening={false}>
-        {arrows.map((arrow) => (
+        {shotView && (
           <Arrow
-            key={arrow.key}
-            ref={(node) => {
-              arrowRefs.current.set(arrow.key, node)
-            }}
-            points={arrow.points}
-            stroke={arrow.key === "shot" ? COURT_COLORS.shotArrow : COURT_COLORS.movementArrow}
-            fill={arrow.key === "shot" ? COURT_COLORS.shotArrow : COURT_COLORS.movementArrow}
-            strokeWidth={arrow.key === "shot" ? 3 : 2}
-            dash={arrow.dash}
-            dashOffset={arrow.dashOffset}
-            pointerLength={arrow.key === "shot" ? 12 : 9}
-            pointerWidth={arrow.key === "shot" ? 12 : 9}
+            ref={curveRef}
+            points={shotView.curve.points}
+            stroke={COURT_COLORS.shot}
+            fill={COURT_COLORS.shot}
+            strokeWidth={3}
+            dash={shotView.curve.dash}
+            dashOffset={shotView.curve.dashOffset}
+            pointerLength={12}
+            pointerWidth={10}
+            lineJoin="round"
+            lineCap="round"
           />
-        ))}
+        )}
+        {shotView && (
+          <Group ref={ballRef} x={shotView.ball.from.x} y={shotView.ball.from.y} listening={false}>
+            <Circle
+              radius={ballRadius}
+              fill={COURT_COLORS.ball}
+              stroke={COURT_COLORS.ballSeamStroke}
+              strokeWidth={1.2}
+              shadowColor="rgba(12,29,68,0.3)"
+              shadowBlur={5}
+              shadowOffsetY={2}
+            />
+            <Arc
+              innerRadius={ballRadius * 0.55}
+              outerRadius={ballRadius * 0.97}
+              angle={70}
+              rotation={-40}
+              fill={COURT_COLORS.ballSeam}
+            />
+            <Arc
+              innerRadius={ballRadius * 0.55}
+              outerRadius={ballRadius * 0.97}
+              angle={70}
+              rotation={140}
+              fill={COURT_COLORS.ballSeam}
+            />
+          </Group>
+        )}
+        {shotView && (
+          <Bubble
+            nodeRef={(node) => {
+              labelRef.current = node
+            }}
+            x={shotView.label.x}
+            y={shotView.label.y}
+            text={shotView.label.text}
+            fill={COURT_COLORS.labelBg}
+            ink={COURT_COLORS.labelInk}
+            fontSize={14}
+          />
+        )}
+        {shotView && (
+          <Bubble
+            nodeRef={(node) => {
+              hitRef.current = node
+            }}
+            x={shotView.hit.x}
+            y={shotView.hit.y - (figures[0]?.height ?? 40) * 1.6}
+            text="HIT"
+            fill={COURT_COLORS.hitTag}
+            ink={COURT_COLORS.hitInk}
+            fontSize={12}
+          />
+        )}
       </Layer>
     </Stage>
   )
 }
+
+/** Red horizontal: banda translúcida, malla, cinta con sag y postes. */

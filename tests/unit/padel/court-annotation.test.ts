@@ -1,26 +1,19 @@
 /**
  * Unit tests de anotaciones de la cancha (lib/padel/court/annotation.ts, AC-07/AC-08).
- * Sólo lógica pura: geometría de flecha, progreso del trazo y derivación de
- * flechas de movimiento de jugadores.
+ * Sólo lógica pura: curvas Bézier de los tiros y progreso del trazo.
  * @jest-environment node
  */
 import {
-  computeArrowGeometry,
+  computeCurveGeometry,
   computeDashProgress,
-  deriveMovementArrows,
+  quadraticPoint,
 } from "@/lib/padel/court/annotation";
 import { DEMO_SCENARIO } from "@/lib/padel/court/demo-scenario";
-import type {
-  CourtScenario,
-  CourtViewport,
-  PlayerPositions,
-  Shot,
-} from "@/lib/padel/court/types";
+import type { CourtScenario, CourtViewport, Shot } from "@/lib/padel/court/types";
 
 /** Viewport con el mismo aspect que la cancha (10×20 → 1:2), escala 40 px/m. */
 const VIEWPORT: CourtViewport = { width: 400, height: 800, dpr: 1 };
 const TOTAL_LENGTH = 500;
-const PLAYER_ORDER = ["A", "B", "C", "D"] as const;
 
 function shotAt(index: number): Shot {
   const shot = DEMO_SCENARIO.steps[index].shot;
@@ -61,14 +54,6 @@ describe("computeDashProgress — trazo progresivo", () => {
     }
   });
 
-  it("forward y backward son complementarios en el mismo progreso", () => {
-    for (const progress of [0, 0.1, 0.33, 0.5, 0.9, 1]) {
-      const forward = computeDashProgress(progress, TOTAL_LENGTH).dashOffset;
-      const backward = computeDashProgress(progress, TOTAL_LENGTH, "backward").dashOffset;
-      expect(forward + backward).toBeCloseTo(TOTAL_LENGTH, 10);
-    }
-  });
-
   it("acota el progreso al rango [0, 1]", () => {
     expect(computeDashProgress(-3, TOTAL_LENGTH).dashOffset).toBe(TOTAL_LENGTH);
     expect(computeDashProgress(7, TOTAL_LENGTH).dashOffset).toBe(0);
@@ -85,92 +70,93 @@ describe("computeDashProgress — trazo progresivo", () => {
   });
 });
 
-describe("computeArrowGeometry — determinista (AC-07)", () => {
-  it("convierte los extremos a píxeles y calcula la longitud", () => {
-    const arrow = computeArrowGeometry({ x: 0, y: 0 }, { x: 10, y: 0 }, VIEWPORT);
-    expect(arrow).toEqual({ x1: 0, y1: 0, x2: 400, y2: 0, length: 400 });
+describe("quadraticPoint — Bézier cuadrática (estilo PadelChess)", () => {
+  const from = { x: 0, y: 0 };
+  const control = { x: 5, y: 0 };
+  const to = { x: 10, y: 0 };
+
+  it("t=0 → origen, t=1 → destino", () => {
+    expect(quadraticPoint(from, control, to, 0)).toEqual(from);
+    expect(quadraticPoint(from, control, to, 1)).toEqual(to);
   });
 
-  it("calcula la longitud euclídea de un tramo diagonal", () => {
-    const from = { x: 3, y: 15 };
-    const to = { x: 8.5, y: 2 };
-    const arrow = computeArrowGeometry(from, to, VIEWPORT);
-    expect(arrow.x1).toBeCloseTo(120, 10);
-    expect(arrow.y1).toBeCloseTo(600, 10);
-    expect(arrow.x2).toBeCloseTo(340, 10);
-    expect(arrow.y2).toBeCloseTo(80, 10);
-    expect(arrow.length).toBeCloseTo(Math.hypot(220, 520), 10);
+  it("t=0.5 → punto medio de la parábola", () => {
+    // B(0.5) = 0.25·from + 0.5·control + 0.25·to = (0+2.5+2.5, 0) = (5, 0)
+    expect(quadraticPoint(from, control, to, 0.5)).toEqual({ x: 5, y: 0 });
   });
 
-  it("misma cancha + mismo viewport → mismo resultado (repetible)", () => {
-    const from = { x: 2, y: 3 };
-    const to = { x: 9, y: 7 };
-    expect(computeArrowGeometry(from, to, VIEWPORT)).toEqual(
-      computeArrowGeometry(from, to, VIEWPORT)
+  it("el control desvía la curva de la cuerda", () => {
+    const offCurve = quadraticPoint(from, { x: 5, y: 4 }, to, 0.5);
+    expect(offCurve).toEqual({ x: 5, y: 2 });
+    const onChord = quadraticPoint(from, { x: 5, y: 0 }, to, 0.5);
+    expect(offCurve.y).not.toBe(onChord.y);
+  });
+
+  it("acota t fuera de rango a [0,1] (sin extrapolación)", () => {
+    expect(quadraticPoint(from, control, to, -5)).toEqual(from);
+    expect(quadraticPoint(from, control, to, 9)).toEqual(to);
+  });
+});
+
+describe("computeCurveGeometry — polilínea en píxeles (AC-07)", () => {
+  it("el primer y último punto coinciden con origen/destino en px", () => {
+    const shot = shotAt(1);
+    const geometry = computeCurveGeometry(shot, VIEWPORT);
+    const start = { x: geometry.points[0], y: geometry.points[1] };
+    const end = {
+      x: geometry.points[geometry.points.length - 2],
+      y: geometry.points[geometry.points.length - 1],
+    };
+    expect(start.x).toBeCloseTo(shot.from.x * 40, 5);
+    expect(start.y).toBeCloseTo(shot.from.y * 40, 5);
+    expect(end.x).toBeCloseTo(shot.to.x * 40, 5);
+    expect(end.y).toBeCloseTo(shot.to.y * 40, 5);
+  });
+
+  it("la longitud es finita, positiva y mayor que la cuerda recta", () => {
+    const shot = shotAt(1);
+    const geometry = computeCurveGeometry(shot, VIEWPORT);
+    const chord = Math.hypot(
+      (shot.to.x - shot.from.x) * 40,
+      (shot.to.y - shot.from.y) * 40
     );
+    expect(Number.isFinite(geometry.length)).toBe(true);
+    expect(geometry.length).toBeGreaterThan(chord);
   });
 
-  it("el escenario es serializable: el round-trip JSON no cambia el tiro", () => {
+  it("el punto medio queda sobre la curva (no en la cuerda)", () => {
+    const shot = shotAt(1);
+    const geometry = computeCurveGeometry(shot, VIEWPORT);
+    const chordMid = {
+      x: ((shot.from.x + shot.to.x) / 2) * 40,
+      y: ((shot.from.y + shot.to.y) / 2) * 40,
+    };
+    const dist = Math.hypot(geometry.midpoint.x - chordMid.x, geometry.midpoint.y - chordMid.y);
+    expect(dist).toBeGreaterThan(10);
+  });
+
+  it("mismo escenario + mismo viewport → mismo resultado (repetible)", () => {
+    const shot = shotAt(2);
+    expect(computeCurveGeometry(shot, VIEWPORT)).toEqual(computeCurveGeometry(shot, VIEWPORT));
+  });
+
+  it("el escenario es serializable: el round-trip JSON no cambia la curva", () => {
     const roundTrip = JSON.parse(JSON.stringify(DEMO_SCENARIO)) as CourtScenario;
     const original = shotAt(1);
     const restored = roundTrip.steps[1].shot;
     expect(restored).not.toBeNull();
     if (!restored) throw new Error("el tiro no sobrevivió al round-trip");
 
-    expect(computeArrowGeometry(restored.from, restored.to, VIEWPORT)).toEqual(
-      computeArrowGeometry(original.from, original.to, VIEWPORT)
+    expect(computeCurveGeometry(restored, VIEWPORT)).toEqual(
+      computeCurveGeometry(original, VIEWPORT)
     );
   });
 
   it("E5: viewport 0×0 no produce NaN ni Infinity", () => {
-    const arrow = computeArrowGeometry({ x: 5, y: 5 }, { x: 15, y: 5 }, { width: 0, height: 0, dpr: 1 });
-    for (const value of [arrow.x1, arrow.y1, arrow.x2, arrow.y2, arrow.length]) {
+    const geometry = computeCurveGeometry(shotAt(1), { width: 0, height: 0, dpr: 1 });
+    for (const value of [...geometry.points, geometry.length, geometry.midpoint.x, geometry.midpoint.y]) {
       expect(Number.isFinite(value)).toBe(true);
     }
-    expect(arrow.length).toBe(0);
-  });
-});
-
-describe("deriveMovementArrows — flechas negras derivadas de posiciones", () => {
-  const step1 = DEMO_SCENARIO.steps[0].positions;
-  const step2 = DEMO_SCENARIO.steps[1].positions;
-
-  it("el paso inicial no genera flechas (nadie se movió)", () => {
-    expect(deriveMovementArrows(step1, step1, PLAYER_ORDER)).toEqual([]);
-  });
-
-  it("paso 1 → 2: sólo los jugadores que se desplazaron (A y D)", () => {
-    const arrows = deriveMovementArrows(step1, step2, PLAYER_ORDER);
-    expect(arrows.map((arrow) => arrow.player)).toEqual(["A", "D"]);
-    expect(arrows[0].from).toEqual(step1.A);
-    expect(arrows[0].to).toEqual(step2.A);
-    expect(arrows[1].from).toEqual(step1.D);
-    expect(arrows[1].to).toEqual(step2.D);
-  });
-
-  it("respeta el orden estable A, B, C, D aunque se muevan al revés", () => {
-    const arrows = deriveMovementArrows(step2, step1, PLAYER_ORDER);
-    expect(arrows.map((arrow) => arrow.player)).toEqual(["A", "D"]);
-    expect(arrows[0].from).toEqual(step2.A);
-    expect(arrows[0].to).toEqual(step1.A);
-  });
-
-  it("desplazamientos por debajo del epsilon no cuentan como movimiento", () => {
-    const from: PlayerPositions = { ...step1 };
-    const to: PlayerPositions = { ...step1, A: { x: 3.005, y: 5 } };
-    expect(deriveMovementArrows(from, to, PLAYER_ORDER)).toEqual([]);
-  });
-
-  it("es determinista: mismas posiciones → mismas flechas", () => {
-    expect(deriveMovementArrows(step1, step2, PLAYER_ORDER)).toEqual(
-      deriveMovementArrows(step1, step2, PLAYER_ORDER)
-    );
-  });
-
-  it("sobrevive al round-trip JSON del escenario", () => {
-    const roundTrip = JSON.parse(JSON.stringify(DEMO_SCENARIO)) as CourtScenario;
-    expect(deriveMovementArrows(roundTrip.steps[0].positions, roundTrip.steps[1].positions, PLAYER_ORDER)).toEqual(
-      deriveMovementArrows(step1, step2, PLAYER_ORDER)
-    );
+    expect(geometry.length).toBe(0);
   });
 });

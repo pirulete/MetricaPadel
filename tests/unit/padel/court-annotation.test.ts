@@ -1,24 +1,40 @@
 /**
  * Unit tests de anotaciones de la cancha (lib/padel/court/annotation.ts, AC-07/AC-08).
- * Sólo lógica pura: curvas Bézier de los tiros y progreso del trazo.
+ * Sólo lógica pura: resolución del hitador, curvas Bézier de los tiros y
+ * progreso del trazo.
  * @jest-environment node
  */
 import {
   computeCurveGeometry,
   computeDashProgress,
   quadraticPoint,
+  resolveHitter,
 } from "@/lib/padel/court/annotation";
 import { DEMO_SCENARIO } from "@/lib/padel/court/demo-scenario";
-import type { CourtScenario, CourtViewport, Shot } from "@/lib/padel/court/types";
+import type {
+  CourtScenario,
+  CourtViewport,
+  PlayerId,
+  PlayerPositions,
+  Shot,
+} from "@/lib/padel/court/types";
 
 /** Viewport con el mismo aspect que la cancha (10×20 → 1:2), escala 40 px/m. */
 const VIEWPORT: CourtViewport = { width: 400, height: 800, dpr: 1 };
 const TOTAL_LENGTH = 500;
+const ORDER: readonly PlayerId[] = ["A", "B", "C", "D"];
+
+const STEPS = DEMO_SCENARIO.steps;
 
 function shotAt(index: number): Shot {
-  const shot = DEMO_SCENARIO.steps[index].shot;
+  const shot = STEPS[index].shot;
   if (!shot) throw new Error(`el paso ${index} no define tiro`);
   return shot;
+}
+
+/** Origen del tiro del paso N = posiciones del paso N-1 (regla del demo). */
+function originAt(index: number): PlayerPositions {
+  return STEPS[Math.max(0, index - 1)].positions;
 }
 
 describe("computeDashProgress — trazo progresivo", () => {
@@ -81,14 +97,13 @@ describe("quadraticPoint — Bézier cuadrática (estilo PadelChess)", () => {
   });
 
   it("t=0.5 → punto medio de la parábola", () => {
-    // B(0.5) = 0.25·from + 0.5·control + 0.25·to = (0+2.5+2.5, 0) = (5, 0)
     expect(quadraticPoint(from, control, to, 0.5)).toEqual({ x: 5, y: 0 });
   });
 
   it("el control desvía la curva de la cuerda", () => {
     const offCurve = quadraticPoint(from, { x: 5, y: 4 }, to, 0.5);
-    expect(offCurve).toEqual({ x: 5, y: 2 });
     const onChord = quadraticPoint(from, { x: 5, y: 0 }, to, 0.5);
+    expect(offCurve).toEqual({ x: 5, y: 2 });
     expect(offCurve.y).not.toBe(onChord.y);
   });
 
@@ -98,38 +113,81 @@ describe("quadraticPoint — Bézier cuadrática (estilo PadelChess)", () => {
   });
 });
 
+describe("resolveHitter — el tiro sale del jugador más cercano al destino", () => {
+  const positions: PlayerPositions = {
+    A: { x: 0, y: 0 },
+    B: { x: 10, y: 0 },
+    C: { x: 0, y: 10 },
+    D: { x: 10, y: 10 },
+  };
+
+  it("elige al más cercano al destino", () => {
+    expect(resolveHitter(positions, { x: 9, y: 1 }, ORDER)).toBe("B");
+    expect(resolveHitter(positions, { x: 1, y: 9 }, ORDER)).toBe("C");
+    expect(resolveHitter(positions, { x: 1, y: 1 }, ORDER)).toBe("A");
+    expect(resolveHitter(positions, { x: 9, y: 9 }, ORDER)).toBe("D");
+  });
+
+  it("desempate determinista por orden estable A,B,C,D", () => {
+    const tie: PlayerPositions = {
+      A: { x: 5, y: 0 },
+      B: { x: 5, y: 0 },
+      C: { x: 0, y: 0 },
+      D: { x: 10, y: 0 },
+    };
+    // A y B empatan a distancia 0 → gana A (primero en PLAYER_IDS).
+    expect(resolveHitter(tie, { x: 5, y: 0 }, ORDER)).toBe("A");
+  });
+
+  it("el escenario demo cumple la regla: paso 2 lo inicia C, paso 3 lo inicia B", () => {
+    const hitterStep2 = resolveHitter(originAt(1), shotAt(1).to, ORDER);
+    const hitterStep3 = resolveHitter(originAt(2), shotAt(2).to, ORDER);
+    expect(hitterStep2).toBe("C");
+    expect(hitterStep3).toBe("B");
+    // El hitador declarado en la narrativa del label coincide con el resuelto.
+    expect(STEPS[1].label).toContain(hitterStep2);
+    expect(STEPS[2].label).toContain(hitterStep3);
+  });
+
+  it("el origen del tiro está en los pies del hitador (es una posición real)", () => {
+    const origin = originAt(1)[resolveHitter(originAt(1), shotAt(1).to, ORDER)];
+    expect(origin).toBeDefined();
+    expect(Number.isFinite(origin.x)).toBe(true);
+    expect(Number.isFinite(origin.y)).toBe(true);
+  });
+});
+
 describe("computeCurveGeometry — polilínea en píxeles (AC-07)", () => {
+  const from = { x: 4.5, y: 11 };
+
   it("el primer y último punto coinciden con origen/destino en px", () => {
     const shot = shotAt(1);
-    const geometry = computeCurveGeometry(shot, VIEWPORT);
+    const geometry = computeCurveGeometry(from, shot, VIEWPORT);
     const start = { x: geometry.points[0], y: geometry.points[1] };
     const end = {
       x: geometry.points[geometry.points.length - 2],
       y: geometry.points[geometry.points.length - 1],
     };
-    expect(start.x).toBeCloseTo(shot.from.x * 40, 5);
-    expect(start.y).toBeCloseTo(shot.from.y * 40, 5);
+    expect(start.x).toBeCloseTo(from.x * 40, 5);
+    expect(start.y).toBeCloseTo(from.y * 40, 5);
     expect(end.x).toBeCloseTo(shot.to.x * 40, 5);
     expect(end.y).toBeCloseTo(shot.to.y * 40, 5);
   });
 
   it("la longitud es finita, positiva y mayor que la cuerda recta", () => {
     const shot = shotAt(1);
-    const geometry = computeCurveGeometry(shot, VIEWPORT);
-    const chord = Math.hypot(
-      (shot.to.x - shot.from.x) * 40,
-      (shot.to.y - shot.from.y) * 40
-    );
+    const geometry = computeCurveGeometry(from, shot, VIEWPORT);
+    const chord = Math.hypot((shot.to.x - from.x) * 40, (shot.to.y - from.y) * 40);
     expect(Number.isFinite(geometry.length)).toBe(true);
     expect(geometry.length).toBeGreaterThan(chord);
   });
 
   it("el punto medio queda sobre la curva (no en la cuerda)", () => {
     const shot = shotAt(1);
-    const geometry = computeCurveGeometry(shot, VIEWPORT);
+    const geometry = computeCurveGeometry(from, shot, VIEWPORT);
     const chordMid = {
-      x: ((shot.from.x + shot.to.x) / 2) * 40,
-      y: ((shot.from.y + shot.to.y) / 2) * 40,
+      x: ((from.x + shot.to.x) / 2) * 40,
+      y: ((from.y + shot.to.y) / 2) * 40,
     };
     const dist = Math.hypot(geometry.midpoint.x - chordMid.x, geometry.midpoint.y - chordMid.y);
     expect(dist).toBeGreaterThan(10);
@@ -137,7 +195,9 @@ describe("computeCurveGeometry — polilínea en píxeles (AC-07)", () => {
 
   it("mismo escenario + mismo viewport → mismo resultado (repetible)", () => {
     const shot = shotAt(2);
-    expect(computeCurveGeometry(shot, VIEWPORT)).toEqual(computeCurveGeometry(shot, VIEWPORT));
+    expect(computeCurveGeometry(from, shot, VIEWPORT)).toEqual(
+      computeCurveGeometry(from, shot, VIEWPORT)
+    );
   });
 
   it("el escenario es serializable: el round-trip JSON no cambia la curva", () => {
@@ -147,13 +207,14 @@ describe("computeCurveGeometry — polilínea en píxeles (AC-07)", () => {
     expect(restored).not.toBeNull();
     if (!restored) throw new Error("el tiro no sobrevivió al round-trip");
 
-    expect(computeCurveGeometry(restored, VIEWPORT)).toEqual(
-      computeCurveGeometry(original, VIEWPORT)
+    expect(computeCurveGeometry(from, restored, VIEWPORT)).toEqual(
+      computeCurveGeometry(from, original, VIEWPORT)
     );
+    expect(resolveHitter(roundTrip.steps[0].positions, restored.to, ORDER)).toBe("C");
   });
 
   it("E5: viewport 0×0 no produce NaN ni Infinity", () => {
-    const geometry = computeCurveGeometry(shotAt(1), { width: 0, height: 0, dpr: 1 });
+    const geometry = computeCurveGeometry(from, shotAt(1), { width: 0, height: 0, dpr: 1 });
     for (const value of [...geometry.points, geometry.length, geometry.midpoint.x, geometry.midpoint.y]) {
       expect(Number.isFinite(value)).toBe(true);
     }

@@ -29,6 +29,9 @@ export function PuzzleDemo() {
   const viewport = useMemo<CourtViewport>(() => ({ width, height, dpr }), [width, height, dpr])
 
   const activeStep = STEPS[clampStepIndex(pasoActivo, STEPS.length)]
+  // Origen del tiro: posiciones del paso anterior (de ahí despega la pelota).
+  const originStep = STEPS[clampStepIndex(pasoActivo, STEPS.length) - 1]
+  const originPositions = originStep?.positions ?? activeStep.positions
   const isFirst = pasoActivo <= 0
   const isLast = pasoActivo >= STEPS.length - 1
 
@@ -51,7 +54,9 @@ export function PuzzleDemo() {
           ref={containerRef}
           className="mx-auto aspect-[1/2] w-full max-w-sm overflow-hidden rounded-lg border bg-muted/30"
         >
-          {isReady && <CourtStage step={activeStep} viewport={viewport} />}
+          {isReady && (
+            <CourtStage step={activeStep} originPositions={originPositions} viewport={viewport} />
+          )}
         </div>
 
         {/* Leyenda de la escena (fuera del canvas, legible por lectores de pantalla). */}
@@ -66,7 +71,7 @@ export function PuzzleDemo() {
           </li>
           <li className="flex items-center gap-1.5">
             <span className="h-0.5 w-4 bg-yellow-300" aria-hidden />
-            Tiro (curva con pelota)
+            Tiro (sale del jugador más cercano)
           </li>
           <li className="flex items-center gap-1.5">
             <span className="size-2.5 rounded-sm bg-emerald-300/70 ring-1 ring-emerald-300" aria-hidden />

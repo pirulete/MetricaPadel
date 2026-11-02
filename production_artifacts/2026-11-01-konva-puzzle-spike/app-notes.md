@@ -203,3 +203,28 @@ Input del usuario: "olvida mi spec para este caso y homologa todo a lo que tiene
 ### Verificación Iteración 3
 - `tsc --noEmit` 0 errores · `eslint components/court lib/padel/court` **0 errores, 0 warnings** (max-lines resuelto con CourtParts) · unit **754/754** · E2E **2/2** · `next build` OK.
 - Screenshots Playwright de los 3 pasos inspeccionados: piso redondeado, red con malla/sag/postes, postes laterales, kits morado/blanco con sombra y pala, curva amarilla discontinua, pelota lima en destino, burbujas GLOBO/CRUZADO + HIT, zona mint.
+
+---
+
+## Iteración 4 (2026-11-02) — cabeza, zancada, semántica e hitador derivado
+
+Pedida por el usuario tras revisar la Iteración 3: "falta cabeza, la transición es incorrecta" + "el tiro inicial lo hace el jugador más alejado; debe ser el más cercano al destino" + "coloca identificadores a cada jugador".
+
+### Bugs raíz probados empíricamente (node + Konva instalado)
+1. `new Konva.Circle({r:10})` → `attrs={r:10}`, `sceneFunc` lee `attrs.radius||0` → **0 → invisible**. Ocurría en pelo/cara/ojos (`r=`) y en la sombra (`radiusX/radiusY` sobre `Circle`, props de `Ellipse`) — llevaba roto desde la Iteración 2.
+2. `node.rotation(90)` → matriz `[0,1,-1,0]` → **Konva usa GRADOS**. El ciclo de caminata aplicaba `*0.55` como si fueran radianes (≈31°) → 0.55° real → piernas inmóviles (los muñecos deslizaban).
+3. Semántica al revés de PadelChess: HIT/etiqueta al FINAL (t>0.6), zona al INICIO; y el tiro del paso saliente desaparecía de golpe (unmount) al cambiar de paso.
+
+### Cambios
+- `components/court/CourtParts.tsx`: cabeza con `radius` (pelo, cara, ojos), sombra con `Ellipse`, nuevo **badge A–D** (Rect+Text) sobre la cabeza de `PlayerFigure`.
+- `components/court/CourtStage.tsx`: `STRIDE_DEG = 31` (grados) para zancada; semántica: HIT+etiqueta opacity=1 desde t=0, zona `clamp01((t-0.6)/0.4)`; nuevo estado `outgoing` + refs de tiro saliente que se **retraza** (`dashOffset 0→length` en 60% del tiempo, pelota vuela de vuelta por la curva, etiquetas/zona fade 40%) mientras el entrante se dibuja; `setOutgoing(null)` al terminar (sin bucle: no está en deps del efecto).
+- `lib/padel/court/types.ts`: `PLAYER_IDS` exportado (orden estable compartido), `Shot` ya NO tiene `from` (se deriva).
+- `lib/padel/court/annotation.ts`: nueva **`resolveHitter(positions, target, order)`** (más cercano al destino, desempate A,B,C,D); `computeCurveGeometry(from, shot, viewport)` ahora recibe el origen explícito.
+- `components/court/CourtLayers.ts`: `buildShotView(step, viewport, progress, originPositions)` resuelve el hitador con `resolveHitter(originPositions, shot.to)` → `ball.from`/`hit` = pies del hitador; re-exporta `PLAYER_IDS`.
+- `components/court/PuzzleDemo.tsx`: calcula `originPositions` = posiciones del paso anterior (`STEPS[idx-1]`) y la pasa a `CourtStage`; leyenda actualizada ("Tiro (sale del jugador más cercano)").
+- `lib/padel/court/demo-scenario.ts`: escenario rehecho — Paso 1 colocación (C en la red), Paso 2 **C remata** al norte (regla: C es el más cercano a (6,8) desde P1: 3.35 vs B 4.47), Paso 3 **B responde con drop** al sur (B más cercano a (4,12) desde P2: 2.69 vs C 4.03). Labels narrativos coinciden con el hitador resuelto (test lo bloquea).
+- `tests/unit/padel/court-annotation.test.ts`: +6 tests de `resolveHitter` (más cercano por cuadrante, desempate por orden, regla del escenario con labels, origen = posición real); `computeCurveGeometry` adaptado a la firma nueva.
+
+### Verificación Iteración 4
+- `tsc --noEmit` 0 · `eslint` área 0/0 · unit **758/758** · E2E **2/2** · `next build` OK.
+- Screenshots: paso 1 con cabezas/sombras/identificadores; frames de transición 1→2 con HIT+REMATE visibles desde t=0, pelota despegando de los pies de C, zona apareciendo al aterrizar; transición 2→3 con retracción del REMATE (HIT/zona atenuados) mientras entra el DROP desde B; zancada visible en muestreo denso cada 40 ms (w-03 juntas → w-05 separadas → w-07 zancada amplia).

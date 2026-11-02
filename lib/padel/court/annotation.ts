@@ -11,7 +11,14 @@
  */
 
 import { courtToPx } from "./geometry";
-import type { CourtPoint, CourtViewport, Shot } from "./types";
+import {
+  PLAYER_IDS,
+  type CourtPoint,
+  type CourtViewport,
+  type PlayerId,
+  type PlayerPositions,
+  type Shot,
+} from "./types";
 
 /** Número de segmentos de la polilínea que aproxima la curva. */
 const CURVE_SEGMENTS = 32;
@@ -52,25 +59,53 @@ export function quadraticPoint(from: CourtPoint, control: CourtPoint, to: CourtP
 }
 
 /**
+ * Resuelve el JUGADOR QUE GOLPEA: el más cercano al destino del tiro
+ * (regla pedida por el usuario — el tiro nunca debe salir del jugador más
+ * alejado). Orden estable `PLAYER_IDS` como desempate determinista.
+ */
+export function resolveHitter(
+  positions: PlayerPositions,
+  target: CourtPoint,
+  order: readonly PlayerId[] = PLAYER_IDS
+): PlayerId {
+  let best: PlayerId = order[0];
+  let bestDist = Infinity;
+  for (const id of order) {
+    const p = positions[id];
+    if (!p) continue;
+    const d = (p.x - target.x) ** 2 + (p.y - target.y) ** 2;
+    if (d < bestDist) {
+      bestDist = d;
+      best = id;
+    }
+  }
+  return best;
+}
+
+/**
  * Geometría de la curva del tiro en píxeles: muestrea la cuadrática en
  * `CURVE_SEGMENTS` segmentos, calcula la longitud poligonal y el punto medio
  * (donde PadelChess coloca la etiqueta del tiro). Determinista: mismos
  * puntos + mismo viewport → mismo resultado (AC-07).
  */
-export function computeCurveGeometry(shot: Shot, viewport: CourtViewport): CurveGeometry {
+export function computeCurveGeometry(
+  from: CourtPoint,
+  shot: Shot,
+  viewport: CourtViewport
+): CurveGeometry {
   const points: number[] = [];
   let length = 0;
   let previous: { x: number; y: number } | null = null;
 
   for (let i = 0; i <= CURVE_SEGMENTS; i++) {
-    const courtPoint = quadraticPoint(shot.from, shot.control, shot.to, i / CURVE_SEGMENTS);
+    const courtPoint = quadraticPoint(from, shot.control, shot.to, i / CURVE_SEGMENTS);
     const pixel = courtToPx(courtPoint, viewport);
     points.push(pixel.x, pixel.y);
     if (previous) length += Math.hypot(pixel.x - previous.x, pixel.y - previous.y);
     previous = pixel;
   }
 
-  const midpointCourt = quadraticPoint(shot.from, shot.control, shot.to, 0.5);
+  const midpointCourt = quadraticPoint(from, shot.control, shot.to, 0.5);
   return { points, length, midpoint: courtToPx(midpointCourt, viewport) };
 }
 

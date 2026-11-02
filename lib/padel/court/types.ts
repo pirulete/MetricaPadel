@@ -35,20 +35,23 @@ export type CourtPoint = { x: number; y: number };
 /** Identificador de los 4 jugadores del escenario demo. */
 export type PlayerId = "A" | "B" | "C" | "D";
 
+/** Orden estable de los jugadores (desempate determinista). */
+export const PLAYER_IDS = ["A", "B", "C", "D"] as const satisfies readonly PlayerId[];
+
 /** Posición de cada jugador en un paso. */
 export type PlayerPositions = Record<PlayerId, CourtPoint>;
 
 /**
  * Tiro de la pelota en un paso: curva Bézier cuadrática (como PadelChess,
  * que modela los tiros con `startPoint`/`controlPoint`/`endPoint`).
- * La etiqueta se dibuja en escena junto a la curva.
+ * El origen NO se guarda: se deriva del JUGADOR MÁS CERCANO al destino
+ * (`resolveHitter`) — regla pedida por el usuario. La etiqueta se dibuja
+ * en escena junto a la curva.
  */
 export type Shot = {
-  from: CourtPoint;
-  /** Punto de control de la cuadrática (define el arco del tiro). */
   control: CourtPoint;
   to: CourtPoint;
-  /** Etiqueta en escena, p. ej. "GLOBO". */
+  /** Etiqueta en escena, p. ej. "CRUZADO". */
   label: string;
 };
 

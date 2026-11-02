@@ -10,7 +10,7 @@
  * que entra al bundle vía `dynamic(..., { ssr: false })`.
  */
 
-import { Arc, Circle, Group, Line, Path, Rect, Text } from "react-konva"
+import { Arc, Circle, Ellipse, Group, Line, Path, Rect, Text } from "react-konva"
 import type Konva from "konva"
 import { COURT_COLORS, type NetProps, type PlayerFigureProps } from "./CourtLayers"
 
@@ -28,11 +28,14 @@ export function PlayerFigure({
   const headY = -h * 0.885
   const shoulderY = -h * 0.74
   const shoulderX = h * 0.16
+  const badgeW = h * 0.34
+  const badgeH = h * 0.26
+  const badgeY = headY - headR - badgeH * 1.15
 
   return (
     <Group x={figure.x} y={figure.y} listening={false} ref={groupRef}>
-      {/* Sombra en el piso */}
-      <Circle x={0} y={0} radiusX={h * 0.28} radiusY={h * 0.085} fill={COURT_COLORS.groundShadow} />
+      {/* Sombra en el piso (Ellipse: radiusX/radiusY son props de Ellipse, no de Circle) */}
+      <Ellipse x={0} y={0} radiusX={h * 0.28} radiusY={h * 0.085} fill={COURT_COLORS.groundShadow} />
       {/* Pierna izquierda (pivote en la cadera) */}
       <Group x={-h * 0.05} y={-h * 0.42} name="leg-l">
         <Rect x={-h * 0.04} y={0} width={h * 0.075} height={h * 0.38} fill={figure.skin} cornerRadius={h * 0.03} />
@@ -82,15 +85,38 @@ export function PlayerFigure({
           fill={COURT_COLORS.racketStrings}
         />
       </Group>
-      {/* Cabeza: pelo + cara (o sólo pelo en vista trasera) */}
-      <Circle x={0} y={headY} r={headR} fill={COURT_COLORS.hair} />
+      {/* Cabeza: pelo + cara (o sólo pelo en vista trasera). Konva Circle sólo reconoce `radius`. */}
+      <Circle x={0} y={headY} radius={headR} fill={COURT_COLORS.hair} />
       {figure.view === "face" ? (
         <>
-          <Circle x={0} y={headY + headR * 0.18} r={headR * 0.86} fill={figure.skin} />
-          <Circle x={-headR * 0.33} y={headY + headR * 0.1} r={Math.max(0.8, headR * 0.13)} fill="#171717" />
-          <Circle x={headR * 0.33} y={headY + headR * 0.1} r={Math.max(0.8, headR * 0.13)} fill="#171717" />
+          <Circle x={0} y={headY + headR * 0.18} radius={headR * 0.86} fill={figure.skin} />
+          <Circle x={-headR * 0.33} y={headY + headR * 0.1} radius={Math.max(0.8, headR * 0.13)} fill="#171717" />
+          <Circle x={headR * 0.33} y={headY + headR * 0.1} radius={Math.max(0.8, headR * 0.13)} fill="#171717" />
         </>
       ) : null}
+      {/* Identificador del jugador (A–D) sobre la cabeza */}
+      <Rect
+        x={-badgeW / 2}
+        y={badgeY}
+        width={badgeW}
+        height={badgeH}
+        fill={COURT_COLORS.labelInk}
+        cornerRadius={badgeH * 0.3}
+        stroke={COURT_COLORS.line}
+        strokeWidth={Math.max(1, h * 0.012)}
+      />
+      <Text
+        x={-badgeW / 2}
+        y={badgeY}
+        width={badgeW}
+        height={badgeH}
+        text={figure.id}
+        fill={COURT_COLORS.line}
+        fontSize={badgeH * 0.72}
+        fontStyle="bold"
+        align="center"
+        verticalAlign="middle"
+      />
     </Group>
   )
 }

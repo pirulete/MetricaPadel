@@ -13,12 +13,13 @@
  * zona mint de aterrizaje, jugadores = figuras con kit por equipo.
  */
 
-import { computeCurveGeometry, computeDashProgress } from "@/lib/padel/court/annotation"
+import { computeCurveGeometry, computeDashProgress, resolveHitter } from "@/lib/padel/court/annotation"
 import { computeScale, courtToPx } from "@/lib/padel/court/geometry"
 import {
   COURT_DEPTH_M,
   COURT_WIDTH_M,
   NET_Y_M,
+  PLAYER_IDS,
   SERVICE_LINE_OFFSET_M,
   SERVICE_LINE_OVERSHOOT_M,
   type CourtViewport,
@@ -28,8 +29,7 @@ import {
   type Shot,
 } from "@/lib/padel/court/types"
 
-/** Orden estable de los 4 jugadores. */
-export const PLAYER_IDS = ["A", "B", "C", "D"] as const satisfies readonly PlayerId[]
+export { PLAYER_IDS }
 
 /**
  * Paleta homologada a los tokens de PadelChess. Konva dibuja en canvas y no
@@ -356,13 +356,23 @@ function buildZone(shot: Shot, viewport: CourtViewport): ShotViewProps["zone"] {
 /**
  * Capa 3: vista completa del tiro — curva Bézier amarilla discontinua con
  * progreso del trazo, etiqueta en el punto medio, zona de aterrizaje, ruta
- * de la pelota y tag "HIT" sobre quien golpea. `progress` 0 = trazo oculto
- * (el reloj de CourtStage lo anima hasta 1).
+ * de la pelota y tag "HIT" sobre quien golpea.
+ *
+ * El ORIGEN se deriva con `resolveHitter(originPositions, shot.to)` — el
+ * jugador más cercano al destino entre las posiciones del paso ANTERIOR
+ * (la pelota despega de sus pies en t=0). `progress` 0 = trazo oculto.
  */
-export function buildShotView(step: Paso, viewport: CourtViewport, progress = 0): ShotViewProps | null {
+export function buildShotView(
+  step: Paso,
+  viewport: CourtViewport,
+  progress = 0,
+  originPositions: PlayerPositions = step.positions
+): ShotViewProps | null {
   if (!step.shot) return null
   const shot = step.shot
-  const geometry = computeCurveGeometry(shot, viewport)
+  const hitter = resolveHitter(originPositions, shot.to)
+  const from = originPositions[hitter] ?? shot.to
+  const geometry = computeCurveGeometry(from, shot, viewport)
   const dash = computeDashProgress(progress, geometry.length, "forward")
 
   return {
@@ -375,10 +385,10 @@ export function buildShotView(step: Paso, viewport: CourtViewport, progress = 0)
     label: { x: geometry.midpoint.x, y: geometry.midpoint.y, text: shot.label },
     zone: buildZone(shot, viewport),
     ball: {
-      from: courtToPx(shot.from, viewport),
+      from: courtToPx(from, viewport),
       to: courtToPx(shot.to, viewport),
       path: geometry.points,
     },
-    hit: courtToPx(shot.from, viewport),
+    hit: courtToPx(from, viewport),
   }
 }

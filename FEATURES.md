@@ -47,6 +47,22 @@ El usuario pidió olvidar los ajustes previos y replicar el estilo de PadelChess
 - `CourtStage.tsx` dividido en `CourtParts.tsx` (figuras/burbujas/red — regla ponytail <500 líneas).
 - Verificación: tsc 0 · lint **0 errores y 0 warnings** · unit **754/754** (annotation tests reescritos para Bézier) · E2E 2/2 · build OK · screenshots de los 3 pasos inspeccionados (curva+pelota+GLOBO/HIT+zona correctos).
 
+#### Iteración 4 (2026-11-02) — cabeza visible, zancada, semántica de transición e hitador derivado
+
+4 correcciones pedidas por el usuario (la 4 incluye regla nueva de origen del tiro + identificadores):
+
+1. **Cabeza y sombra ahora se dibujan** (bug raíz probado contra Konva): `Circle` sólo reconoce `radius` — el código usaba `r` (pelo/cara/ojos → `attrs.r` ignorado, `sceneFunc` leía `attrs.radius || 0` → radio 0 → invisible) y `radiusX/radiusY` sobre `Circle` (props de `Ellipse` → sombra invisible). Fix: `radius` en los 4 `Circle` de la cabeza + sombra migrada a `Ellipse`.
+2. **Zancada visible**: `Konva.rotation` está en **GRADOS** (probado: `rotation(90)` → matriz de 90°); el ciclo usaba ±0.55 (interpretado como rad ≈31°, pero aplicado como **0.55°** → piernas inmóviles, los muñecos deslizaban). Fix: `STRIDE_DEG = 31` grados explícitos para piernas (brazos ±0.7×).
+3. **Semántica de transición homologada a PadelChess** (su `puzzleClipSequence`: golpe primero, movimiento después):
+   - **HIT + etiqueta del tiro visibles desde t=0** (antes aparecían al final, t>0.6 — al revés: el golpe precede).
+   - **Zona de aterrizaje aparece al final** (`(t-0.6)/0.4`, cuando la pelota llega — antes aparecía al inicio).
+   - **Tiro saliente se RETRAE** en vez de corte seco: nuevo estado `outgoing` en `CourtStage` conserva la vista del tiro anterior y su reloj la retraza hacia el origen (60% del tiempo, con fade de etiquetas/zona al 40%) mientras el entrante se dibuja.
+4. **Regla del hitador**: el tiro sale del **jugador más cercano al destino** — nueva función pura `resolveHitter(positions, target, order)` (desempate por orden estable A,B,C,D) y el `Shot` ya no guarda `from`: se deriva en `buildShotView` desde `originPositions` = posiciones del **paso anterior** (prop nueva `originPositions` en `CourtStage`, calculada en `PuzzleDemo`), de modo que la pelota despega de los pies del hitador en t=0. Escenario demo rehecho (remate de C desde la red + drop de B) con la regla verificada por test. **Etiquetas A–D** (badge sobre la cabeza) en cada figura (`PlayerFigure`).
+
+Tests: `court-annotation.test.ts` + `resolveHitter` (más cercano, desempate determinista, regla del escenario, origen = posición real) — total **758/758**.
+
+- Verificación Iteración 4: tsc 0 · lint 0/0 en el área · unit **758/758** · E2E 2/2 · build OK · screenshots: cabezas/sombras/identificadores en paso 1; HIT+REMATE desde t=0 y zona al aterrizar en la transición 1→2; retracción del REMATE mientras entra el DROP en 2→3; zancada visible en muestreo denso (40 ms).
+
 ### Archivos Modificados
 
 Nuevos: `app/(app)/puzzle-demo/page.tsx` (Server Component, `validateUser` + `ACTIVE`), `components/court/{PuzzleDemo.tsx,CourtStage.tsx,CourtParts.tsx,CourtLayers.ts,useCourtConfig.ts}`, `lib/padel/court/{types,geometry,steps,annotation,demo-scenario}.ts`, `tests/unit/padel/court-{geometry,steps,annotation}.test.ts`, `tests/e2e/puzzle-demo.spec.ts`. Modificados: `package.json`/`pnpm-lock.yaml` (`konva@^10.9.1`, `react-konva@19.2.7` exacto, `-D @next/bundle-analyzer`), `next.config.mjs` (wrapper `ANALYZE` reversible), `.env.example` (1 comentario). Detalle en `production_artifacts/2026-11-01-konva-puzzle-spike/{technical-design.md,app-notes.md}`.

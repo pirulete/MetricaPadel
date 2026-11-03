@@ -1,0 +1,44 @@
+{
+  "change_id": "2026-11-03-fix-problems",
+  "change_class": "fix",
+  "timestamp": "2026-11-03T05:06:04Z",
+  "files_changed": 17,
+  "files_detail": {
+    "production": 10,
+    "tests": 5,
+    "preview_route_and_mockup": 2,
+    "list": [
+      "components/layout/app-layout-client.tsx",
+      "lib/constants/navigation.ts",
+      "components/padel/teacher-dashboard.tsx",
+      "components/padel/transition-editor/flow-strip.tsx",
+      "components/padel/transition-editor/editor-screen.tsx",
+      "components/padel/transition-editor/context-bar.tsx",
+      "components/padel/transition-editor/step-filmstrip.tsx",
+      "components/padel/transition-editor/scenario-canvas.tsx",
+      "components/court/EditorStage.tsx",
+      "lib/padel/court/flow.ts",
+      "tests/unit/padel/transition-fab-visibility.test.ts",
+      "tests/unit/padel/transition-flow.test.ts",
+      "tests/e2e/transition-fab.spec.ts",
+      "tests/e2e/transition-editor.spec.ts",
+      "app/preview/coach-transition-editor/page.tsx",
+      "components/preview/coach-transition-editor.tsx"
+    ]
+  },
+  "tests_added": 35,
+  "tests_added_detail": {
+    "unit_new": 33,
+    "e2e_new": 2,
+    "source": "app-notes.md L42/L47-48 (+33 unit) + test-matrix.md 5.1 (fab-visibility 16, flow 17) y 5.2 (transition-fab.spec.ts 2 casos)"
+  },
+  "tests_updated": 1,
+  "tests_updated_detail": ["tests/e2e/transition-editor.spec.ts"],
+  "test_coverage_delta": null,
+  "gates_passed": 15,
+  "gates_failed": 0,
+  "risk_level": "LOW",
+  "loop_duration_ms": null,
+  "iterations": 1,
+  "notes": "Fix 100% presentacional/UI (G1 FAB, G2 flow strip, G3 affordances). 0 endpoints, 0 migraciones, 0 cambios de auth/DB. Incluye 1 bug S1 cazado por E2E (position: relative pisando fixed en el FAB) resuelto en 1 linea."
+}

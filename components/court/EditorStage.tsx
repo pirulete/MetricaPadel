@@ -86,7 +86,10 @@ function DragHandle({
   return (
     <Group x={x} y={y} draggable dragBoundFunc={dragBoundFunc} onDragEnd={onDragEnd}>
       <Circle radius={hitR} fill="transparent" />
-      <Circle radius={8} fill={fill} stroke={stroke} strokeWidth={2} listening={false} />
+      {/* Affordance visual: anillo marcado + punto central. `listening={false}`
+          deja el hit-testing y el arrastre exactamente como estaban. */}
+      <Circle radius={8} fill={fill} stroke={stroke} strokeWidth={3} listening={false} />
+      <Circle radius={2.5} fill={stroke} listening={false} />
     </Group>
   )
 }
@@ -264,6 +267,10 @@ export default function EditorStage({
                 fill="transparent"
               />
               <PlayerFigure figure={{ ...figure, x: 0, y: 0 }} groupRef={() => {}} />
+              {/* Punto central del jugador seleccionado (sólo visual). */}
+              {isSelected && (
+                <Circle radius={3} fill={COURT_COLORS.hitTag} listening={false} />
+              )}
             </Group>
           )
         })}

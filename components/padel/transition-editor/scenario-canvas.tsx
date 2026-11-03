@@ -60,6 +60,15 @@ export function ScenarioCanvas({
 }: ScenarioCanvasProps) {
   const { containerRef, isReady, width, height, dpr } = useCourtConfig()
 
+  // Pista contextual en el punto de acción (G3): sustituye al gesto implícito
+  // que hoy sólo vive en el `aria-label`. Derivada, sin estado ni persistencia.
+  const hint =
+    selected === null
+      ? "Toca un jugador para seleccionarlo, arrástralo para moverlo"
+      : step.shot === null
+        ? "Sin tiro · toca ◎ para fijarlo"
+        : "Arrastra el arco para curvar el tiro"
+
   return (
     <div
       className="flex w-full justify-center"
@@ -84,6 +93,12 @@ export function ScenarioCanvas({
         ) : (
           <CanvasLoading />
         )}
+        <p
+          role="status"
+          className="pointer-events-none absolute left-2 top-2 z-10 max-w-[90%] rounded-md bg-background/90 px-2 py-1 text-[11px] font-medium shadow-sm"
+        >
+          {hint}
+        </p>
       </div>
     </div>
   )

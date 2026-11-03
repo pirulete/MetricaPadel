@@ -55,7 +55,7 @@ export function TeacherDashboard() {
         {/* Sólo ADMIN monta este componente (dashboard/page.tsx ramifica por rol) */}
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" asChild>
-            <Link href="/transiciones">Transiciones</Link>
+            <Link href="/transiciones">Preparar jugada</Link>
           </Button>
           <Button asChild>
             <Link href="/evaluar">Evaluar ahora</Link>

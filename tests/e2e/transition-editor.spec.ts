@@ -109,16 +109,56 @@ test.describe("Editor de transiciones — móvil", () => {
     await expect(titleInput).toBeVisible();
     await expectNoHorizontalScroll(page);
 
+    // B5: el canvas sigue montado y completo con el strip de flujo arriba (AC-01)
+    await expect(page.getByRole("group", { name: /Cancha del paso/ })).toBeVisible();
+
+    // B3: strip del flujo visible con exactamente un paso activo (`ol/li`)
+    const flowStrip = page.getByRole("navigation", { name: "Flujo del editor" });
+    await expect(flowStrip).toBeVisible();
+    await expect(flowStrip.locator('[aria-current="step"]')).toHaveCount(1);
+
+    // C1: el gesto implícito ahora es un hint visible (`role="status"`)
+    await expect(page.locator('[role="status"]').filter({ hasText: /Toca un jugador/ })).toHaveCount(1);
+
+    // C2: Probar vs Guardar se distinguen por `aria-describedby` sin cambiar el nombre
+    const previewButton = page.getByRole("button", { name: "Probar", exact: true });
+    const saveButton = page.getByRole("button", { name: "Guardar", exact: true });
+    await expect(previewButton).toHaveAttribute("aria-describedby", "transition-preview-hint");
+    await expect(page.locator("#transition-preview-hint")).toHaveText(/en memoria/);
+    await expect(saveButton).toHaveAttribute("aria-describedby", "transition-save-hint");
+    await expect(page.locator("#transition-save-hint")).toHaveText(/biblioteca/);
+    // C5: el nombre accesible del botón Guardar es estable aunque el texto pase a "Guardado ✓"
+    await expect(saveButton).toHaveAttribute("aria-label", "Guardar");
+
     const title = `Transición E2E ${Date.now()}`;
     await titleInput.fill(title);
+
+    // C3: documento sucio → badge de estado; B3: el strip avanza a «Tiro»
+    await expect(page.getByText(/●\s*Cambios sin guardar/).first()).toBeVisible();
+    await expect(flowStrip.locator('[aria-current="step"]')).toHaveText(/Tiro/);
 
     // Añadir un segundo paso (filmstrip móvil; el aside está oculto a 375 px)
     await page.getByRole("button", { name: "Añadir paso", exact: true }).first().click();
     await expect(page.getByRole("tab", { name: /Paso 2/ }).first()).toBeVisible();
 
+    // C4: filmstrip con copy de secuencia y reordenamiento «Antes / Después»
+    await expect(page.getByText(/Secuencia · 2 pasos/).first()).toBeVisible();
+    await expect(page.getByText("Cada paso es una foto de la jugada").first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /← Antes/ }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /Después →/ }).first()).toBeVisible();
+    // B4: los locators históricos resuelven a 1 elemento (strict mode)
+    await expect(page.getByRole("tab", { name: /^Paso 1/ })).toHaveCount(1);
+    await expect(page.getByRole("tab", { name: /Paso 2/ })).toHaveCount(1);
+    await expect(page.getByRole("button", { name: "Añadir paso", exact: true })).toHaveCount(1);
+    await expect(page.getByRole("button", { name: "Probar", exact: true })).toHaveCount(1);
+    await expect(page.getByRole("button", { name: "Guardar", exact: true })).toHaveCount(1);
+
     // Volver al paso 1 y Probar: el preview queda montado con el status visible
     await page.getByRole("tab", { name: /^Paso 1/ }).first().click();
     await page.getByRole("button", { name: "Probar" }).click();
+    // B3/C1: durante el preview el strip marca «Prueba» y el hint del canvas desaparece
+    await expect(flowStrip.locator('[aria-current="step"]')).toHaveText(/Prueba/);
+    await expect(page.locator('[role="status"]').filter({ hasText: /Toca un jugador/ })).toHaveCount(0);
     const status = page.getByText(/Reproduciendo paso \d de \d/);
     await expect(status).toBeVisible();
     await expect(status).toContainText("de 2");
@@ -135,6 +175,10 @@ test.describe("Editor de transiciones — móvil", () => {
     await page.waitForLoadState("networkidle");
     await expect(page.getByLabel("Título de la transición")).toHaveValue(title);
     await expect(page.getByRole("tab", { name: /Paso 2/ }).first()).toBeVisible();
+
+    // C3/C5: documento persistido → badge «✓ Guardado» y el botón conserva su nombre
+    await expect(page.getByText(/✓\s*Guardado/).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Guardar", exact: true })).toBeVisible();
   });
 
   test("USER en /transiciones es redirigido a /dashboard y la API responde 403", async ({ page }) => {

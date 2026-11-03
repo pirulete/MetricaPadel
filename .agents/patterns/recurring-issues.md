@@ -22,6 +22,15 @@
 
 <!-- Los patrones se agregan automáticamente aquí después de cada fix. -->
 
+### Elemento `fixed` fuera del viewport por conflicto relative/fixed vía Slot
+- **Síntoma:** Playwright `element is outside of the viewport` (o `y` negativo medido con `boundingBox`) en un botón/fijo montado con `Button asChild` + `Link className="relative"`; el click nunca sucede aunque el elemento esté "visible".
+- **Causa raíz:** `Slot` de Radix fusiona el className del Button (`fixed bottom-[...]`) con el del Link (`relative`); Tailwind emite `.relative` DESPUÉS de `.fixed` en el stylesheet → gana `position: relative` y `bottom`/`right` pasan a ser offsets relativos → el elemento queda fuera del viewport (p. ej. y = −76 px).
+- **Fix:** eliminar `className="relative"` del hijo (el `fixed` del padre ya sirve de contexto de posicionamiento para los descendientes `absolute`); blindar con assert geométrico en el E2E (`box.y + box.height ≤ viewport.height − alto_nav`).
+- **Archivos afectados:** `components/layout/app-layout-client.tsx`
+- **Primera detección:** 2026-11-03
+- **Ocurrencias:** 1
+- **Última vez:** 2026-11-03
+
 ### DB Connection Crash on Layout Import
 - **Síntoma:** `password authentication failed for user 'user'` when DB is unreachable; app crashes on any public page
 - **Causa raíz:** `app/(public)/layout.tsx` calls `getCachedNavigation()` which queries DB at request time; when NeonDB is unreachable, the query throws and the entire layout fails

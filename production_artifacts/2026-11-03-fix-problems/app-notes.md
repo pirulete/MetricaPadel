@@ -31,7 +31,7 @@
 
 **Síntoma**: `transition-fab.spec.ts` — el FAB era "visible" pero `element is outside of the viewport` (click imposible); medición con Playwright: `rect {x:303, y:-76, w:56, h:56}` en 375×667.
 
-**Causa raíz**: el `<Link className="relative">` dentro de `Button asChild` — al fusionar classNames vía `Slot`, conviven `fixed` (del Button) y `relative` (del Link); Tailwind emite `.relative` **después** de `.fixed` en el stylesheet → gana `position: relative`. El `bottom-[calc(4.75rem+env(...))]` (computado correctamente: 76px) pasa a ser desplazamiento **relativo** → el FAB sube 76 px → `y = -76`, fuera del viewport.
+**Causa raíz**: el `<Link className="relative">` dentro de `Button asChild` — al fusionar classNames vía `Slot`, conviven `fixed` (del Button) y `relative` (del Link); Tailwind emite `.relative` **después** de `.fixed` en el stylesheet → gana `position: relative`. La declaración `bottom` del FAB (calc con safe-area, computada correctamente: 76px) pasa a ser desplazamiento **relativo** → el FAB sube 76 px → `y = -76`, fuera del viewport.
 
 **Fix (1 línea)**: eliminar `className="relative"` del `Link`. El dot de anclaje (`absolute right-2 top-2`) sigue bien porque el `fixed` del propio Link es contexto de posicionamiento.
 

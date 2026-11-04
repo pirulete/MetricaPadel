@@ -22,3 +22,12 @@ export const USER_NAV_ITEMS = [
 export function getNavItems(role: "ADMIN" | "USER") {
   return role === "ADMIN" ? ADMIN_NAV_ITEMS : USER_NAV_ITEMS
 }
+
+/** Rutas donde el FAB de transiciones no aporta (biblioteca, modo foco, ajustes, back-office). */
+const HIDDEN_TRANSITION_FAB_ROUTES = [/^\/transiciones(\/|$)/, /^\/settings(\/|$)/, /^\/admin(\/|$)/]
+
+/** FAB "Crear transición": sólo coach y sólo en rutas de trabajo. Función pura (testeable). */
+export function canShowTransitionFab(role: string, pathname: string): boolean {
+  if (role !== "ADMIN" && role !== "SUPER_ADMIN") return false
+  return !HIDDEN_TRANSITION_FAB_ROUTES.some((re) => re.test(pathname))
+}

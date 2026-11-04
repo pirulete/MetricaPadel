@@ -53,6 +53,7 @@ import { clampStepIndex } from "@/lib/padel/court/steps"
 import { emptyTransitionDoc, type TransitionRow } from "@/lib/padel/court/transition"
 import type { CourtPoint, Paso, PlayerId } from "@/lib/padel/court/types"
 import { ContextBar } from "./context-bar"
+import { FlowStrip } from "./flow-strip"
 import { ScenarioCanvas, type ShotPatch } from "./scenario-canvas"
 import { StepFilmstrip } from "./step-filmstrip"
 
@@ -274,6 +275,15 @@ export function EditorScreen({ initial }: EditorScreenProps) {
 
       <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_190px] md:items-start">
         <div className="min-w-0 space-y-2">
+          <FlowStrip
+            stepsCount={steps.length}
+            selected={selected}
+            hasShot={step.shot !== null}
+            dirty={dirty}
+            previewing={previewing}
+            collapsed={id !== null}
+          />
+
           {previewing ? (
             <div
               className="relative overflow-hidden rounded-xl border bg-muted"

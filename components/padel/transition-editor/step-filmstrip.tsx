@@ -49,19 +49,23 @@ export function StepFilmstrip({
   return (
     <div className="rounded-xl border bg-card">
       <div className="flex items-center justify-between gap-2 px-2 py-1">
-        <p className="truncate text-[11px] font-medium text-muted-foreground">
-          Pasos · {total}
-          {dirty && <span className="text-foreground"> · sin guardar</span>}
-        </p>
+        <div className="min-w-0">
+          <p className="truncate text-[11px] font-medium text-muted-foreground">
+            Secuencia · {total} {total === 1 ? "paso" : "pasos"}
+          </p>
+          <p className="truncate text-[10px] text-muted-foreground">
+            Cada paso es una foto de la jugada
+          </p>
+        </div>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
-            size="icon"
-            className="size-11"
+            className="h-11 min-w-11 shrink-0 gap-1.5 px-2"
             onClick={onAdd}
             aria-label="Añadir paso"
           >
             <Plus className="size-5" />
+            <span className="hidden text-xs md:inline">Añadir paso</span>
           </Button>
           <Button
             variant="ghost"
@@ -141,8 +145,9 @@ export function StepFilmstrip({
                 className="h-11 flex-1"
                 disabled={activeIndex <= 0}
                 onClick={() => onMove(activeIndex, activeIndex - 1)}
+                title="Mover este paso antes"
               >
-                ← Mover
+                ← Antes
               </Button>
               <Button
                 variant="outline"
@@ -150,8 +155,9 @@ export function StepFilmstrip({
                 className="h-11 flex-1"
                 disabled={activeIndex >= lastIndex}
                 onClick={() => onMove(activeIndex, activeIndex + 1)}
+                title="Mover este paso después"
               >
-                Mover →
+                Después →
               </Button>
               <Button
                 variant="outline"

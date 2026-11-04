@@ -1,5 +1,52 @@
 # FEATURES — Registro de Cambios
 
+## ✨ Fix UX — Descubribilidad y comprensión del Editor de Transiciones (2026-11-03)
+
+> status: released (validado 2026-11-03 por @qa-release — `tsc`=0 · lint 0 errores · 882/882 unit · 6/6 E2E con SQL real · build OK)
+> release: v0.10 (mismo ciclo que el editor)
+> date: 2026-11-03
+> change_id: 2026-11-03-fix-problems
+> module: dashboard
+> tags: [ui, ux, fix, fab, onboarding, copy, e2e, no-db, no-auth]
+
+### Release (2026-11-03 · @qa-release)
+
+- **Gates reales**: `npx tsc --noEmit` = 0 · `pnpm run lint` = 0 errores (255 warnings preexistentes) · `pnpm run test:unit` = **882/882** (67 suites) · `playwright test transition-fab + transition-editor + puzzle-demo` (con `DATABASE_URL`) = **6/6**, 0 skipped · `pnpm run build` = OK (`/preview/coach-transition-editor` prerenderizada) · cobertura `lib/padel/court` 99.1 % stmts / 96.96 % ramas · `lib/padel/court/flow.ts` 100 %.
+- **Bug real cazado por el E2E y corregido** (S1): el FAB se renderizaba con `position: relative` porque el `<Link className="relative">` hijo de `Button asChild` pisaba el `fixed` del padre al fusionarse vía `Slot` (Tailwind emite `.relative` después de `.fixed`) ⇒ `bottom: calc(4.75rem…)` actuaba como desplazamiento relativo ⇒ `y ≈ −76`, fuera del viewport. Fix: quitar `className="relative"` del `Link` (1 línea); blindado por el assert geométrico `y + height ≤ vh − 61` del E2E.
+- **Regresiones**: ninguna (motor Konva, locators E2E históricos, `BottomNav` 7 items, contrato API y guards intactos).
+- Artefactos: `production_artifacts/2026-11-03-fix-problems/{release-report,repair-report,acceptance-criteria,test-matrix}.md`.
+- Pendientes no bloqueantes: `validate-harness.js --all` (secrets/SAST/audit deps), borrar el mockup efímero, checklist manual 375 px + `md+` (manija Konva).
+
+### Problema
+
+Con cuenta ADMIN, el usuario (1) no encontró cómo entrar al editor de transiciones y (2) al entrar, no entendió la secuencia (paso → mover → tiro → probar → guardar). No son bugs de runtime (`tsc`=0, `lint`=0, `.validation/status.json`=pass): son defectos de descubribilidad y de modelo mental. Causa raíz en código: el editor sólo se alcanza por un CTA secundario `outline` en el dashboard del coach (sin entry point persistente; `BottomNav` saturado a 7 items) y el flujo no está representado en ninguna parte aunque `editor-screen` orquesta 6 estados.
+
+### Solución Implementada (diseño aprobado: FAB A3 + onboarding O1)
+
+- **G1 · entry point (fix local, LOW)**: FAB 56 px `fixed` en `AppLayoutClient` (único punto con `role` + `pathname`) → `/transiciones/nueva`, visible sólo para ADMIN en las 7 rutas de trabajo y oculto en `/transiciones*`, `/settings` y `/admin/**`; visibilidad vía función pura `canShowTransitionFab(role, pathname)`. Copy del CTA del dashboard → "Preparar jugada".
+- **G2 · onboarding (fix local, MEDIUM)**: nuevo `flow-strip.tsx` presentacional (`<ol>/<li>` + `aria-current="step"`, **sin** `role="tab"` para no colisionar con los locators E2E) alimentado por `deriveFlowStep()` puro en `lib/padel/court/flow.ts`; sin estado nuevo.
+- **G3 · affordances/copy (fix local, MEDIUM)**: Badge de hint `role="status"` sobre el lienzo, `aria-describedby` en Probar ("en memoria") vs Guardar ("biblioteca"), badge `● Cambios sin guardar` / `✓ Guardado`, "Secuencia · N pasos", "← Antes / Después →", "+ Añadir paso" y anillo visible en la manija del arco (sólo estilo Konva).
+- **Sin impacto** en auth, DB, migraciones, API, `lib/api-docs/spec.ts` ni `.env`. `BottomNav` intacto (7 items). El FAB no es frontera de seguridad: `validateAdmin` sigue en la ruta destino.
+
+### Archivos Modificados (planificados — 15 en chunks ≤5)
+
+- Chunk A (G1): `components/layout/app-layout-client.tsx`, `lib/constants/navigation.ts`, `components/padel/teacher-dashboard.tsx`, `tests/unit/padel/transition-fab-visibility.test.ts` ✨, `tests/e2e/transition-fab.spec.ts` ✨
+- Chunk B (G2): `components/padel/transition-editor/{flow-strip.tsx ✨,editor-screen.tsx}`, `lib/padel/court/flow.ts` ✨, `tests/unit/padel/transition-flow.test.ts` ✨
+- Chunk C (G3): `components/padel/transition-editor/{context-bar,step-filmstrip,scenario-canvas}.tsx`, `components/court/EditorStage.tsx`, `tests/e2e/transition-editor.spec.ts` 🔧
+- Chunk D (efímero): `app/preview/coach-transition-editor/page.tsx` ✨ (se elimina al cierre con `components/preview/coach-transition-editor.tsx`)
+
+### Tests
+
+- Unit nuevos: `tests/unit/padel/transition-fab-visibility.test.ts` (tabla de visibilidad A1/A2), `tests/unit/padel/transition-flow.test.ts` (precedencia B1/B2).
+- E2E nuevos/actualizados: `tests/e2e/transition-fab.spec.ts` (ADMIN ve, USER no, 56 px sin solape), `tests/e2e/transition-editor.spec.ts` (strip, hints, badges, copy — sin romper los 4 locators vigentes).
+- Artefactos: `production_artifacts/2026-11-03-fix-problems/{problems-triage,repair-plan,test-matrix,design-approved}.md`.
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+---
+
 ## ✨ Editor de Transiciones de Pádel para Profesores (2026-11-02)
 
 > status: in-progress (QA: NO-GO condicionado — H-1 overflow 8.4 px en editor 375 px + H-2 spec E2E con login ADMIN, ver release-report.md)

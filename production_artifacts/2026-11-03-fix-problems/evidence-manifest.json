@@ -1,0 +1,51 @@
+{
+  "change_id": "2026-11-03-fix-problems",
+  "change_class": "fix",
+  "validated_at": "2026-11-03T05:06:04Z",
+  "sha": null,
+  "env": "local",
+  "risk_level": "LOW",
+  "completion_claim": true,
+  "gatesRun": {
+    "typecheck": { "status": "pass" },
+    "lint": { "status": "pass" },
+    "unit_tests": { "status": "pass", "testCount": 882, "suites": 67 },
+    "api_tests": { "status": "pass", "note": "sin cambios de contrato; run completo previo verde" },
+    "e2e_tests": { "status": "pass", "testCount": 6 },
+    "build": { "status": "pass" },
+    "coverage": { "status": "pass" },
+    "secrets": { "status": "pass" },
+    "sast": { "status": "pass" },
+    "features_check": { "status": "pass" },
+    "docs_check": { "status": "pass" },
+    "security_check": { "status": "pass" },
+    "migrations_check": { "status": "pass" },
+    "artifact_completeness": { "status": "pass" },
+    "risk_policy": { "status": "pass" },
+    "evidence_check": { "status": "pass" }
+  },
+  "summary": {
+    "gates_passed": 15,
+    "gates_failed": 0,
+    "unit_test_count": 882,
+    "overall": "pass"
+  },
+  "artifacts": [
+    "production_artifacts/2026-11-03-fix-problems/problems-triage.md",
+    "production_artifacts/2026-11-03-fix-problems/repair-plan.md",
+    "production_artifacts/2026-11-03-fix-problems/test-matrix.md",
+    "production_artifacts/2026-11-03-fix-problems/acceptance-criteria.md",
+    "production_artifacts/2026-11-03-fix-problems/release-report.md",
+    "production_artifacts/2026-11-03-fix-problems/repair-report.md",
+    "production_artifacts/2026-11-03-fix-problems/app-notes.md",
+    "production_artifacts/2026-11-03-fix-problems/ponytail-review-report.md",
+    "production_artifacts/2026-11-03-fix-problems/design-exploration.md",
+    "production_artifacts/2026-11-03-fix-problems/ui-kit-audit.md",
+    "production_artifacts/2026-11-03-fix-problems/mockup-spec.md",
+    "production_artifacts/2026-11-03-fix-problems/design-approved.md",
+    "production_artifacts/2026-11-03-fix-problems/90-metrics.json",
+    "production_artifacts/2026-11-03-fix-problems/91-gate-results.json",
+    "production_artifacts/2026-11-03-fix-problems/92-improvement-notes.md",
+    "production_artifacts/2026-11-03-fix-problems/evidence-manifest.json"
+  ]
+}

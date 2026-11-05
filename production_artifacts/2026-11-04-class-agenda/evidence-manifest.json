@@ -1,0 +1,75 @@
+{
+  "change_id": "2026-11-04-class-agenda",
+  "change_class": "feature",
+  "validated_at": "2026-11-04T15:34:00Z",
+  "sha": null,
+  "env": "local",
+  "risk_level": "HIGH",
+  "completion_claim": true,
+  "gatesRun": {
+    "typecheck": { "status": "pass", "detail": "npx tsc --noEmit → 0 errores" },
+    "lint": { "status": "pass", "detail": "pnpm run lint → 0 errores / 256 warnings preexistentes (+ max-lines de protected-routes.ts con excepción documentada en ponytail-review-report.md)" },
+    "unit_tests": { "status": "pass", "testCount": 948, "detail": "71 suites / 948 tests passed" },
+    "api_tests": { "status": "pass", "testCount": 7, "detail": "class-agenda-happy + class-agenda-guard + class-agenda-student-happy con SQL real (:5434); 6 passed + 1 flaky de cold-start, verde en retry y en corrida aislada" },
+    "e2e": { "status": "pass", "testCount": 8, "detail": "2/2 class-agenda.spec.ts (375x667) + 6/6 regresión (transition-editor, puzzle-demo, transition-fab)" },
+    "build": { "status": "pass", "detail": "pnpm run build OK (route table completa)" },
+    "secrets": { "status": "pass", "detail": "gitleaks — último run completo del harness sin leaks; re-ejecutado en el run final" },
+    "sast": { "status": "pass", "detail": "semgrep — último run completo del harness sin hallazgos bloqueantes" },
+    "features_check": { "status": "pass", "detail": "entry 2026-11-04-class-agenda released / v0.11 / module padel" },
+    "migrations_check": { "status": "pass", "detail": "drizzle/0013_spotty_felicia_hardy.sql, journal idx 13; columnas/índices/FK verificados con information_schema" },
+    "docs_check": { "status": "pass", "detail": "ARCHITECTURE.md sección v0.11, AGENTS.md sin cambios, FEATURES.md released, QUICKSTART sin drift" },
+    "artifact_completeness": { "status": "pass", "detail": "19/19 artifacts esperados presentes (spec, scope, ui-kit-audit, design-exploration, design-approved, mockup-spec, technical-design v1+v2, change-map v1+v2, db-plan, migration-notes, auth-impact, security-checklist, app-notes, ponytail, release-report, test-matrix, acceptance-criteria)" },
+    "security_check": { "status": "pass", "detail": "15 rutas de agenda en protected-routes, guardAdmin + ownership con 404 anti-IDOR, auditoría en todas las mutaciones, security-checklist con todos los ítems [x]" },
+    "coverage_check": { "status": "pass", "detail": "lib/padel/class-agenda.ts 96.7%, lib/validations/class-agenda.ts 100%, módulo padel sin caída > 3%" },
+    "evidence_check": { "status": "pass", "detail": "release-report GO + test-matrix + acceptance-criteria coherentes con los gates ejecutados" }
+  },
+  "summary": {
+    "gates_passed": 15,
+    "gates_failed": 0,
+    "unit_test_count": 948,
+    "api_test_count": 7,
+    "e2e_test_count": 8,
+    "files_changed": 51,
+    "overall": "pass"
+  },
+  "riskRationale": "HIGH por el patrón de lib/policy/risk-rules.js: el change incluye migración drizzle/0013 + lib/db/schema.ts + drizzle/meta/_journal.json y toca lib/auth/protected-routes.ts.",
+  "knownIssues": [
+    {
+      "id": "BUG-01",
+      "severity": "medium",
+      "preexisting": true,
+      "summary": "/cursos/[id] desborda a 375px (scrollWidth 589-608) en todas sus tabs por el H1 del nombre y la fila de acciones sin wrap; no lo introduce esta feature.",
+      "action": "documentado en release-report.md §3; fix de 1 archivo, candidato a /fix-problems"
+    }
+  ],
+  "manualChecksPending": [
+    "M-01 push visible en dispositivo real",
+    "M-02 responsive visual en iPhone SE real"
+  ],
+  "artifacts": [
+    "feature-spec.md",
+    "release-scope.md",
+    "ui-kit-audit.md",
+    "design-exploration.md",
+    "design-approved.md",
+    "mockup-spec.md",
+    "design-review.md",
+    "technical-design.md",
+    "technical-design-v2.md",
+    "change-map.md",
+    "change-map-v2.md",
+    "db-plan.md",
+    "migration-notes.md",
+    "auth-impact.md",
+    "security-checklist.md",
+    "app-notes.md",
+    "ponytail-review-report.md",
+    "release-report.md",
+    "test-matrix.md",
+    "acceptance-criteria.md",
+    "90-metrics.json",
+    "91-gate-results.json",
+    "92-improvement-notes.md",
+    "evidence-manifest.json"
+  ]
+}

@@ -31,7 +31,7 @@ jest.mock("@/lib/db", () => {
 });
 
 import { db } from "@/lib/db";
-import { listCourses, listCoursesForDashboard } from "@/lib/db/queries/padel/courses";
+import { getCourseOwned, listCourses, listCoursesForDashboard } from "@/lib/db/queries/padel/courses";
 
 const mocked = jest.requireMock("@/lib/db") as any;
 const dbQueue = mocked.__dbQueue as any[][];
@@ -97,5 +97,32 @@ describe("listCoursesForDashboard", () => {
     expect(result).toEqual(rows);
     expect(result).toHaveLength(2);
     expect(db.select).toHaveBeenCalled();
+  });
+});
+
+describe("getCourseOwned (B3)", () => {
+  it("curso propio: retorna la fila con status (no CourseDetail)", async () => {
+    dbQueue.push([course]);
+
+    const result = await getCourseOwned("coach1", "c1");
+
+    expect(result).toEqual(course);
+    expect(result).not.toHaveProperty("course");
+  });
+
+  it("curso ajeno: retorna null (404 anti-IDOR)", async () => {
+    dbQueue.push([]);
+
+    const result = await getCourseOwned("otro-coach", "c1");
+
+    expect(result).toBeNull();
+  });
+
+  it("curso archivado: expone status 'archived' para el 409 AGENDA_COURSE_ARCHIVED (EC-13)", async () => {
+    dbQueue.push([{ ...course, status: "archived" }]);
+
+    const result = await getCourseOwned("coach1", "c1");
+
+    expect(result?.status).toBe("archived");
   });
 });

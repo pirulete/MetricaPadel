@@ -10,3 +10,5 @@ export * from './academies';
 export * from './pair';
 export * from './super-admin';
 export * from './transitions';
+export * from './class-agenda';
+export * from './class-agenda-blocks';

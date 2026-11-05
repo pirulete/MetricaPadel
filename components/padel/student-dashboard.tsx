@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card"
 import { EmptyState } from "@/components/padel/empty-state"
 import { JoinCourseModal } from "@/components/padel/join-course-modal"
+import { UpcomingClassesCard } from "@/components/padel/upcoming-classes-card"
 
 type StudentCourse = {
   id: string
@@ -85,6 +86,8 @@ export function StudentDashboard() {
         </div>
         <JoinCourseModal />
       </div>
+
+      <UpcomingClassesCard />
 
       {level && (
         <Card>

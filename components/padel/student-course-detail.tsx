@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { EmptyState } from "@/components/padel/empty-state"
+import { StudentCourseAgenda } from "@/components/padel/student-course-agenda"
 
 export type StudentCourseInfo = {
   id: string
@@ -90,6 +91,8 @@ export function StudentCourseDetail({
           )}
         </div>
       </div>
+
+      <StudentCourseAgenda courseId={course.id} />
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Rúbricas asignadas</h2>

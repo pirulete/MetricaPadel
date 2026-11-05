@@ -181,6 +181,19 @@ export async function getCourseById(ownerId: string, id: string): Promise<Course
 }
 
 /**
+ * Fila de curso scoped al owner, SIN joins (1 query). Helper de ownership para
+ * los handlers de agenda: a diferencia de getCourseById (que devuelve
+ * CourseDetail), expone `status` para aplicar EC-13 (409 AGENDA_COURSE_ARCHIVED).
+ * Retorna null si no existe o no pertenece al coach ⇒ 404 (anti-IDOR).
+ */
+export async function getCourseOwned(ownerId: string, id: string) {
+  const [row] = await db.select().from(courses)
+    .where(and(eq(courses.id, id), eq(courses.ownerId, ownerId)))
+    .limit(1);
+  return row ?? null;
+}
+
+/**
  * Actualiza campos parciales del curso. Retorna null si no existe o no
  * pertenece al owner.
  */

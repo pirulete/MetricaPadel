@@ -1,0 +1,12 @@
+{
+  "change_id": "2026-11-04-class-agenda",
+  "change_class": "feature",
+  "timestamp": "2026-11-04T15:34:00Z",
+  "files_changed": 51,
+  "tests_added": 72,
+  "tests_updated": 1,
+  "test_coverage_delta": null,
+  "gates_passed": 15,
+  "gates_failed": 0,
+  "notes": "files_changed = 36 añadidos + 13 modificados + 2 borrados (change-map-v2, incluye C9-fix y docs). tests_added = 63 casos unit en 4 archivos nuevos + 7 API en 3 specs + 2 E2E en 1 spec. tests_updated = tests/unit/db/courses.test.ts."
+}

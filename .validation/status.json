@@ -1,6 +1,6 @@
 {
   "status": "pass",
-  "last_validated": "2026-11-03T05:15:44.607Z",
+  "last_validated": "2026-11-04T20:18:45.639Z",
   "gates_passed": 19,
   "gates_failed": 0,
   "gates_warning": 4,
@@ -11,7 +11,7 @@
     "env_vars",
     "file_size"
   ],
-  "risk_level": "LOW",
+  "risk_level": "HIGH",
   "gates_run": [
     "typecheck",
     "lint",
@@ -37,6 +37,6 @@
     "coverage_check",
     "loop_metrics"
   ],
-  "test_coverage_delta": 33,
+  "test_coverage_delta": null,
   "message": "⚠️ All 19 gates passed, 4 warning(s): [e2e_tests] E2E Tests, [api_integration] API Integration Tests, [env_vars] Env Vars, [file_size] File size"
 }

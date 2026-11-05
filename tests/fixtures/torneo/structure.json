@@ -1,0 +1,4572 @@
+{
+  "meta": {
+    "seed": 7,
+    "source": "motor_torneo/instancia.py",
+    "frase": "golden L1 — bloques + partidos, orden determinista por id"
+  },
+  "bloques": [
+    {
+      "idx": 0,
+      "dayLabel": "Jue",
+      "startTime": "14:00",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 1,
+      "dayLabel": "Jue",
+      "startTime": "15:15",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 2,
+      "dayLabel": "Jue",
+      "startTime": "16:30",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 3,
+      "dayLabel": "Jue",
+      "startTime": "17:45",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 4,
+      "dayLabel": "Jue",
+      "startTime": "19:00",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 5,
+      "dayLabel": "Jue",
+      "startTime": "20:15",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 6,
+      "dayLabel": "Jue",
+      "startTime": "21:30",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 7,
+      "dayLabel": "Vie",
+      "startTime": "14:00",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 8,
+      "dayLabel": "Vie",
+      "startTime": "15:15",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 9,
+      "dayLabel": "Vie",
+      "startTime": "16:30",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 10,
+      "dayLabel": "Vie",
+      "startTime": "17:45",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 11,
+      "dayLabel": "Vie",
+      "startTime": "19:00",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 12,
+      "dayLabel": "Vie",
+      "startTime": "20:15",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 13,
+      "dayLabel": "Vie",
+      "startTime": "21:30",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 14,
+      "dayLabel": "Sab",
+      "startTime": "08:00",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 15,
+      "dayLabel": "Sab",
+      "startTime": "09:15",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 16,
+      "dayLabel": "Sab",
+      "startTime": "10:30",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 17,
+      "dayLabel": "Sab",
+      "startTime": "11:45",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 18,
+      "dayLabel": "Sab",
+      "startTime": "13:00",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 19,
+      "dayLabel": "Sab",
+      "startTime": "14:15",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 20,
+      "dayLabel": "Sab",
+      "startTime": "15:30",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 21,
+      "dayLabel": "Sab",
+      "startTime": "16:45",
+      "phase": "previa",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 22,
+      "dayLabel": "Sab",
+      "startTime": "18:00",
+      "phase": "final",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 23,
+      "dayLabel": "Sab",
+      "startTime": "19:15",
+      "phase": "final",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 24,
+      "dayLabel": "Sab",
+      "startTime": "20:30",
+      "phase": "final",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 25,
+      "dayLabel": "Sab",
+      "startTime": "21:45",
+      "phase": "final",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 26,
+      "dayLabel": "Dom",
+      "startTime": "08:00",
+      "phase": "final",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 27,
+      "dayLabel": "Dom",
+      "startTime": "09:15",
+      "phase": "final",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 28,
+      "dayLabel": "Dom",
+      "startTime": "10:30",
+      "phase": "final",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 29,
+      "dayLabel": "Dom",
+      "startTime": "11:45",
+      "phase": "final",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 30,
+      "dayLabel": "Dom",
+      "startTime": "13:00",
+      "phase": "final",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 31,
+      "dayLabel": "Dom",
+      "startTime": "14:15",
+      "phase": "final",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 32,
+      "dayLabel": "Dom",
+      "startTime": "15:30",
+      "phase": "final",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 33,
+      "dayLabel": "Dom",
+      "startTime": "16:45",
+      "phase": "final",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 34,
+      "dayLabel": "Dom",
+      "startTime": "18:00",
+      "phase": "final",
+      "isExtension": false,
+      "capacity": 8
+    },
+    {
+      "idx": 35,
+      "dayLabel": "Dom",
+      "startTime": "19:15",
+      "phase": "final",
+      "isExtension": true,
+      "capacity": 8
+    },
+    {
+      "idx": 36,
+      "dayLabel": "Dom",
+      "startTime": "20:30",
+      "phase": "final",
+      "isExtension": true,
+      "capacity": 8
+    },
+    {
+      "idx": 37,
+      "dayLabel": "Dom",
+      "startTime": "21:45",
+      "phase": "final",
+      "isExtension": true,
+      "capacity": 8
+    }
+  ],
+  "partidos": [
+    {
+      "id": "2da-4tos-1",
+      "categoria": "2da",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "2da-G1",
+        "2da-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-4tos-2",
+      "categoria": "2da",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "2da-G3",
+        "2da-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-4tos-3",
+      "categoria": "2da",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "2da-G1",
+        "2da-G2",
+        "2da-G5",
+        "2da-G6"
+      ],
+      "alimentadores": [
+        "2da-8vos-5",
+        "2da-8vos-6"
+      ]
+    },
+    {
+      "id": "2da-4tos-4",
+      "categoria": "2da",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "2da-G3",
+        "2da-G4",
+        "2da-G5",
+        "2da-G6"
+      ],
+      "alimentadores": [
+        "2da-8vos-7",
+        "2da-8vos-8"
+      ]
+    },
+    {
+      "id": "2da-8vos-5",
+      "categoria": "2da",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "2da-G5",
+        "2da-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-8vos-6",
+      "categoria": "2da",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "2da-G1",
+        "2da-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-8vos-7",
+      "categoria": "2da",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "2da-G3",
+        "2da-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-8vos-8",
+      "categoria": "2da",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "2da-G5",
+        "2da-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G1-P1",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G1",
+      "parejas": [
+        "2da-G1-A",
+        "2da-G1-B"
+      ],
+      "gruposOrigen": [
+        "2da-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G1-P2",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G1",
+      "parejas": [
+        "2da-G1-A",
+        "2da-G1-C"
+      ],
+      "gruposOrigen": [
+        "2da-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G1-P3",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G1",
+      "parejas": [
+        "2da-G1-B",
+        "2da-G1-C"
+      ],
+      "gruposOrigen": [
+        "2da-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G2-P1",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G2",
+      "parejas": [
+        "2da-G2-A",
+        "2da-G2-B"
+      ],
+      "gruposOrigen": [
+        "2da-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G2-P2",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G2",
+      "parejas": [
+        "2da-G2-A",
+        "2da-G2-C"
+      ],
+      "gruposOrigen": [
+        "2da-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G2-P3",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G2",
+      "parejas": [
+        "2da-G2-B",
+        "2da-G2-C"
+      ],
+      "gruposOrigen": [
+        "2da-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G3-P1",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G3",
+      "parejas": [
+        "2da-G3-A",
+        "2da-G3-B"
+      ],
+      "gruposOrigen": [
+        "2da-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G3-P2",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G3",
+      "parejas": [
+        "2da-G3-A",
+        "2da-G3-C"
+      ],
+      "gruposOrigen": [
+        "2da-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G3-P3",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G3",
+      "parejas": [
+        "2da-G3-B",
+        "2da-G3-C"
+      ],
+      "gruposOrigen": [
+        "2da-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G4-P1",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G4",
+      "parejas": [
+        "2da-G4-A",
+        "2da-G4-B"
+      ],
+      "gruposOrigen": [
+        "2da-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G4-P2",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G4",
+      "parejas": [
+        "2da-G4-A",
+        "2da-G4-C"
+      ],
+      "gruposOrigen": [
+        "2da-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G4-P3",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G4",
+      "parejas": [
+        "2da-G4-B",
+        "2da-G4-C"
+      ],
+      "gruposOrigen": [
+        "2da-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G5-P1",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G5",
+      "parejas": [
+        "2da-G5-A",
+        "2da-G5-B"
+      ],
+      "gruposOrigen": [
+        "2da-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G5-P2",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G5",
+      "parejas": [
+        "2da-G5-A",
+        "2da-G5-C"
+      ],
+      "gruposOrigen": [
+        "2da-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G5-P3",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G5",
+      "parejas": [
+        "2da-G5-B",
+        "2da-G5-C"
+      ],
+      "gruposOrigen": [
+        "2da-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G6-P1",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G6",
+      "parejas": [
+        "2da-G6-A",
+        "2da-G6-B"
+      ],
+      "gruposOrigen": [
+        "2da-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G6-P2",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G6",
+      "parejas": [
+        "2da-G6-A",
+        "2da-G6-C"
+      ],
+      "gruposOrigen": [
+        "2da-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-G6-P3",
+      "categoria": "2da",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "2da-G6",
+      "parejas": [
+        "2da-G6-B",
+        "2da-G6-C"
+      ],
+      "gruposOrigen": [
+        "2da-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "2da-final-1",
+      "categoria": "2da",
+      "phase": "final",
+      "ronda": "final",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "2da-G1",
+        "2da-G2",
+        "2da-G3",
+        "2da-G4",
+        "2da-G5",
+        "2da-G6"
+      ],
+      "alimentadores": [
+        "2da-semi-1",
+        "2da-semi-2"
+      ]
+    },
+    {
+      "id": "2da-semi-1",
+      "categoria": "2da",
+      "phase": "final",
+      "ronda": "semi",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "2da-G1",
+        "2da-G2",
+        "2da-G3",
+        "2da-G4"
+      ],
+      "alimentadores": [
+        "2da-4tos-1",
+        "2da-4tos-2"
+      ]
+    },
+    {
+      "id": "2da-semi-2",
+      "categoria": "2da",
+      "phase": "final",
+      "ronda": "semi",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "2da-G1",
+        "2da-G2",
+        "2da-G3",
+        "2da-G4",
+        "2da-G5",
+        "2da-G6"
+      ],
+      "alimentadores": [
+        "2da-4tos-3",
+        "2da-4tos-4"
+      ]
+    },
+    {
+      "id": "3ra-4tos-1",
+      "categoria": "3ra",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "3ra-G1",
+        "3ra-G2",
+        "3ra-G5",
+        "3ra-G6"
+      ],
+      "alimentadores": [
+        "3ra-8vos-1",
+        "3ra-8vos-2"
+      ]
+    },
+    {
+      "id": "3ra-4tos-2",
+      "categoria": "3ra",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "3ra-G3",
+        "3ra-G4",
+        "3ra-G7",
+        "3ra-G8"
+      ],
+      "alimentadores": [
+        "3ra-8vos-3",
+        "3ra-8vos-4"
+      ]
+    },
+    {
+      "id": "3ra-4tos-3",
+      "categoria": "3ra",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "3ra-G1",
+        "3ra-G2",
+        "3ra-G5",
+        "3ra-G6"
+      ],
+      "alimentadores": [
+        "3ra-8vos-5",
+        "3ra-8vos-6"
+      ]
+    },
+    {
+      "id": "3ra-4tos-4",
+      "categoria": "3ra",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "3ra-G3",
+        "3ra-G4",
+        "3ra-G7",
+        "3ra-G8"
+      ],
+      "alimentadores": [
+        "3ra-8vos-7",
+        "3ra-8vos-8"
+      ]
+    },
+    {
+      "id": "3ra-8vos-1",
+      "categoria": "3ra",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "3ra-G1",
+        "3ra-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-8vos-2",
+      "categoria": "3ra",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "3ra-G2",
+        "3ra-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-8vos-3",
+      "categoria": "3ra",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "3ra-G3",
+        "3ra-G7"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-8vos-4",
+      "categoria": "3ra",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "3ra-G4",
+        "3ra-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-8vos-5",
+      "categoria": "3ra",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "3ra-G1",
+        "3ra-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-8vos-6",
+      "categoria": "3ra",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "3ra-G2",
+        "3ra-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-8vos-7",
+      "categoria": "3ra",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "3ra-G3",
+        "3ra-G7"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-8vos-8",
+      "categoria": "3ra",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "3ra-G4",
+        "3ra-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G1-P1",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G1",
+      "parejas": [
+        "3ra-G1-A",
+        "3ra-G1-B"
+      ],
+      "gruposOrigen": [
+        "3ra-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G1-P2",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G1",
+      "parejas": [
+        "3ra-G1-A",
+        "3ra-G1-C"
+      ],
+      "gruposOrigen": [
+        "3ra-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G1-P3",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G1",
+      "parejas": [
+        "3ra-G1-B",
+        "3ra-G1-C"
+      ],
+      "gruposOrigen": [
+        "3ra-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G2-P1",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G2",
+      "parejas": [
+        "3ra-G2-A",
+        "3ra-G2-B"
+      ],
+      "gruposOrigen": [
+        "3ra-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G2-P2",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G2",
+      "parejas": [
+        "3ra-G2-A",
+        "3ra-G2-C"
+      ],
+      "gruposOrigen": [
+        "3ra-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G2-P3",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G2",
+      "parejas": [
+        "3ra-G2-B",
+        "3ra-G2-C"
+      ],
+      "gruposOrigen": [
+        "3ra-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G3-P1",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G3",
+      "parejas": [
+        "3ra-G3-A",
+        "3ra-G3-B"
+      ],
+      "gruposOrigen": [
+        "3ra-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G3-P2",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G3",
+      "parejas": [
+        "3ra-G3-A",
+        "3ra-G3-C"
+      ],
+      "gruposOrigen": [
+        "3ra-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G3-P3",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G3",
+      "parejas": [
+        "3ra-G3-B",
+        "3ra-G3-C"
+      ],
+      "gruposOrigen": [
+        "3ra-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G4-P1",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G4",
+      "parejas": [
+        "3ra-G4-A",
+        "3ra-G4-B"
+      ],
+      "gruposOrigen": [
+        "3ra-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G4-P2",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G4",
+      "parejas": [
+        "3ra-G4-A",
+        "3ra-G4-C"
+      ],
+      "gruposOrigen": [
+        "3ra-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G4-P3",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G4",
+      "parejas": [
+        "3ra-G4-B",
+        "3ra-G4-C"
+      ],
+      "gruposOrigen": [
+        "3ra-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G5-P1",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G5",
+      "parejas": [
+        "3ra-G5-A",
+        "3ra-G5-B"
+      ],
+      "gruposOrigen": [
+        "3ra-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G5-P2",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G5",
+      "parejas": [
+        "3ra-G5-A",
+        "3ra-G5-C"
+      ],
+      "gruposOrigen": [
+        "3ra-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G5-P3",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G5",
+      "parejas": [
+        "3ra-G5-B",
+        "3ra-G5-C"
+      ],
+      "gruposOrigen": [
+        "3ra-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G6-P1",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G6",
+      "parejas": [
+        "3ra-G6-A",
+        "3ra-G6-B"
+      ],
+      "gruposOrigen": [
+        "3ra-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G6-P2",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G6",
+      "parejas": [
+        "3ra-G6-A",
+        "3ra-G6-C"
+      ],
+      "gruposOrigen": [
+        "3ra-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G6-P3",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G6",
+      "parejas": [
+        "3ra-G6-B",
+        "3ra-G6-C"
+      ],
+      "gruposOrigen": [
+        "3ra-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G7-P1",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G7",
+      "parejas": [
+        "3ra-G7-A",
+        "3ra-G7-B"
+      ],
+      "gruposOrigen": [
+        "3ra-G7"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G7-P2",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G7",
+      "parejas": [
+        "3ra-G7-B",
+        "3ra-G7-C"
+      ],
+      "gruposOrigen": [
+        "3ra-G7"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G7-P3",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G7",
+      "parejas": [
+        "3ra-G7-C",
+        "3ra-G7-D"
+      ],
+      "gruposOrigen": [
+        "3ra-G7"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G7-P4",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G7",
+      "parejas": [
+        "3ra-G7-D",
+        "3ra-G7-A"
+      ],
+      "gruposOrigen": [
+        "3ra-G7"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G8-P1",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G8",
+      "parejas": [
+        "3ra-G8-A",
+        "3ra-G8-B"
+      ],
+      "gruposOrigen": [
+        "3ra-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G8-P2",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G8",
+      "parejas": [
+        "3ra-G8-B",
+        "3ra-G8-C"
+      ],
+      "gruposOrigen": [
+        "3ra-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G8-P3",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G8",
+      "parejas": [
+        "3ra-G8-C",
+        "3ra-G8-D"
+      ],
+      "gruposOrigen": [
+        "3ra-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-G8-P4",
+      "categoria": "3ra",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "3ra-G8",
+      "parejas": [
+        "3ra-G8-D",
+        "3ra-G8-A"
+      ],
+      "gruposOrigen": [
+        "3ra-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "3ra-final-1",
+      "categoria": "3ra",
+      "phase": "final",
+      "ronda": "final",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "3ra-G1",
+        "3ra-G2",
+        "3ra-G3",
+        "3ra-G4",
+        "3ra-G5",
+        "3ra-G6",
+        "3ra-G7",
+        "3ra-G8"
+      ],
+      "alimentadores": [
+        "3ra-semi-1",
+        "3ra-semi-2"
+      ]
+    },
+    {
+      "id": "3ra-semi-1",
+      "categoria": "3ra",
+      "phase": "final",
+      "ronda": "semi",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "3ra-G1",
+        "3ra-G2",
+        "3ra-G3",
+        "3ra-G4",
+        "3ra-G5",
+        "3ra-G6",
+        "3ra-G7",
+        "3ra-G8"
+      ],
+      "alimentadores": [
+        "3ra-4tos-1",
+        "3ra-4tos-2"
+      ]
+    },
+    {
+      "id": "3ra-semi-2",
+      "categoria": "3ra",
+      "phase": "final",
+      "ronda": "semi",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "3ra-G1",
+        "3ra-G2",
+        "3ra-G3",
+        "3ra-G4",
+        "3ra-G5",
+        "3ra-G6",
+        "3ra-G7",
+        "3ra-G8"
+      ],
+      "alimentadores": [
+        "3ra-4tos-3",
+        "3ra-4tos-4"
+      ]
+    },
+    {
+      "id": "4ta-4tos-1",
+      "categoria": "4ta",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "4ta-G1",
+        "4ta-G2",
+        "4ta-G5",
+        "4ta-G6"
+      ],
+      "alimentadores": [
+        "4ta-8vos-1",
+        "4ta-8vos-2"
+      ]
+    },
+    {
+      "id": "4ta-4tos-2",
+      "categoria": "4ta",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "4ta-G3",
+        "4ta-G4",
+        "4ta-G7",
+        "4ta-G8"
+      ],
+      "alimentadores": [
+        "4ta-8vos-3",
+        "4ta-8vos-4"
+      ]
+    },
+    {
+      "id": "4ta-4tos-3",
+      "categoria": "4ta",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "4ta-G1",
+        "4ta-G2",
+        "4ta-G5",
+        "4ta-G6"
+      ],
+      "alimentadores": [
+        "4ta-8vos-5",
+        "4ta-8vos-6"
+      ]
+    },
+    {
+      "id": "4ta-4tos-4",
+      "categoria": "4ta",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "4ta-G3",
+        "4ta-G4",
+        "4ta-G7",
+        "4ta-G8"
+      ],
+      "alimentadores": [
+        "4ta-8vos-7",
+        "4ta-8vos-8"
+      ]
+    },
+    {
+      "id": "4ta-8vos-1",
+      "categoria": "4ta",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "4ta-G1",
+        "4ta-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-8vos-2",
+      "categoria": "4ta",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "4ta-G2",
+        "4ta-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-8vos-3",
+      "categoria": "4ta",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "4ta-G3",
+        "4ta-G7"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-8vos-4",
+      "categoria": "4ta",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "4ta-G4",
+        "4ta-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-8vos-5",
+      "categoria": "4ta",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "4ta-G1",
+        "4ta-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-8vos-6",
+      "categoria": "4ta",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "4ta-G2",
+        "4ta-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-8vos-7",
+      "categoria": "4ta",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "4ta-G3",
+        "4ta-G7"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-8vos-8",
+      "categoria": "4ta",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "4ta-G4",
+        "4ta-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G1-P1",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G1",
+      "parejas": [
+        "4ta-G1-A",
+        "4ta-G1-B"
+      ],
+      "gruposOrigen": [
+        "4ta-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G1-P2",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G1",
+      "parejas": [
+        "4ta-G1-A",
+        "4ta-G1-C"
+      ],
+      "gruposOrigen": [
+        "4ta-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G1-P3",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G1",
+      "parejas": [
+        "4ta-G1-B",
+        "4ta-G1-C"
+      ],
+      "gruposOrigen": [
+        "4ta-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G2-P1",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G2",
+      "parejas": [
+        "4ta-G2-A",
+        "4ta-G2-B"
+      ],
+      "gruposOrigen": [
+        "4ta-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G2-P2",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G2",
+      "parejas": [
+        "4ta-G2-A",
+        "4ta-G2-C"
+      ],
+      "gruposOrigen": [
+        "4ta-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G2-P3",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G2",
+      "parejas": [
+        "4ta-G2-B",
+        "4ta-G2-C"
+      ],
+      "gruposOrigen": [
+        "4ta-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G3-P1",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G3",
+      "parejas": [
+        "4ta-G3-A",
+        "4ta-G3-B"
+      ],
+      "gruposOrigen": [
+        "4ta-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G3-P2",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G3",
+      "parejas": [
+        "4ta-G3-A",
+        "4ta-G3-C"
+      ],
+      "gruposOrigen": [
+        "4ta-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G3-P3",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G3",
+      "parejas": [
+        "4ta-G3-B",
+        "4ta-G3-C"
+      ],
+      "gruposOrigen": [
+        "4ta-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G4-P1",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G4",
+      "parejas": [
+        "4ta-G4-A",
+        "4ta-G4-B"
+      ],
+      "gruposOrigen": [
+        "4ta-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G4-P2",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G4",
+      "parejas": [
+        "4ta-G4-A",
+        "4ta-G4-C"
+      ],
+      "gruposOrigen": [
+        "4ta-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G4-P3",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G4",
+      "parejas": [
+        "4ta-G4-B",
+        "4ta-G4-C"
+      ],
+      "gruposOrigen": [
+        "4ta-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G5-P1",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G5",
+      "parejas": [
+        "4ta-G5-A",
+        "4ta-G5-B"
+      ],
+      "gruposOrigen": [
+        "4ta-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G5-P2",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G5",
+      "parejas": [
+        "4ta-G5-A",
+        "4ta-G5-C"
+      ],
+      "gruposOrigen": [
+        "4ta-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G5-P3",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G5",
+      "parejas": [
+        "4ta-G5-B",
+        "4ta-G5-C"
+      ],
+      "gruposOrigen": [
+        "4ta-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G6-P1",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G6",
+      "parejas": [
+        "4ta-G6-A",
+        "4ta-G6-B"
+      ],
+      "gruposOrigen": [
+        "4ta-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G6-P2",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G6",
+      "parejas": [
+        "4ta-G6-A",
+        "4ta-G6-C"
+      ],
+      "gruposOrigen": [
+        "4ta-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G6-P3",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G6",
+      "parejas": [
+        "4ta-G6-B",
+        "4ta-G6-C"
+      ],
+      "gruposOrigen": [
+        "4ta-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G7-P1",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G7",
+      "parejas": [
+        "4ta-G7-A",
+        "4ta-G7-B"
+      ],
+      "gruposOrigen": [
+        "4ta-G7"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G7-P2",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G7",
+      "parejas": [
+        "4ta-G7-B",
+        "4ta-G7-C"
+      ],
+      "gruposOrigen": [
+        "4ta-G7"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G7-P3",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G7",
+      "parejas": [
+        "4ta-G7-C",
+        "4ta-G7-D"
+      ],
+      "gruposOrigen": [
+        "4ta-G7"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G7-P4",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G7",
+      "parejas": [
+        "4ta-G7-D",
+        "4ta-G7-A"
+      ],
+      "gruposOrigen": [
+        "4ta-G7"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G8-P1",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G8",
+      "parejas": [
+        "4ta-G8-A",
+        "4ta-G8-B"
+      ],
+      "gruposOrigen": [
+        "4ta-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G8-P2",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G8",
+      "parejas": [
+        "4ta-G8-B",
+        "4ta-G8-C"
+      ],
+      "gruposOrigen": [
+        "4ta-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G8-P3",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G8",
+      "parejas": [
+        "4ta-G8-C",
+        "4ta-G8-D"
+      ],
+      "gruposOrigen": [
+        "4ta-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-G8-P4",
+      "categoria": "4ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "4ta-G8",
+      "parejas": [
+        "4ta-G8-D",
+        "4ta-G8-A"
+      ],
+      "gruposOrigen": [
+        "4ta-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "4ta-final-1",
+      "categoria": "4ta",
+      "phase": "final",
+      "ronda": "final",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "4ta-G1",
+        "4ta-G2",
+        "4ta-G3",
+        "4ta-G4",
+        "4ta-G5",
+        "4ta-G6",
+        "4ta-G7",
+        "4ta-G8"
+      ],
+      "alimentadores": [
+        "4ta-semi-1",
+        "4ta-semi-2"
+      ]
+    },
+    {
+      "id": "4ta-semi-1",
+      "categoria": "4ta",
+      "phase": "final",
+      "ronda": "semi",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "4ta-G1",
+        "4ta-G2",
+        "4ta-G3",
+        "4ta-G4",
+        "4ta-G5",
+        "4ta-G6",
+        "4ta-G7",
+        "4ta-G8"
+      ],
+      "alimentadores": [
+        "4ta-4tos-1",
+        "4ta-4tos-2"
+      ]
+    },
+    {
+      "id": "4ta-semi-2",
+      "categoria": "4ta",
+      "phase": "final",
+      "ronda": "semi",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "4ta-G1",
+        "4ta-G2",
+        "4ta-G3",
+        "4ta-G4",
+        "4ta-G5",
+        "4ta-G6",
+        "4ta-G7",
+        "4ta-G8"
+      ],
+      "alimentadores": [
+        "4ta-4tos-3",
+        "4ta-4tos-4"
+      ]
+    },
+    {
+      "id": "5ta-4tos-1",
+      "categoria": "5ta",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "5ta-G1",
+        "5ta-G2",
+        "5ta-G5",
+        "5ta-G6"
+      ],
+      "alimentadores": [
+        "5ta-8vos-1",
+        "5ta-8vos-2"
+      ]
+    },
+    {
+      "id": "5ta-4tos-2",
+      "categoria": "5ta",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "5ta-G3",
+        "5ta-G4",
+        "5ta-G7",
+        "5ta-G8"
+      ],
+      "alimentadores": [
+        "5ta-8vos-3",
+        "5ta-8vos-4"
+      ]
+    },
+    {
+      "id": "5ta-4tos-3",
+      "categoria": "5ta",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "5ta-G1",
+        "5ta-G2",
+        "5ta-G5",
+        "5ta-G6"
+      ],
+      "alimentadores": [
+        "5ta-8vos-5",
+        "5ta-8vos-6"
+      ]
+    },
+    {
+      "id": "5ta-4tos-4",
+      "categoria": "5ta",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "5ta-G3",
+        "5ta-G4",
+        "5ta-G7",
+        "5ta-G8"
+      ],
+      "alimentadores": [
+        "5ta-8vos-7",
+        "5ta-8vos-8"
+      ]
+    },
+    {
+      "id": "5ta-8vos-1",
+      "categoria": "5ta",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "5ta-G1",
+        "5ta-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-8vos-2",
+      "categoria": "5ta",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "5ta-G2",
+        "5ta-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-8vos-3",
+      "categoria": "5ta",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "5ta-G3",
+        "5ta-G7"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-8vos-4",
+      "categoria": "5ta",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "5ta-G4",
+        "5ta-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-8vos-5",
+      "categoria": "5ta",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "5ta-G1",
+        "5ta-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-8vos-6",
+      "categoria": "5ta",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "5ta-G2",
+        "5ta-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-8vos-7",
+      "categoria": "5ta",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "5ta-G3",
+        "5ta-G7"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-8vos-8",
+      "categoria": "5ta",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "5ta-G4",
+        "5ta-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G1-P1",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G1",
+      "parejas": [
+        "5ta-G1-A",
+        "5ta-G1-B"
+      ],
+      "gruposOrigen": [
+        "5ta-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G1-P2",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G1",
+      "parejas": [
+        "5ta-G1-A",
+        "5ta-G1-C"
+      ],
+      "gruposOrigen": [
+        "5ta-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G1-P3",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G1",
+      "parejas": [
+        "5ta-G1-B",
+        "5ta-G1-C"
+      ],
+      "gruposOrigen": [
+        "5ta-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G2-P1",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G2",
+      "parejas": [
+        "5ta-G2-A",
+        "5ta-G2-B"
+      ],
+      "gruposOrigen": [
+        "5ta-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G2-P2",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G2",
+      "parejas": [
+        "5ta-G2-A",
+        "5ta-G2-C"
+      ],
+      "gruposOrigen": [
+        "5ta-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G2-P3",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G2",
+      "parejas": [
+        "5ta-G2-B",
+        "5ta-G2-C"
+      ],
+      "gruposOrigen": [
+        "5ta-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G3-P1",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G3",
+      "parejas": [
+        "5ta-G3-A",
+        "5ta-G3-B"
+      ],
+      "gruposOrigen": [
+        "5ta-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G3-P2",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G3",
+      "parejas": [
+        "5ta-G3-A",
+        "5ta-G3-C"
+      ],
+      "gruposOrigen": [
+        "5ta-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G3-P3",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G3",
+      "parejas": [
+        "5ta-G3-B",
+        "5ta-G3-C"
+      ],
+      "gruposOrigen": [
+        "5ta-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G4-P1",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G4",
+      "parejas": [
+        "5ta-G4-A",
+        "5ta-G4-B"
+      ],
+      "gruposOrigen": [
+        "5ta-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G4-P2",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G4",
+      "parejas": [
+        "5ta-G4-A",
+        "5ta-G4-C"
+      ],
+      "gruposOrigen": [
+        "5ta-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G4-P3",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G4",
+      "parejas": [
+        "5ta-G4-B",
+        "5ta-G4-C"
+      ],
+      "gruposOrigen": [
+        "5ta-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G5-P1",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G5",
+      "parejas": [
+        "5ta-G5-A",
+        "5ta-G5-B"
+      ],
+      "gruposOrigen": [
+        "5ta-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G5-P2",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G5",
+      "parejas": [
+        "5ta-G5-A",
+        "5ta-G5-C"
+      ],
+      "gruposOrigen": [
+        "5ta-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G5-P3",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G5",
+      "parejas": [
+        "5ta-G5-B",
+        "5ta-G5-C"
+      ],
+      "gruposOrigen": [
+        "5ta-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G6-P1",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G6",
+      "parejas": [
+        "5ta-G6-A",
+        "5ta-G6-B"
+      ],
+      "gruposOrigen": [
+        "5ta-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G6-P2",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G6",
+      "parejas": [
+        "5ta-G6-A",
+        "5ta-G6-C"
+      ],
+      "gruposOrigen": [
+        "5ta-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G6-P3",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G6",
+      "parejas": [
+        "5ta-G6-B",
+        "5ta-G6-C"
+      ],
+      "gruposOrigen": [
+        "5ta-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G7-P1",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G7",
+      "parejas": [
+        "5ta-G7-A",
+        "5ta-G7-B"
+      ],
+      "gruposOrigen": [
+        "5ta-G7"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G7-P2",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G7",
+      "parejas": [
+        "5ta-G7-A",
+        "5ta-G7-C"
+      ],
+      "gruposOrigen": [
+        "5ta-G7"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G7-P3",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G7",
+      "parejas": [
+        "5ta-G7-B",
+        "5ta-G7-C"
+      ],
+      "gruposOrigen": [
+        "5ta-G7"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G8-P1",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G8",
+      "parejas": [
+        "5ta-G8-A",
+        "5ta-G8-B"
+      ],
+      "gruposOrigen": [
+        "5ta-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G8-P2",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G8",
+      "parejas": [
+        "5ta-G8-B",
+        "5ta-G8-C"
+      ],
+      "gruposOrigen": [
+        "5ta-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G8-P3",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G8",
+      "parejas": [
+        "5ta-G8-C",
+        "5ta-G8-D"
+      ],
+      "gruposOrigen": [
+        "5ta-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-G8-P4",
+      "categoria": "5ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "5ta-G8",
+      "parejas": [
+        "5ta-G8-D",
+        "5ta-G8-A"
+      ],
+      "gruposOrigen": [
+        "5ta-G8"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "5ta-final-1",
+      "categoria": "5ta",
+      "phase": "final",
+      "ronda": "final",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "5ta-G1",
+        "5ta-G2",
+        "5ta-G3",
+        "5ta-G4",
+        "5ta-G5",
+        "5ta-G6",
+        "5ta-G7",
+        "5ta-G8"
+      ],
+      "alimentadores": [
+        "5ta-semi-1",
+        "5ta-semi-2"
+      ]
+    },
+    {
+      "id": "5ta-semi-1",
+      "categoria": "5ta",
+      "phase": "final",
+      "ronda": "semi",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "5ta-G1",
+        "5ta-G2",
+        "5ta-G3",
+        "5ta-G4",
+        "5ta-G5",
+        "5ta-G6",
+        "5ta-G7",
+        "5ta-G8"
+      ],
+      "alimentadores": [
+        "5ta-4tos-1",
+        "5ta-4tos-2"
+      ]
+    },
+    {
+      "id": "5ta-semi-2",
+      "categoria": "5ta",
+      "phase": "final",
+      "ronda": "semi",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "5ta-G1",
+        "5ta-G2",
+        "5ta-G3",
+        "5ta-G4",
+        "5ta-G5",
+        "5ta-G6",
+        "5ta-G7",
+        "5ta-G8"
+      ],
+      "alimentadores": [
+        "5ta-4tos-3",
+        "5ta-4tos-4"
+      ]
+    },
+    {
+      "id": "6ta-4tos-1",
+      "categoria": "6ta",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "6ta-G1",
+        "6ta-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "6ta-4tos-2",
+      "categoria": "6ta",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "6ta-G2",
+        "6ta-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "6ta-4tos-3",
+      "categoria": "6ta",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "6ta-G1",
+        "6ta-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "6ta-4tos-4",
+      "categoria": "6ta",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "6ta-G2",
+        "6ta-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "6ta-G1-P1",
+      "categoria": "6ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "6ta-G1",
+      "parejas": [
+        "6ta-G1-A",
+        "6ta-G1-B"
+      ],
+      "gruposOrigen": [
+        "6ta-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "6ta-G1-P2",
+      "categoria": "6ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "6ta-G1",
+      "parejas": [
+        "6ta-G1-A",
+        "6ta-G1-C"
+      ],
+      "gruposOrigen": [
+        "6ta-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "6ta-G1-P3",
+      "categoria": "6ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "6ta-G1",
+      "parejas": [
+        "6ta-G1-B",
+        "6ta-G1-C"
+      ],
+      "gruposOrigen": [
+        "6ta-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "6ta-G2-P1",
+      "categoria": "6ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "6ta-G2",
+      "parejas": [
+        "6ta-G2-A",
+        "6ta-G2-B"
+      ],
+      "gruposOrigen": [
+        "6ta-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "6ta-G2-P2",
+      "categoria": "6ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "6ta-G2",
+      "parejas": [
+        "6ta-G2-A",
+        "6ta-G2-C"
+      ],
+      "gruposOrigen": [
+        "6ta-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "6ta-G2-P3",
+      "categoria": "6ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "6ta-G2",
+      "parejas": [
+        "6ta-G2-B",
+        "6ta-G2-C"
+      ],
+      "gruposOrigen": [
+        "6ta-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "6ta-G3-P1",
+      "categoria": "6ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "6ta-G3",
+      "parejas": [
+        "6ta-G3-A",
+        "6ta-G3-B"
+      ],
+      "gruposOrigen": [
+        "6ta-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "6ta-G3-P2",
+      "categoria": "6ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "6ta-G3",
+      "parejas": [
+        "6ta-G3-A",
+        "6ta-G3-C"
+      ],
+      "gruposOrigen": [
+        "6ta-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "6ta-G3-P3",
+      "categoria": "6ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "6ta-G3",
+      "parejas": [
+        "6ta-G3-B",
+        "6ta-G3-C"
+      ],
+      "gruposOrigen": [
+        "6ta-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "6ta-G4-P1",
+      "categoria": "6ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "6ta-G4",
+      "parejas": [
+        "6ta-G4-A",
+        "6ta-G4-B"
+      ],
+      "gruposOrigen": [
+        "6ta-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "6ta-G4-P2",
+      "categoria": "6ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "6ta-G4",
+      "parejas": [
+        "6ta-G4-A",
+        "6ta-G4-C"
+      ],
+      "gruposOrigen": [
+        "6ta-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "6ta-G4-P3",
+      "categoria": "6ta",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "6ta-G4",
+      "parejas": [
+        "6ta-G4-B",
+        "6ta-G4-C"
+      ],
+      "gruposOrigen": [
+        "6ta-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "6ta-final-1",
+      "categoria": "6ta",
+      "phase": "final",
+      "ronda": "final",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "6ta-G1",
+        "6ta-G2",
+        "6ta-G3",
+        "6ta-G4"
+      ],
+      "alimentadores": [
+        "6ta-semi-1",
+        "6ta-semi-2"
+      ]
+    },
+    {
+      "id": "6ta-semi-1",
+      "categoria": "6ta",
+      "phase": "final",
+      "ronda": "semi",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "6ta-G1",
+        "6ta-G2",
+        "6ta-G3",
+        "6ta-G4"
+      ],
+      "alimentadores": [
+        "6ta-4tos-1",
+        "6ta-4tos-2"
+      ]
+    },
+    {
+      "id": "6ta-semi-2",
+      "categoria": "6ta",
+      "phase": "final",
+      "ronda": "semi",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "6ta-G1",
+        "6ta-G2",
+        "6ta-G3",
+        "6ta-G4"
+      ],
+      "alimentadores": [
+        "6ta-4tos-3",
+        "6ta-4tos-4"
+      ]
+    },
+    {
+      "id": "A-4tos-1",
+      "categoria": "A",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "A-G1",
+        "A-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-4tos-2",
+      "categoria": "A",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "A-G3",
+        "A-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-4tos-3",
+      "categoria": "A",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "A-G1",
+        "A-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-4tos-4",
+      "categoria": "A",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "A-G2",
+        "A-G3",
+        "A-G4",
+        "A-G5"
+      ],
+      "alimentadores": [
+        "A-8vos-7",
+        "A-8vos-8"
+      ]
+    },
+    {
+      "id": "A-8vos-7",
+      "categoria": "A",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "A-G2",
+        "A-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-8vos-8",
+      "categoria": "A",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "A-G4",
+        "A-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-G1-P1",
+      "categoria": "A",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "A-G1",
+      "parejas": [
+        "A-G1-A",
+        "A-G1-B"
+      ],
+      "gruposOrigen": [
+        "A-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-G1-P2",
+      "categoria": "A",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "A-G1",
+      "parejas": [
+        "A-G1-A",
+        "A-G1-C"
+      ],
+      "gruposOrigen": [
+        "A-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-G1-P3",
+      "categoria": "A",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "A-G1",
+      "parejas": [
+        "A-G1-B",
+        "A-G1-C"
+      ],
+      "gruposOrigen": [
+        "A-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-G2-P1",
+      "categoria": "A",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "A-G2",
+      "parejas": [
+        "A-G2-A",
+        "A-G2-B"
+      ],
+      "gruposOrigen": [
+        "A-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-G2-P2",
+      "categoria": "A",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "A-G2",
+      "parejas": [
+        "A-G2-A",
+        "A-G2-C"
+      ],
+      "gruposOrigen": [
+        "A-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-G2-P3",
+      "categoria": "A",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "A-G2",
+      "parejas": [
+        "A-G2-B",
+        "A-G2-C"
+      ],
+      "gruposOrigen": [
+        "A-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-G3-P1",
+      "categoria": "A",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "A-G3",
+      "parejas": [
+        "A-G3-A",
+        "A-G3-B"
+      ],
+      "gruposOrigen": [
+        "A-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-G3-P2",
+      "categoria": "A",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "A-G3",
+      "parejas": [
+        "A-G3-A",
+        "A-G3-C"
+      ],
+      "gruposOrigen": [
+        "A-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-G3-P3",
+      "categoria": "A",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "A-G3",
+      "parejas": [
+        "A-G3-B",
+        "A-G3-C"
+      ],
+      "gruposOrigen": [
+        "A-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-G4-P1",
+      "categoria": "A",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "A-G4",
+      "parejas": [
+        "A-G4-A",
+        "A-G4-B"
+      ],
+      "gruposOrigen": [
+        "A-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-G4-P2",
+      "categoria": "A",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "A-G4",
+      "parejas": [
+        "A-G4-A",
+        "A-G4-C"
+      ],
+      "gruposOrigen": [
+        "A-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-G4-P3",
+      "categoria": "A",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "A-G4",
+      "parejas": [
+        "A-G4-B",
+        "A-G4-C"
+      ],
+      "gruposOrigen": [
+        "A-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-G5-P1",
+      "categoria": "A",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "A-G5",
+      "parejas": [
+        "A-G5-A",
+        "A-G5-B"
+      ],
+      "gruposOrigen": [
+        "A-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-G5-P2",
+      "categoria": "A",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "A-G5",
+      "parejas": [
+        "A-G5-A",
+        "A-G5-C"
+      ],
+      "gruposOrigen": [
+        "A-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-G5-P3",
+      "categoria": "A",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "A-G5",
+      "parejas": [
+        "A-G5-B",
+        "A-G5-C"
+      ],
+      "gruposOrigen": [
+        "A-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "A-final-1",
+      "categoria": "A",
+      "phase": "final",
+      "ronda": "final",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "A-G1",
+        "A-G2",
+        "A-G3",
+        "A-G4",
+        "A-G5"
+      ],
+      "alimentadores": [
+        "A-semi-1",
+        "A-semi-2"
+      ]
+    },
+    {
+      "id": "A-semi-1",
+      "categoria": "A",
+      "phase": "final",
+      "ronda": "semi",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "A-G1",
+        "A-G2",
+        "A-G3",
+        "A-G4"
+      ],
+      "alimentadores": [
+        "A-4tos-1",
+        "A-4tos-2"
+      ]
+    },
+    {
+      "id": "A-semi-2",
+      "categoria": "A",
+      "phase": "final",
+      "ronda": "semi",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "A-G1",
+        "A-G2",
+        "A-G3",
+        "A-G4",
+        "A-G5"
+      ],
+      "alimentadores": [
+        "A-4tos-3",
+        "A-4tos-4"
+      ]
+    },
+    {
+      "id": "B-4tos-1",
+      "categoria": "B",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "B-G1",
+        "B-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-4tos-2",
+      "categoria": "B",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "B-G3",
+        "B-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-4tos-3",
+      "categoria": "B",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "B-G1",
+        "B-G2",
+        "B-G5",
+        "B-G6"
+      ],
+      "alimentadores": [
+        "B-8vos-5",
+        "B-8vos-6"
+      ]
+    },
+    {
+      "id": "B-4tos-4",
+      "categoria": "B",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "B-G3",
+        "B-G4",
+        "B-G5",
+        "B-G6"
+      ],
+      "alimentadores": [
+        "B-8vos-7",
+        "B-8vos-8"
+      ]
+    },
+    {
+      "id": "B-8vos-5",
+      "categoria": "B",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "B-G5",
+        "B-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-8vos-6",
+      "categoria": "B",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "B-G1",
+        "B-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-8vos-7",
+      "categoria": "B",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "B-G3",
+        "B-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-8vos-8",
+      "categoria": "B",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "B-G5",
+        "B-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G1-P1",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G1",
+      "parejas": [
+        "B-G1-A",
+        "B-G1-B"
+      ],
+      "gruposOrigen": [
+        "B-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G1-P2",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G1",
+      "parejas": [
+        "B-G1-A",
+        "B-G1-C"
+      ],
+      "gruposOrigen": [
+        "B-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G1-P3",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G1",
+      "parejas": [
+        "B-G1-B",
+        "B-G1-C"
+      ],
+      "gruposOrigen": [
+        "B-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G2-P1",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G2",
+      "parejas": [
+        "B-G2-A",
+        "B-G2-B"
+      ],
+      "gruposOrigen": [
+        "B-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G2-P2",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G2",
+      "parejas": [
+        "B-G2-A",
+        "B-G2-C"
+      ],
+      "gruposOrigen": [
+        "B-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G2-P3",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G2",
+      "parejas": [
+        "B-G2-B",
+        "B-G2-C"
+      ],
+      "gruposOrigen": [
+        "B-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G3-P1",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G3",
+      "parejas": [
+        "B-G3-A",
+        "B-G3-B"
+      ],
+      "gruposOrigen": [
+        "B-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G3-P2",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G3",
+      "parejas": [
+        "B-G3-A",
+        "B-G3-C"
+      ],
+      "gruposOrigen": [
+        "B-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G3-P3",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G3",
+      "parejas": [
+        "B-G3-B",
+        "B-G3-C"
+      ],
+      "gruposOrigen": [
+        "B-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G4-P1",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G4",
+      "parejas": [
+        "B-G4-A",
+        "B-G4-B"
+      ],
+      "gruposOrigen": [
+        "B-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G4-P2",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G4",
+      "parejas": [
+        "B-G4-A",
+        "B-G4-C"
+      ],
+      "gruposOrigen": [
+        "B-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G4-P3",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G4",
+      "parejas": [
+        "B-G4-B",
+        "B-G4-C"
+      ],
+      "gruposOrigen": [
+        "B-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G5-P1",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G5",
+      "parejas": [
+        "B-G5-A",
+        "B-G5-B"
+      ],
+      "gruposOrigen": [
+        "B-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G5-P2",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G5",
+      "parejas": [
+        "B-G5-A",
+        "B-G5-C"
+      ],
+      "gruposOrigen": [
+        "B-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G5-P3",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G5",
+      "parejas": [
+        "B-G5-B",
+        "B-G5-C"
+      ],
+      "gruposOrigen": [
+        "B-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G6-P1",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G6",
+      "parejas": [
+        "B-G6-A",
+        "B-G6-B"
+      ],
+      "gruposOrigen": [
+        "B-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G6-P2",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G6",
+      "parejas": [
+        "B-G6-A",
+        "B-G6-C"
+      ],
+      "gruposOrigen": [
+        "B-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-G6-P3",
+      "categoria": "B",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "B-G6",
+      "parejas": [
+        "B-G6-B",
+        "B-G6-C"
+      ],
+      "gruposOrigen": [
+        "B-G6"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "B-final-1",
+      "categoria": "B",
+      "phase": "final",
+      "ronda": "final",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "B-G1",
+        "B-G2",
+        "B-G3",
+        "B-G4",
+        "B-G5",
+        "B-G6"
+      ],
+      "alimentadores": [
+        "B-semi-1",
+        "B-semi-2"
+      ]
+    },
+    {
+      "id": "B-semi-1",
+      "categoria": "B",
+      "phase": "final",
+      "ronda": "semi",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "B-G1",
+        "B-G2",
+        "B-G3",
+        "B-G4"
+      ],
+      "alimentadores": [
+        "B-4tos-1",
+        "B-4tos-2"
+      ]
+    },
+    {
+      "id": "B-semi-2",
+      "categoria": "B",
+      "phase": "final",
+      "ronda": "semi",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "B-G1",
+        "B-G2",
+        "B-G3",
+        "B-G4",
+        "B-G5",
+        "B-G6"
+      ],
+      "alimentadores": [
+        "B-4tos-3",
+        "B-4tos-4"
+      ]
+    },
+    {
+      "id": "C-4tos-1",
+      "categoria": "C",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "C-G1",
+        "C-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-4tos-2",
+      "categoria": "C",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "C-G3",
+        "C-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-4tos-3",
+      "categoria": "C",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "C-G1",
+        "C-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-4tos-4",
+      "categoria": "C",
+      "phase": "final",
+      "ronda": "4tos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "C-G2",
+        "C-G3",
+        "C-G4",
+        "C-G5"
+      ],
+      "alimentadores": [
+        "C-8vos-7",
+        "C-8vos-8"
+      ]
+    },
+    {
+      "id": "C-8vos-7",
+      "categoria": "C",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "C-G2",
+        "C-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-8vos-8",
+      "categoria": "C",
+      "phase": "final",
+      "ronda": "8vos",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "C-G4",
+        "C-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-G1-P1",
+      "categoria": "C",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "C-G1",
+      "parejas": [
+        "C-G1-A",
+        "C-G1-B"
+      ],
+      "gruposOrigen": [
+        "C-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-G1-P2",
+      "categoria": "C",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "C-G1",
+      "parejas": [
+        "C-G1-A",
+        "C-G1-C"
+      ],
+      "gruposOrigen": [
+        "C-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-G1-P3",
+      "categoria": "C",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "C-G1",
+      "parejas": [
+        "C-G1-B",
+        "C-G1-C"
+      ],
+      "gruposOrigen": [
+        "C-G1"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-G2-P1",
+      "categoria": "C",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "C-G2",
+      "parejas": [
+        "C-G2-A",
+        "C-G2-B"
+      ],
+      "gruposOrigen": [
+        "C-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-G2-P2",
+      "categoria": "C",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "C-G2",
+      "parejas": [
+        "C-G2-A",
+        "C-G2-C"
+      ],
+      "gruposOrigen": [
+        "C-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-G2-P3",
+      "categoria": "C",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "C-G2",
+      "parejas": [
+        "C-G2-B",
+        "C-G2-C"
+      ],
+      "gruposOrigen": [
+        "C-G2"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-G3-P1",
+      "categoria": "C",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "C-G3",
+      "parejas": [
+        "C-G3-A",
+        "C-G3-B"
+      ],
+      "gruposOrigen": [
+        "C-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-G3-P2",
+      "categoria": "C",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "C-G3",
+      "parejas": [
+        "C-G3-A",
+        "C-G3-C"
+      ],
+      "gruposOrigen": [
+        "C-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-G3-P3",
+      "categoria": "C",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "C-G3",
+      "parejas": [
+        "C-G3-B",
+        "C-G3-C"
+      ],
+      "gruposOrigen": [
+        "C-G3"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-G4-P1",
+      "categoria": "C",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "C-G4",
+      "parejas": [
+        "C-G4-A",
+        "C-G4-B"
+      ],
+      "gruposOrigen": [
+        "C-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-G4-P2",
+      "categoria": "C",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "C-G4",
+      "parejas": [
+        "C-G4-A",
+        "C-G4-C"
+      ],
+      "gruposOrigen": [
+        "C-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-G4-P3",
+      "categoria": "C",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "C-G4",
+      "parejas": [
+        "C-G4-B",
+        "C-G4-C"
+      ],
+      "gruposOrigen": [
+        "C-G4"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-G5-P1",
+      "categoria": "C",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "C-G5",
+      "parejas": [
+        "C-G5-A",
+        "C-G5-B"
+      ],
+      "gruposOrigen": [
+        "C-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-G5-P2",
+      "categoria": "C",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "C-G5",
+      "parejas": [
+        "C-G5-A",
+        "C-G5-C"
+      ],
+      "gruposOrigen": [
+        "C-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-G5-P3",
+      "categoria": "C",
+      "phase": "previa",
+      "ronda": "grupo",
+      "grupo": "C-G5",
+      "parejas": [
+        "C-G5-B",
+        "C-G5-C"
+      ],
+      "gruposOrigen": [
+        "C-G5"
+      ],
+      "alimentadores": []
+    },
+    {
+      "id": "C-final-1",
+      "categoria": "C",
+      "phase": "final",
+      "ronda": "final",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "C-G1",
+        "C-G2",
+        "C-G3",
+        "C-G4",
+        "C-G5"
+      ],
+      "alimentadores": [
+        "C-semi-1",
+        "C-semi-2"
+      ]
+    },
+    {
+      "id": "C-semi-1",
+      "categoria": "C",
+      "phase": "final",
+      "ronda": "semi",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "C-G1",
+        "C-G2",
+        "C-G3",
+        "C-G4"
+      ],
+      "alimentadores": [
+        "C-4tos-1",
+        "C-4tos-2"
+      ]
+    },
+    {
+      "id": "C-semi-2",
+      "categoria": "C",
+      "phase": "final",
+      "ronda": "semi",
+      "grupo": null,
+      "parejas": null,
+      "gruposOrigen": [
+        "C-G1",
+        "C-G2",
+        "C-G3",
+        "C-G4",
+        "C-G5"
+      ],
+      "alimentadores": [
+        "C-4tos-3",
+        "C-4tos-4"
+      ]
+    }
+  ],
+  "grupos": {
+    "2da-G1": {
+      "categoria": "2da",
+      "tam": 3,
+      "partidos": [
+        "2da-G1-P1",
+        "2da-G1-P2",
+        "2da-G1-P3"
+      ]
+    },
+    "2da-G2": {
+      "categoria": "2da",
+      "tam": 3,
+      "partidos": [
+        "2da-G2-P1",
+        "2da-G2-P2",
+        "2da-G2-P3"
+      ]
+    },
+    "2da-G3": {
+      "categoria": "2da",
+      "tam": 3,
+      "partidos": [
+        "2da-G3-P1",
+        "2da-G3-P2",
+        "2da-G3-P3"
+      ]
+    },
+    "2da-G4": {
+      "categoria": "2da",
+      "tam": 3,
+      "partidos": [
+        "2da-G4-P1",
+        "2da-G4-P2",
+        "2da-G4-P3"
+      ]
+    },
+    "2da-G5": {
+      "categoria": "2da",
+      "tam": 3,
+      "partidos": [
+        "2da-G5-P1",
+        "2da-G5-P2",
+        "2da-G5-P3"
+      ]
+    },
+    "2da-G6": {
+      "categoria": "2da",
+      "tam": 3,
+      "partidos": [
+        "2da-G6-P1",
+        "2da-G6-P2",
+        "2da-G6-P3"
+      ]
+    },
+    "3ra-G1": {
+      "categoria": "3ra",
+      "tam": 3,
+      "partidos": [
+        "3ra-G1-P1",
+        "3ra-G1-P2",
+        "3ra-G1-P3"
+      ]
+    },
+    "3ra-G2": {
+      "categoria": "3ra",
+      "tam": 3,
+      "partidos": [
+        "3ra-G2-P1",
+        "3ra-G2-P2",
+        "3ra-G2-P3"
+      ]
+    },
+    "3ra-G3": {
+      "categoria": "3ra",
+      "tam": 3,
+      "partidos": [
+        "3ra-G3-P1",
+        "3ra-G3-P2",
+        "3ra-G3-P3"
+      ]
+    },
+    "3ra-G4": {
+      "categoria": "3ra",
+      "tam": 3,
+      "partidos": [
+        "3ra-G4-P1",
+        "3ra-G4-P2",
+        "3ra-G4-P3"
+      ]
+    },
+    "3ra-G5": {
+      "categoria": "3ra",
+      "tam": 3,
+      "partidos": [
+        "3ra-G5-P1",
+        "3ra-G5-P2",
+        "3ra-G5-P3"
+      ]
+    },
+    "3ra-G6": {
+      "categoria": "3ra",
+      "tam": 3,
+      "partidos": [
+        "3ra-G6-P1",
+        "3ra-G6-P2",
+        "3ra-G6-P3"
+      ]
+    },
+    "3ra-G7": {
+      "categoria": "3ra",
+      "tam": 4,
+      "partidos": [
+        "3ra-G7-P1",
+        "3ra-G7-P2",
+        "3ra-G7-P3",
+        "3ra-G7-P4"
+      ]
+    },
+    "3ra-G8": {
+      "categoria": "3ra",
+      "tam": 4,
+      "partidos": [
+        "3ra-G8-P1",
+        "3ra-G8-P2",
+        "3ra-G8-P3",
+        "3ra-G8-P4"
+      ]
+    },
+    "4ta-G1": {
+      "categoria": "4ta",
+      "tam": 3,
+      "partidos": [
+        "4ta-G1-P1",
+        "4ta-G1-P2",
+        "4ta-G1-P3"
+      ]
+    },
+    "4ta-G2": {
+      "categoria": "4ta",
+      "tam": 3,
+      "partidos": [
+        "4ta-G2-P1",
+        "4ta-G2-P2",
+        "4ta-G2-P3"
+      ]
+    },
+    "4ta-G3": {
+      "categoria": "4ta",
+      "tam": 3,
+      "partidos": [
+        "4ta-G3-P1",
+        "4ta-G3-P2",
+        "4ta-G3-P3"
+      ]
+    },
+    "4ta-G4": {
+      "categoria": "4ta",
+      "tam": 3,
+      "partidos": [
+        "4ta-G4-P1",
+        "4ta-G4-P2",
+        "4ta-G4-P3"
+      ]
+    },
+    "4ta-G5": {
+      "categoria": "4ta",
+      "tam": 3,
+      "partidos": [
+        "4ta-G5-P1",
+        "4ta-G5-P2",
+        "4ta-G5-P3"
+      ]
+    },
+    "4ta-G6": {
+      "categoria": "4ta",
+      "tam": 3,
+      "partidos": [
+        "4ta-G6-P1",
+        "4ta-G6-P2",
+        "4ta-G6-P3"
+      ]
+    },
+    "4ta-G7": {
+      "categoria": "4ta",
+      "tam": 4,
+      "partidos": [
+        "4ta-G7-P1",
+        "4ta-G7-P2",
+        "4ta-G7-P3",
+        "4ta-G7-P4"
+      ]
+    },
+    "4ta-G8": {
+      "categoria": "4ta",
+      "tam": 4,
+      "partidos": [
+        "4ta-G8-P1",
+        "4ta-G8-P2",
+        "4ta-G8-P3",
+        "4ta-G8-P4"
+      ]
+    },
+    "5ta-G1": {
+      "categoria": "5ta",
+      "tam": 3,
+      "partidos": [
+        "5ta-G1-P1",
+        "5ta-G1-P2",
+        "5ta-G1-P3"
+      ]
+    },
+    "5ta-G2": {
+      "categoria": "5ta",
+      "tam": 3,
+      "partidos": [
+        "5ta-G2-P1",
+        "5ta-G2-P2",
+        "5ta-G2-P3"
+      ]
+    },
+    "5ta-G3": {
+      "categoria": "5ta",
+      "tam": 3,
+      "partidos": [
+        "5ta-G3-P1",
+        "5ta-G3-P2",
+        "5ta-G3-P3"
+      ]
+    },
+    "5ta-G4": {
+      "categoria": "5ta",
+      "tam": 3,
+      "partidos": [
+        "5ta-G4-P1",
+        "5ta-G4-P2",
+        "5ta-G4-P3"
+      ]
+    },
+    "5ta-G5": {
+      "categoria": "5ta",
+      "tam": 3,
+      "partidos": [
+        "5ta-G5-P1",
+        "5ta-G5-P2",
+        "5ta-G5-P3"
+      ]
+    },
+    "5ta-G6": {
+      "categoria": "5ta",
+      "tam": 3,
+      "partidos": [
+        "5ta-G6-P1",
+        "5ta-G6-P2",
+        "5ta-G6-P3"
+      ]
+    },
+    "5ta-G7": {
+      "categoria": "5ta",
+      "tam": 3,
+      "partidos": [
+        "5ta-G7-P1",
+        "5ta-G7-P2",
+        "5ta-G7-P3"
+      ]
+    },
+    "5ta-G8": {
+      "categoria": "5ta",
+      "tam": 4,
+      "partidos": [
+        "5ta-G8-P1",
+        "5ta-G8-P2",
+        "5ta-G8-P3",
+        "5ta-G8-P4"
+      ]
+    },
+    "6ta-G1": {
+      "categoria": "6ta",
+      "tam": 3,
+      "partidos": [
+        "6ta-G1-P1",
+        "6ta-G1-P2",
+        "6ta-G1-P3"
+      ]
+    },
+    "6ta-G2": {
+      "categoria": "6ta",
+      "tam": 3,
+      "partidos": [
+        "6ta-G2-P1",
+        "6ta-G2-P2",
+        "6ta-G2-P3"
+      ]
+    },
+    "6ta-G3": {
+      "categoria": "6ta",
+      "tam": 3,
+      "partidos": [
+        "6ta-G3-P1",
+        "6ta-G3-P2",
+        "6ta-G3-P3"
+      ]
+    },
+    "6ta-G4": {
+      "categoria": "6ta",
+      "tam": 3,
+      "partidos": [
+        "6ta-G4-P1",
+        "6ta-G4-P2",
+        "6ta-G4-P3"
+      ]
+    },
+    "A-G1": {
+      "categoria": "A",
+      "tam": 3,
+      "partidos": [
+        "A-G1-P1",
+        "A-G1-P2",
+        "A-G1-P3"
+      ]
+    },
+    "A-G2": {
+      "categoria": "A",
+      "tam": 3,
+      "partidos": [
+        "A-G2-P1",
+        "A-G2-P2",
+        "A-G2-P3"
+      ]
+    },
+    "A-G3": {
+      "categoria": "A",
+      "tam": 3,
+      "partidos": [
+        "A-G3-P1",
+        "A-G3-P2",
+        "A-G3-P3"
+      ]
+    },
+    "A-G4": {
+      "categoria": "A",
+      "tam": 3,
+      "partidos": [
+        "A-G4-P1",
+        "A-G4-P2",
+        "A-G4-P3"
+      ]
+    },
+    "A-G5": {
+      "categoria": "A",
+      "tam": 3,
+      "partidos": [
+        "A-G5-P1",
+        "A-G5-P2",
+        "A-G5-P3"
+      ]
+    },
+    "B-G1": {
+      "categoria": "B",
+      "tam": 3,
+      "partidos": [
+        "B-G1-P1",
+        "B-G1-P2",
+        "B-G1-P3"
+      ]
+    },
+    "B-G2": {
+      "categoria": "B",
+      "tam": 3,
+      "partidos": [
+        "B-G2-P1",
+        "B-G2-P2",
+        "B-G2-P3"
+      ]
+    },
+    "B-G3": {
+      "categoria": "B",
+      "tam": 3,
+      "partidos": [
+        "B-G3-P1",
+        "B-G3-P2",
+        "B-G3-P3"
+      ]
+    },
+    "B-G4": {
+      "categoria": "B",
+      "tam": 3,
+      "partidos": [
+        "B-G4-P1",
+        "B-G4-P2",
+        "B-G4-P3"
+      ]
+    },
+    "B-G5": {
+      "categoria": "B",
+      "tam": 3,
+      "partidos": [
+        "B-G5-P1",
+        "B-G5-P2",
+        "B-G5-P3"
+      ]
+    },
+    "B-G6": {
+      "categoria": "B",
+      "tam": 3,
+      "partidos": [
+        "B-G6-P1",
+        "B-G6-P2",
+        "B-G6-P3"
+      ]
+    },
+    "C-G1": {
+      "categoria": "C",
+      "tam": 3,
+      "partidos": [
+        "C-G1-P1",
+        "C-G1-P2",
+        "C-G1-P3"
+      ]
+    },
+    "C-G2": {
+      "categoria": "C",
+      "tam": 3,
+      "partidos": [
+        "C-G2-P1",
+        "C-G2-P2",
+        "C-G2-P3"
+      ]
+    },
+    "C-G3": {
+      "categoria": "C",
+      "tam": 3,
+      "partidos": [
+        "C-G3-P1",
+        "C-G3-P2",
+        "C-G3-P3"
+      ]
+    },
+    "C-G4": {
+      "categoria": "C",
+      "tam": 3,
+      "partidos": [
+        "C-G4-P1",
+        "C-G4-P2",
+        "C-G4-P3"
+      ]
+    },
+    "C-G5": {
+      "categoria": "C",
+      "tam": 3,
+      "partidos": [
+        "C-G5-P1",
+        "C-G5-P2",
+        "C-G5-P3"
+      ]
+    }
+  },
+  "conteos": {
+    "blocks": 38,
+    "blocksPrevia": 22,
+    "blocksFinal": 16,
+    "blocksExtension": 3,
+    "categories": 8,
+    "groups": 50,
+    "teams": 155,
+    "persons": 285,
+    "doubleCategoryPersons": 25,
+    "matchesPrevia": 155,
+    "matchesFinal": 92,
+    "matches": 247,
+    "rondasFinal": {
+      "4tos": 32,
+      "8vos": 36,
+      "final": 8,
+      "semi": 16
+    },
+    "capacityTotal": 304
+  }
+}

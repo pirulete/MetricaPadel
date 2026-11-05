@@ -84,6 +84,7 @@
     "drizzle-orm": "^0.45.1",
     "embla-carousel": "8.5.1",
     "embla-carousel-react": "8.5.1",
+    "highs": "^1.15.4",
     "input-otp": "1.4.1",
     "konva": "^10.9.1",
     "lucide-react": "^0.454.0",

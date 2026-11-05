@@ -34,6 +34,9 @@ const securityHeaders = [
 ]
 
 const nextConfig = {
+  // `highs` (WASM) resuelve su `.wasm` por filesystem vía emscripten: debe quedar
+  // fuera del bundle del server (worker de torneos, runtime nodejs).
+  serverExternalPackages: ["highs"],
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [

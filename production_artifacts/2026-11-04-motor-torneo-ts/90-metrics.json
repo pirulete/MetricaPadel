@@ -1,0 +1,11 @@
+{
+  "change_id": "2026-11-04-motor-torneo-ts",
+  "change_class": "feature",
+  "timestamp": "2026-11-04T20:10:48Z",
+  "files_changed": 61,
+  "tests_added": 15,
+  "tests_updated": 0,
+  "test_coverage_delta": 66,
+  "gates_passed": 14,
+  "gates_failed": 0
+}

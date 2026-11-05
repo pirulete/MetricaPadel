@@ -20,6 +20,11 @@ import { superAdminPaths, superAdminTags } from './paths/super-admin'
 import { superAdminSchemas } from './schemas/super-admin'
 import { padelTransitionsTags, transitionsPaths } from './paths/transitions'
 import { transitionsSchemas } from './schemas/transitions'
+import { classAgendaPaths, padelAgendaTags } from './paths/class-agenda'
+import { padelStudentAgendaTags, studentAgendaPaths } from './paths/student-agenda'
+import { classAgendaSchemas } from './schemas/class-agenda'
+import { torneosPaths, torneosTags, torneosWorkerTags } from './paths/torneos'
+import { torneoSchemas } from './schemas/torneo'
 
 const spec = {
   openapi: '3.0.3',
@@ -325,11 +330,11 @@ const spec = {
 // en lib/api-docs/{paths,schemas}/ para no acumular líneas en este archivo.
 const apiSpec = {
   ...spec,
-  tags: [...spec.tags, adminMarketingTags, notificationsTags, adminNotificationsTags, padelAdminTags, padelStudentTags, padelCoursesTags, padelDashboardTags, padelEvolutionTags, academiesTags, academyRequestsTags, superAdminTags, padelTransitionsTags],
-  paths: { ...spec.paths, ...publicMarketingPaths, ...adminMarketingPaths, ...notificationsPaths, ...padelPaths, ...coursesPaths, ...evolutionPaths, ...academiesPaths, ...academyRequestsPaths, ...superAdminPaths, ...transitionsPaths },
+  tags: [...spec.tags, adminMarketingTags, notificationsTags, adminNotificationsTags, padelAdminTags, padelStudentTags, padelCoursesTags, padelDashboardTags, padelEvolutionTags, academiesTags, academyRequestsTags, superAdminTags, padelTransitionsTags, padelAgendaTags, padelStudentAgendaTags, torneosTags, torneosWorkerTags],
+  paths: { ...spec.paths, ...publicMarketingPaths, ...adminMarketingPaths, ...notificationsPaths, ...padelPaths, ...coursesPaths, ...evolutionPaths, ...academiesPaths, ...academyRequestsPaths, ...superAdminPaths, ...transitionsPaths, ...classAgendaPaths, ...studentAgendaPaths, ...torneosPaths },
   components: {
     ...spec.components,
-    schemas: { ...spec.components.schemas, ...marketingSchemas, ...notificationsSchemas, ...padelSchemas, ...coursesSchemas, ...academiesSchemas, ...academyRequestsSchemas, ...superAdminSchemas, ...transitionsSchemas },
+    schemas: { ...spec.components.schemas, ...marketingSchemas, ...notificationsSchemas, ...padelSchemas, ...coursesSchemas, ...academiesSchemas, ...academyRequestsSchemas, ...superAdminSchemas, ...transitionsSchemas, ...classAgendaSchemas, ...torneoSchemas },
   },
 }
 

@@ -1,0 +1,64 @@
+{
+  "meta": {
+    "seed": 7,
+    "courts": 8,
+    "source": "motor_torneo/modelo.py:Modelo (sin resolver)",
+    "frase": "golden L3 — nº de variables y restricciones exacto"
+  },
+  "params": {
+    "frontera_sabado": true,
+    "descanso_final": 1,
+    "max_seguidos": 3,
+    "bloque_final_objetivo": 33,
+    "disponibilidad_dura": true,
+    "doble_dura_en": [
+      "8vos"
+    ],
+    "W_EXTENSION": 1000,
+    "W_DISPONIBILIDAD": 500,
+    "W_DOBLE_BLANDO": 60,
+    "W_DIAS": 40,
+    "W_FINAL_TEMPRANA": 30,
+    "W_COMPACTO": 25,
+    "W_SEGUIDOS": 15,
+    "W_TEMPRANO": 1,
+    "tiempo_max": 120,
+    "gap": 0.01
+  },
+  "nVars": 5020,
+  "nConstraints": 6604,
+  "nNonZeros": 56683,
+  "familias": {
+    "DIA": 846,
+    "FIN": 8,
+    "MN": 155,
+    "MX": 155,
+    "R1": 247,
+    "R2": 38,
+    "R3": 2812,
+    "R3b": 400,
+    "R5": 1618,
+    "SEG": 325
+  },
+  "conteos": {
+    "blocks": 38,
+    "blocksPrevia": 22,
+    "blocksFinal": 16,
+    "blocksExtension": 3,
+    "categories": 8,
+    "groups": 50,
+    "teams": 155,
+    "persons": 285,
+    "doubleCategoryPersons": 25,
+    "matchesPrevia": 155,
+    "matchesFinal": 92,
+    "matches": 247,
+    "rondasFinal": {
+      "4tos": 32,
+      "8vos": 36,
+      "final": 8,
+      "semi": 16
+    },
+    "capacityTotal": 304
+  }
+}

@@ -14,6 +14,9 @@
  *   - guardAcademyOwner(session, academyId)   → DB-backed, solo OWNER (SPEC-EPIC-01)
  *   - guardAcademyAdmin(session, academyId)   → DB-backed, OWNER o ADMIN
  *   - guardAcademyCoach(session, academyId)   → DB-backed, OWNER/ADMIN/COACH activos
+ *   - worker-secret (header `x-worker-secret`) → solo endpoints internos sin
+ *     sesión (p.ej. /api/internal/tournament-worker). sha256 + timingSafeEqual;
+ *     401 sin header, 503 fail-closed si el secreto no está configurado.
  *
  * Guards de academia (lib/auth/academy-guard.ts):
  *   - Son async: `Promise<NextResponse | null>` (null = OK).
@@ -460,6 +463,129 @@ export const routeProtection = {
     audit: 'auditDelete(coach_transition)',
   },
 
+  // ─── PADEL EVALUATIVO — Agenda de clases (v0.11, A1–A12) ───────
+  // Patrón obligatorio: guardAdmin → getCourseOwned(session.user.id, id) →
+  // null = 404 (anti-IDOR, sin oráculo de existencia) → curso archivado en
+  // operación de escritura = 409 AGENDA_COURSE_ARCHIVED (A1 y A6 son lectura
+  // y sí permiten curso archivado). `antiIdor` documenta la clave de ownership.
+  'GET /api/courses/[id]/agenda/slots': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Lista la plantilla semanal de slots del curso (A1; lectura, permite curso archivado)',
+    antiIdor: 'getCourseOwned(ownerId=me, id) → 404 si ajeno',
+  },
+  'POST /api/courses/[id]/agenda/slots': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Crea slot semanal (A2; 409 AGENDA_SLOT_DUPLICATE; 409 AGENDA_COURSE_ARCHIVED si archivado)',
+    antiIdor: 'getCourseOwned(ownerId=me, id) → 404 si ajeno',
+    audit: 'auditCreate(weekly_slot)',
+  },
+  'PUT /api/courses/[id]/agenda/slots/[slotId]': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Actualiza slot semanal (A3; ≥1 campo; 409 duplicado; 409 AGENDA_COURSE_ARCHIVED)',
+    antiIdor: 'getCourseOwned(ownerId=me, id) + slot filtrado por courseId → 404 si ajeno',
+    audit: 'auditUpdate(weekly_slot)',
+  },
+  'DELETE /api/courses/[id]/agenda/slots/[slotId]': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Elimina slot semanal y desvincula bloques (detachedBlocks) (A4; 404 si ajeno; 409 AGENDA_COURSE_ARCHIVED)',
+    antiIdor: 'getCourseOwned(ownerId=me, id) + slot filtrado por courseId → 404 si ajeno',
+    audit: 'auditDelete(weekly_slot)',
+  },
+  'POST /api/courses/[id]/agenda/weeks': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Materializa la semana desde la plantilla, idempotente en tx (A5; 409 AGENDA_NO_SLOTS sin escritura; 409 AGENDA_COURSE_ARCHIVED)',
+    antiIdor: 'getCourseOwned(ownerId=me, id) → 404 si ajeno',
+    audit: 'auditCreate(class_block_week)',
+  },
+  'GET /api/courses/[id]/agenda/blocks': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Lista bloques por rango (A6; default semana actual, máximo 8 semanas; lectura, permite archivar)',
+    antiIdor: 'getCourseOwned(ownerId=me, id) → 404 si ajeno',
+  },
+  'POST /api/courses/[id]/agenda/blocks': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Crea bloque suelto (A7; 409 duplicado si slot+fecha ya existe; 409 AGENDA_COURSE_ARCHIVED)',
+    antiIdor: 'getCourseOwned(ownerId=me, id) → 404 si ajeno',
+    audit: 'auditCreate(class_block)',
+  },
+  'GET /api/courses/[id]/agenda/blocks/[blockId]': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Detalle del bloque + inscripciones con alumno (A8; lectura, permite archivar; hidrata el sheet al reabrir)',
+    antiIdor: 'getCourseOwned(ownerId=me, id) + bloque filtrado por courseId → 404 si ajeno',
+  },
+  'PUT /api/courses/[id]/agenda/blocks/[blockId]': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Actualiza bloque; status=cancelled arrastra inscripciones y notifica (A8; 409 AGENDA_BLOCK_PAST / AGENDA_BLOCK_CANCELLED / AGENDA_COURSE_ARCHIVED)',
+    antiIdor: 'getCourseOwned(ownerId=me, id) + bloque filtrado por courseId → 404 si ajeno',
+    audit: 'auditUpdate(class_block) + auditUpdate(class_block, cancelled)',
+  },
+  'DELETE /api/courses/[id]/agenda/blocks/[blockId]': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Borra bloque (A9; 409 AGENDA_BLOCK_HAS_ENROLLMENTS si tiene inscripciones → usar cancelación; 409 AGENDA_COURSE_ARCHIVED)',
+    antiIdor: 'getCourseOwned(ownerId=me, id) + bloque filtrado por courseId → 404 si ajeno',
+    audit: 'auditDelete(class_block)',
+  },
+  'POST /api/courses/[id]/agenda/blocks/[blockId]/enrollments': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Asigna alumnos al bloque all-or-nothing (A10; 400 AGENDA_STUDENT_NOT_ENROLLED, 409 AGENDA_CAPACITY / AGENDA_BLOCK_CANCELLED; notifica `assigned` solo a los insertados)',
+    antiIdor: 'getCourseOwned(ownerId=me, id) + assignStudents valida course_enrollments del curso → 404 si ajeno',
+    audit: 'auditCreate(block_enrollment)',
+  },
+  'PUT /api/courses/[id]/agenda/blocks/[blockId]/enrollments/[studentId]': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Marca asistencia tri-estado + notas (A11; 404 si la inscripción no existe; 409 AGENDA_BLOCK_CANCELLED)',
+    antiIdor: 'getCourseOwned(ownerId=me, id) + updateAttendance scoped por courseId/blockId/studentId → 404 si ajeno',
+    audit: 'auditUpdate(block_enrollment)',
+  },
+  'DELETE /api/courses/[id]/agenda/blocks/[blockId]/enrollments/[studentId]': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Quita alumno del bloque (A12; 404 si el bloque o la inscripción no existen; notifica `removed` solo tras borrado efectivo)',
+    antiIdor: 'getCourseOwned(ownerId=me, id) + removeEnrollment scoped por courseId/blockId/studentId → 404 si ajeno',
+    audit: 'auditDelete(block_enrollment)',
+  },
+
+  // ─── PADEL EVALUATIVO — Agenda del alumno (U1–U2, USER) ────────
+  // Anti-IDOR: alcance = `course_enrollments(studentId=me)` (INNER JOIN).
+  // `?courseId` no inscrito → 404. Sin bypass SUPER_ADMIN (D9).
+  'GET /api/student/agenda': {
+    guard: 'guardUser',
+    allowedStatuses: ['ACTIVE'],
+    description: 'Próximas clases propias + agregados de asistencia + todayIso (U1; limit default 5; ?courseId no inscrito ⇒ 404)',
+    antiIdor: 'INNER JOIN course_enrollments(studentId=me) → ?courseId ajeno 404',
+  },
+  'GET /api/student/agenda/history': {
+    guard: 'guardUser',
+    allowedStatuses: ['ACTIVE'],
+    description: 'Historial de clases propias pasadas/canceladas con cursor compuesto (U2; cursor YYYY-MM-DDTHH:mm; ?courseId no inscrito ⇒ 404)',
+    antiIdor: 'INNER JOIN course_enrollments(studentId=me) → ?courseId ajeno 404',
+  },
+
   // ─── ACADEMIA (SPEC-EPIC-01, Fase B) — RBAC por academia ───────
   // Guards DB-backed: guardAcademyOwner / guardAcademyAdmin / guardAcademyCoach.
   // Anti-IDOR: membresía inexistente o academia archivada → 404 (no 403).
@@ -536,6 +662,72 @@ export const routeProtection = {
     guard: 'guardUser',
     allowedStatuses: ['ACTIVE'],
     description: 'Exporta PDF con branding de academia (teacher o student de la evaluación; 400 si draft; 404 si ajeno)',
+  },
+
+  // ─── TORNEOS (v0.12, M1) — motor de agenda ─────────────────────
+  // Patrón: guardAdmin → query con `ownerId=me` → null = 404 (anti-IDOR, sin
+  // oráculo de existencia) → torneo archivado en escritura = 409. El worker
+  // interno NO usa guardAdmin: se autentica por secreto compartido (sin sesión,
+  // los estados USER no aplican).
+  'GET /api/torneos': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Lista torneos del coach (ownerId=me, paginación por cursor updatedAt, anti-IDOR)',
+    antiIdor: 'listTournaments(ownerId=me)',
+  },
+  'POST /api/torneos': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Importa el JSON canónico del torneo (1 transacción; 400 forma/reglas, 422 R0/R6, 201 counts)',
+    antiIdor: 'importTournament(ownerId=me) — ownerId de la sesión, nunca del body',
+    audit: 'auditCreate(tournament)',
+  },
+  'GET /api/torneos/[id]': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Detalle del torneo + counts + bloques + activeRun/currentRun (dispara reaper perezoso idempotente)',
+    antiIdor: 'getTournamentDetail(id, ownerId=me) → 404 si ajeno/inexistente',
+  },
+  'GET /api/torneos/[id]/instancia': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Espejo canónico de la instancia reconstruida desde DB (exportar-corregir-reimportar)',
+    antiIdor: 'buildInstance(id, ownerId=me) → 404 si ajeno/inexistente',
+  },
+  'POST /api/torneos/[id]/agenda': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Encola la generación de agenda (202; 404 ajeno; 409 archived/run_active; 422 infeasible_occupancy sin crear run; timeLimitMs clampa server-side)',
+    antiIdor: 'getTournamentById(id, ownerId=me) + buildInstance(id, ownerId=me) → 404 si ajeno',
+    audit: 'auditCreate(tournament_run)',
+  },
+  'GET /api/torneos/[id]/runs/[runId]': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Polling del run (estado/métricas/diagnóstico; ?include=slots); reaper perezoso + re-despacho ≤2',
+    antiIdor: 'getTournamentById(id, ownerId=me) + getRun(runId, { tournamentId }) → 404 si ajeno',
+  },
+  'POST /api/torneos/[id]/archive': {
+    guard: 'guardAdmin',
+    allowedStatuses: ['ACTIVE'],
+    roles: ['ADMIN'],
+    description: 'Archiva torneo (soft, status=archived; 409 already_archived; nunca DELETE)',
+    antiIdor: 'getTournamentById(id, ownerId=me) + archiveTournament(id, ownerId=me) → 404 si ajeno',
+    audit: 'auditUpdate(tournament)',
+  },
+  'POST /api/internal/tournament-worker': {
+    guard: 'worker-secret',
+    auth: 'x-worker-secret',
+    allowedStatuses: [],
+    roles: [],
+    description: 'Worker interno del motor (sin sesión ni cookies): secreto TOURNAMENT_WORKER_SECRET vía sha256+timingSafeEqual; sin header 401; secreto no configurado 503 worker_not_configured (fail-closed); claim atómico queued→running (409 not_claimed). maxDuration=300',
+    antiIdor: 'No aplica: no expone datos del torneo, solo el runId reclamado',
   },
 } as const
 

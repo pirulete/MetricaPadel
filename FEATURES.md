@@ -1,5 +1,92 @@
 # FEATURES — Registro de Cambios
 
+## ✨ Módulo Torneos — motor de agenda en TypeScript (Milestone 1: cargador real + agenda borrador) (2026-11-04)
+
+> status: proposed (spec lista; sin código — pendiente gate F1: spike HiGHS WASM en Vercel)
+> release: v0.12
+> date: 2026-11-04
+> change_id: 2026-11-04-motor-torneo-ts
+> module: torneos
+> tags: [db, api, ui, migration, optimizer]
+
+### Problema
+
+La agenda de un torneo (8 categorías, 50 grupos, 155 parejas, 247 partidos, 38 bloques de 75 min, 8 canchas) se arma a mano y no garantiza reglas duras (una persona en dos canchas, precedencias del cuadro, disponibilidad declarada, cero extensión del domingo). El prototipo `motor_torneo/` (Python + HiGHS) demuestra que el MILP funciona, pero **inventa** los datos (`instancia.py`), no persiste nada y no puede correr dentro del servidor web.
+
+### Solución Propuesta (Milestone 1 de 3)
+
+- **DB independiente** (migración `0014_*`, 10 tablas `tournament_*`, sin FK a `courses`/`academies`): torneo, bloques del calendario, categorías, grupos, personas, parejas, disponibilidad, partidos materializados, corridas y slots del borrador.
+- **Cargador real** (`lib/motor-torneo/loader.ts`) desde el JSON de `OPERACION.md` §6, con las 4 reglas de validación del cargador; reemplaza `instancia.py` (no se porta el generador de datos falsos).
+- **Port TS del motor** sobre `npm highs` (WASM): `modelo.ts` (MILP completo, R1–R5 + objetivo con pesos `W_*`), `canchas.ts` (asignación voraz), `verificar.ts` (verificador independiente, 6 reglas duras), `diagnostico.ts` (semáforo + indicadores del `resumen.txt`), `bracket.ts` (cuadros con pases libres).
+- **Ejecución asíncrona**: `POST /api/torneos/[id]/agenda` → 202 + worker en background function (`time_limit` ≤ 240 s, `maxDuration` 300), persistencia transaccional de agenda borrador inmutable por corrida + diagnóstico. Plan B: contenedor aparte.
+- **UI mínima coach**: `/torneos` + `/torneos/[id]` con grilla canchas × bloques, semáforo, diagnóstico y estados (corriendo/empty/error/invalid).
+- **Roles**: `guardAdmin` (ADMIN/SUPER_ADMIN + ACTIVE) en todo; anti-IDOR 404 por `tournaments.ownerId`. Sin ruta de alumno (`guardUser`) porque no hay publicación en M1.
+
+### Archivos Esperados
+
+- `lib/db/schema.ts`, `drizzle/0014_*.sql` ✨, `lib/db/queries/torneos/*.ts` ✨
+- `lib/motor-torneo/{types,loader,bracket,instancia,modelo,canchas,verificar,diagnostico}.ts` ✨
+- `app/api/torneos/**` ✨ (import, listado, detalle, instancia, generate, runs, archive, worker), `app/(app)/torneos/**` ✨, `components/torneos/*` ✨, `hooks/use-tournament-*.ts` ✨
+- `lib/api-docs/{spec.ts,paths/torneos.ts,schemas/torneo.ts}`, `lib/auth/protected-routes.ts`, `.env.example` 🔧
+- Tests: `tests/unit/motor-torneo/*.test.ts` ✨, `tests/unit/db/tournament-*.test.ts` ✨, `tests/api/torneos/*.spec.ts` ✨, `tests/e2e/torneo-agenda.spec.ts` ✨
+
+### Variables de Entorno
+
+- `TOURNAMENT_WORKER_SECRET` (auth server-to-server del worker), `TOURNAMENT_MAX_TIME_LIMIT_MS` (default 240000).
+
+### Out-of-scope v0.12
+
+Re-planificación día-T · modo relajado BR-04 avanzado (violaciones listadas / `getIis()`) · publicación con edición manual de slots · inscripción self-service de alumnos · re-planificación durante el torneo · vista `USER` · CP-SAT · export CSV/HTML/PDF · notificaciones/cron · vínculo con courses/academies.
+
+- Spec: `production_artifacts/2026-11-04-motor-torneo-ts/{feature-spec,release-scope}.md`
+
+## ✨ Agenda de clases por curso (coach → alumnos) (2026-11-04)
+
+> status: released (validado 2026-11-04 por @qa-release — `tsc`=0 · lint 0 errores · 948/948 unit (71 suites) · 7/7 API con SQL real · 2/2 E2E 375×667 · 6/6 E2E regresión · build OK)
+> release: v0.11
+> date: 2026-11-04
+> change_id: 2026-11-04-class-agenda
+> module: padel
+> tags: [agenda, db, api, notifications, ui, mobile, cron-standby]
+
+### Problema
+
+`courses.schedule` era sólo texto de display: no había entidad de clase, ni fechas reales, ni asignación de alumnos a sesiones, ni notificaciones, ni asistencia. El coach agendaba por fuera (WhatsApp) y el alumno no tenía dónde ver su próxima clase.
+
+### Solución Implementada (Alternativa C — template + bloques datados + asignación)
+
+- **DB (migración `0013_spotty_felicia_hardy.sql`)**: `weekly_slots` (template semanal), `class_blocks` (instancia datada, `weeklySlotId` `set null`, `maxCapacity` nullable) y `block_enrollments` (UNIQUE `blockId`+`studentId`, `attended` tri-estado + `notes`); enums `class_block_status` y `block_enrollment_status`; índices `courseId`+`blockDate` y `studentId`+fecha.
+- **Materialización idempotente**: `POST /api/courses/[id]/agenda/weeks` genera exactamente 1 bloque por (`weeklySlotId`, fecha) dentro de una transacción y devuelve conteo `created`/`skipped`.
+- **Asignación con reglas**: solo alumnos inscritos (`course_enrollments`) y respeto de `maxCapacity` (409); all-or-nothing en una transacción; doble asignación idempotente (`alreadyAssigned`).
+- **Notificaciones inmediatas** (`lib/notifications/agenda.ts`): `class.assigned` / `class.removed` / `class.cancelled` vía el motor existente, `groupId` determinista (uuid v5) con dedup 1 h; inbox-first, el push es best-effort (`notified` en la respuesta).
+- **Alumno**: `GET /api/student/agenda` (próximas + agregados: programadas/asistidas/canceladas/`attendanceRate`) y `GET /api/student/agenda/history` (cursor). Dashboard con "Próximas clases" móvil-first + tab Agenda en el detalle de curso.
+- **Convenciones nuevas**: fechas como `date` string (`YYYY-MM-DD`) y hora `varchar(5)`; `todayInTimeZone()` + `APP_TIMEZONE` para "hoy" server-side; `groupId` uuid v5 determinista.
+- **Recordatorio automático: STANDBY** (ver excepción abajo).
+
+### Archivos Modificados
+
+- `lib/db/schema.ts`, `drizzle/0013_spotty_felicia_hardy.sql` ✨, `lib/db/queries/padel/class-agenda.ts` ✨, `class-agenda-blocks.ts` ✨, `lib/db/queries/padel/{courses,index}.ts` 🔧
+- `lib/padel/class-agenda.ts` ✨, `lib/padel/agenda-group-id.ts` ✨, `lib/validations/class-agenda.ts` ✨, `lib/notifications/agenda.ts` ✨
+- `app/api/courses/[id]/agenda/{slots,slots/[slotId],weeks,blocks,blocks/[blockId],blocks/[blockId]/enrollments,blocks/[blockId]/enrollments/[studentId]}/route.ts` ✨ (13 endpoints), `app/api/student/agenda/{route,history/route}.ts` ✨ (2 endpoints)
+- `hooks/use-class-agenda.ts` ✨, `components/padel/{agenda-week-list,weekly-slot-manager,enable-week-dialog,block-assignment-sheet,block-enrollment-row,upcoming-classes-card,student-course-agenda}.tsx` ✨, `components/padel/{course-detail,student-dashboard,student-course-detail}.tsx` 🔧
+- `lib/api-docs/{spec.ts,paths/class-agenda.ts,paths/student-agenda.ts,schemas/class-agenda.ts}` ✨/🔧, `lib/auth/protected-routes.ts` 🔧 (15 rutas de agenda)
+
+### Tests
+
+- `tests/unit/padel/class-agenda.test.ts` ✨, `tests/unit/padel/agenda-group-id.test.ts` ✨, `tests/unit/notifications/agenda.test.ts` ✨, `tests/unit/validations/class-agenda.test.ts` ✨, `tests/unit/db/courses.test.ts` 🔧
+- `tests/api/padel/class-agenda-happy.spec.ts` ✨ (SQL real A2–A12 + GET detalle), `class-agenda-guard.spec.ts` ✨ (15 rutas 401, 403/404/409/400), `class-agenda-student-happy.spec.ts` ✨ (SQL real U1/U2)
+- `tests/e2e/class-agenda.spec.ts` ✨ (2 escenarios, viewport 375×667)
+
+### Excepción documentada — recordatorio automático en STANDBY
+
+v1 **no** crea cron ni workflow. El contrato queda documentado en `technical-design-v2.md` (§cron) y en `ARCHITECTURE.md` > "Agenda de clases (v0.11)": `POST /api/cron/class-reminders` con auth por `CRON_SECRET`, ventana de 24 h previas y `reminderSentAt` para idempotencia. Activarlo cuesta 1 endpoint + 1 workflow de GitHub Actions, sin migración. `vercel.json` mantiene `crons: []`.
+
+### Variables de Entorno
+
+- Ninguna nueva. `APP_TIMEZONE` (ya existente) pasa a documentarse como usada por la agenda; `CRON_SECRET` sólo al activar el recordatorio (fuera de v1).
+
+- Spec: `production_artifacts/2026-11-04-class-agenda/{feature-spec,release-report,test-matrix,acceptance-criteria}.md`
+
 ## ✨ Fix UX — Descubribilidad y comprensión del Editor de Transiciones (2026-11-03)
 
 > status: released (validado 2026-11-03 por @qa-release — `tsc`=0 · lint 0 errores · 882/882 unit · 6/6 E2E con SQL real · build OK)
@@ -2406,3 +2493,66 @@ El ADMIN global (coach) podía crear academias y quedar como OWNER, sin supervis
 ### Variables de Entorno
 
 Ninguna nueva.
+
+## ✨ Torneos — motor de agenda en TypeScript (M1) — 2026-11-04
+
+> status: released
+> release: v0.12
+> date: 2026-11-04
+> change_id: 2026-11-04-motor-torneo-ts
+> module: torneos
+> tags: [db, api, ui, migration, optimizer]
+
+### Problema
+
+La agenda de un torneo (8 categorías, 50 grupos, 155 parejas, 247 partidos, 38 bloques de 75 min, 8 canchas) se armaba a mano sin garantizar las reglas duras (una persona en dos canchas, precedencias del cuadro, disponibilidad declarada, cero extensión del domingo). El prototipo `motor_torneo/` (Python + HiGHS) probaba que el MILP funciona pero inventaba los datos (`instancia.py`), no persistía nada y no corría dentro del servidor web.
+
+### Solución Implementada
+
+- **Migración del prototipo**: port a TypeScript de `instancia.py`/`modelo.py`/`verificar.py`/`correr.py` sobre `npm highs` (WASM), con fixtures congeladas del Python (`tests/fixtures/torneo/reference/*`) como golden de paridad (L1/L2/L3).
+- **Motor puro** `lib/motor-torneo/`: `types`, `calendar` (`buildBlocks` + no-solape), `model` (variables `x[m,b]`, R1–R5), `objective` (días por pareja, compacidad, bloques seguidos, finales tempranas), `solver` (único que importa `highs`, clamp `[30 s, 240 s]`), `verify` (verificador independiente, 8 códigos), `courts` (asignación voraz), `engine` (orquestador), `bracket` (cuadros + pases libres), `loader` (JSON §6 con `path` por campo), `diagnostics` (semáforo + 6 indicadores), `synthetic` (solo tests). Sin imports de `lib/db`, `next/*`, `server-only`, `react` ni `node:fs` (test estático `purity.test.ts`).
+- **DB independiente** (migración `0014_*`): 4 enums + 11 tablas `tournament_*` (torneo, bloques, categorías, grupos, personas, parejas, miembros, disponibilidad, partidos, runs, slots) con **UNIQUE parcial** `tournament_runs_active_uq (tournament_id) WHERE status IN ('queued','running')` como garantía DB del 409. Cero FK a `courses`/`academies`.
+- **Worker background** `POST /api/internal/tournament-worker` (`runtime=nodejs`, `maxDuration=300`): secreto `x-worker-secret` con `timingSafeEqual` (ausente ⇒ 503 fail-closed), claim atómico `queued → running`, `buildInstance` desde DB, `runEngine`, persistencia transaccional de la agenda + diagnóstico. Reaper perezoso (sin cron): `queued` > 90 s se re-despacha ≤ 2 y luego `failed(dispatch_failed)`; `running` colgado > `maxDuration + 60 s` ⇒ `failed(worker_crash)`.
+- **Endpoints** (7 route handlers): `POST/GET /api/torneos` (import atómico 201/400/409/422, lista con cursor G15), `GET /api/torneos/[id]` (detalle + `activeRun`/`currentRun` + reaper), `GET /api/torneos/[id]/instancia` (espejo canónico desde DB), `POST /api/torneos/[id]/agenda` (202 + pre-check semáforo 422 + 409), `GET /api/torneos/[id]/runs/[runId]` (estado + `?include=slots`), `POST /api/torneos/[id]/archive`. Guards `guardAdmin`/`validateAdmin` (ADMIN/SUPER_ADMIN + ACTIVE), anti-IDOR 404 por `tournaments.ownerId`, auditoría en import/generate/archive.
+- **UI coach**: `app/(app)/torneos` (lista + modal de import con errores por `path`) y `app/(app)/torneos/[id]` (instancia, botón "Generar agenda", polling con backoff 1 s→5 s, banner por estado terminal, grilla canchas × bloques con color por categoría y fila de ocupación, panel de diagnóstico con semáforo, 9 indicadores, errores del verificador y ocupación por tramo).
+- **API docs**: `lib/api-docs/paths/torneos.ts` + `schemas/torneo.ts` registrados en `spec.ts` (tags `Torneos` / `Torneos Worker`).
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `lib/db/schema.ts` | 🔧 Modificado — 4 enums + 11 tablas `tournament_*` + índices (incl. UNIQUE parcial) |
+| `drizzle/0014_*.sql` | ⚙️ Generado |
+| `lib/db/queries/torneos/{index,tournaments,import,instance,runs}.ts` | ✨ Nuevos |
+| `lib/motor-torneo/*.ts` (13 módulos + `index.ts`) | ✨ Nuevos — motor puro |
+| `lib/validations/torneos.ts` | ✨ Nuevo |
+| `lib/torneos/{dispatch,limits}.ts` | ✨ Nuevos |
+| `app/api/torneos/**` (7 route handlers) | ✨ Nuevos |
+| `app/api/internal/tournament-worker/route.ts` | ✨ Nuevo |
+| `lib/auth/protected-routes.ts` | 🔧 Modificado — 6 rutas `guardAdmin` + worker con `x-worker-secret` |
+| `app/(app)/torneos/page.tsx`, `app/(app)/torneos/[id]/page.tsx` | ✨ Nuevos |
+| `components/torneos/{tournament-list,tournament-import-modal,agenda-grid,diagnostics-panel}.tsx` | ✨ Nuevos |
+| `hooks/use-tournament-run.ts` | ✨ Nuevo |
+| `lib/api-docs/{paths/torneos.ts,schemas/torneo.ts,spec.ts}` | ✨ Nuevos + registro |
+| `package.json` | 🔧 Modificado — `highs` (WASM) |
+| `next.config.mjs` | 🔧 Modificado — `serverExternalPackages: ['highs']` |
+| `scripts/torneo-smoke.ts`, `scripts/torneo-export-fixtures.py`, `scripts/torneo-verify-with-python.py` | ✨ Nuevos (one-shot/local) |
+| `.env.example` | 🔧 Modificado — 3 vars `TOURNAMENT_*` |
+| `tests/fixtures/torneo/**` | ✨ Nuevas — `reference/*`, `instance-seed3`, `python-run-seed3`, `mini.json` |
+
+### Tests
+
+- Unit (Jest): `tests/unit/motor-torneo/{purity,calendar,model,verify,diagnostics,bracket,loader,solver-parity}.test.ts`, `tests/unit/validations/torneo.test.ts`, `tests/unit/db/tournament-queries.test.ts`.
+- API happy (SQL real): `tests/api/torneos/import-happy.spec.ts`, `tests/api/torneos/agenda-happy.spec.ts` (202 < 2 s → worker con secreto → `succeeded` → `slotsCount === partidos` → `agenda_draft`).
+- API guard: `tests/api/torneos/torneos-guard.spec.ts` (401/403/404/409/422/400), `tests/api/torneos/worker-guard.spec.ts` (secreto ausente/ inválido, `not_claimed`).
+- E2E: `tests/e2e/torneo-agenda.spec.ts` — import → generar → grilla + diagnóstico a 375×812, y `USER` fuera de `/torneos` + 403 en la API (2 passed).
+
+### Variables de Entorno
+
+- `TOURNAMENT_WORKER_SECRET` — secreto compartido del worker interno (≥32 chars; sin él el worker responde 503 fail-closed).
+- `TOURNAMENT_MAX_TIME_LIMIT_MS` — techo del presupuesto de solve en ms (default `240000`, clamp server-side).
+- `TOURNAMENT_WORKER_URL` — opcional: override de la URL del worker (plan B contenedor).
+
+### Bug conocido
+
+- **BUG-01 (severidad media, mobile)**: en `/torneos/[id]` con agenda generada el documento desborda horizontalmente a 375 px (`scrollWidth=750`) porque el contenedor de `AgendaGrid` (`max-w-full overflow-x-auto`) crece en vez de recortar. Repro en `production_artifacts/2026-11-04-motor-torneo-ts/test-matrix.md` (F5c).

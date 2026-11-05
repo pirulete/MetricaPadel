@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "name": "Mini torneo QA",
+    "startDate": "2026-11-07",
+    "endDate": "2026-11-08",
+    "courts": 2,
+    "blockMinutes": 75
+  },
+  "calendario": [
+    { "dia": "Sab", "inicio": "08:00", "bloques": 3, "fase": "previa", "extension": false },
+    { "dia": "Sab", "inicio": "12:00", "bloques": 3, "fase": "previa", "extension": false },
+    { "dia": "Sab", "inicio": "16:00", "bloques": 2, "fase": "previa", "extension": false },
+    { "dia": "Dom", "inicio": "08:00", "bloques": 6, "fase": "final", "extension": false },
+    { "dia": "Dom", "inicio": "16:00", "bloques": 3, "fase": "final", "extension": false },
+    { "dia": "Dom", "inicio": "19:45", "bloques": 1, "fase": "final", "extension": false }
+  ],
+  "capacidad_especial": {},
+  "categorias": {
+    "1ra": {
+      "sexo": "H",
+      "nivel": 1,
+      "grupos": {
+        "G1": ["1ra-G1-A", "1ra-G1-B", "1ra-G1-C"],
+        "G2": ["1ra-G2-A", "1ra-G2-B", "1ra-G2-C"]
+      }
+    }
+  },
+  "parejas": {
+    "1ra-G1-A": { "personas": ["P101", "P102"], "no_disponible": [] },
+    "1ra-G1-B": { "personas": ["P103", "P104"], "no_disponible": [] },
+    "1ra-G1-C": { "personas": ["P105", "P106"], "no_disponible": [] },
+    "1ra-G2-A": { "personas": ["P107", "P108"], "no_disponible": [] },
+    "1ra-G2-B": { "personas": ["P109", "P110"], "no_disponible": [] },
+    "1ra-G2-C": { "personas": ["P111", "P112"], "no_disponible": [] }
+  }
+}

@@ -55,6 +55,22 @@
       "gates_failed": 0,
       "loop_duration_ms": 0,
       "module": "dashboard"
+    },
+    {
+      "change_id": "2026-11-04-class-agenda",
+      "timestamp": "2026-11-04T15:44:34.775Z",
+      "iterations": 1,
+      "gates_failed": 0,
+      "loop_duration_ms": 0,
+      "module": "padel"
+    },
+    {
+      "change_id": "2026-11-04-motor-torneo-ts",
+      "timestamp": "2026-11-04T20:19:15.736Z",
+      "iterations": 3,
+      "gates_failed": 0,
+      "loop_duration_ms": 13020000,
+      "module": "torneos"
     }
   ]
 }

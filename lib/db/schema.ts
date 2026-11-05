@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, varchar, json, jsonb, integer, numeric, boolean, pgEnum, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, varchar, json, jsonb, integer, numeric, boolean, date, pgEnum, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
 export const userRoleEnum = pgEnum('user_role', ['USER', 'ADMIN', 'SUPER_ADMIN']);
@@ -158,6 +158,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   courseRubricsAssigned: many(courseRubrics),
   evaluationsAsStudent: many(evaluations, { relationName: "studentEvaluations" }),
   evaluationsAsTeacher: many(evaluations, { relationName: "teacherEvaluations" }),
+  tournaments: many(tournaments),
+  tournamentRuns: many(tournamentRuns, { relationName: "requestedRuns" }),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -428,6 +430,9 @@ export const academyRequestTypeEnum = pgEnum('academy_request_type', ['join_acad
 
 export const academyRequestStatusEnum = pgEnum('academy_request_status', ['pending', 'approved', 'rejected']);
 
+export const classBlockStatusEnum = pgEnum('class_block_status', ['scheduled', 'completed', 'cancelled']);
+export const blockEnrollmentStatusEnum = pgEnum('block_enrollment_status', ['scheduled', 'completed', 'cancelled']);
+
 export type CourseLevel = (typeof courseLevelEnum.enumValues)[number];
 export type CourseStatus = (typeof courseStatusEnum.enumValues)[number];
 export type AcademyMembershipRole = (typeof academyMembershipRoleEnum.enumValues)[number];
@@ -435,6 +440,8 @@ export type AcademyStatus = (typeof academyStatusEnum.enumValues)[number];
 export type RubricScope = (typeof rubricScopeEnum.enumValues)[number];
 export type AcademyRequestType = (typeof academyRequestTypeEnum.enumValues)[number];
 export type AcademyRequestStatus = (typeof academyRequestStatusEnum.enumValues)[number];
+export type ClassBlockStatus = (typeof classBlockStatusEnum.enumValues)[number];
+export type BlockEnrollmentStatus = (typeof blockEnrollmentStatusEnum.enumValues)[number];
 
 // Rúbrica del coach (ADMIN). ownerId = coach. Archivar = soft (status=archived),
 // nunca hard delete: las evaluaciones referencian la rúbrica.
@@ -647,6 +654,64 @@ export const coachTransitions = pgTable("coach_transitions", {
   index("coach_transitions_owner_updated_idx").on(table.ownerId, table.updatedAt),
 ]);
 
+// Agenda de clases — capa 1: plantilla semanal recurrente del curso.
+// dayOfWeek = ISO 1–7 (lun=1 … dom=7). startTime = 'HH:mm' wall-clock sin TZ.
+export const weeklySlots = pgTable("weekly_slots", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  courseId: uuid("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  dayOfWeek: integer("day_of_week").notNull(),
+  startTime: varchar("start_time", { length: 5 }).notNull(),
+  durationMinutes: integer("duration_minutes").notNull().default(60),
+  label: varchar("label", { length: 100 }),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("weekly_slots_course_day_time_idx").on(table.courseId, table.dayOfWeek, table.startTime),
+  index("weekly_slots_course_active_idx").on(table.courseId, table.isActive),
+]);
+
+// Agenda de clases — capa 2: instancia datada de un slot (o bloque suelto).
+// blockDate = date wall-clock ('YYYY-MM-DD'); weeklySlotId null = bloque suelto.
+// Idempotencia D7: UNIQUE parcial (weeklySlotId, blockDate) WHERE weeklySlotId IS NOT NULL.
+export const classBlocks = pgTable("class_blocks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  courseId: uuid("course_id").notNull().references(() => courses.id, { onDelete: "cascade" }),
+  weeklySlotId: uuid("weekly_slot_id").references(() => weeklySlots.id, { onDelete: "set null" }),
+  blockDate: date("block_date", { mode: "string" }).notNull(),
+  startTime: varchar("start_time", { length: 5 }).notNull(),
+  durationMinutes: integer("duration_minutes").notNull(),
+  status: classBlockStatusEnum("status").notNull().default('scheduled'),
+  maxCapacity: integer("max_capacity"),
+  label: varchar("label", { length: 100 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("class_blocks_slot_date_idx")
+    .on(table.weeklySlotId, table.blockDate)
+    .where(sql`"weekly_slot_id" is not null`),
+  index("class_blocks_course_date_idx").on(table.courseId, table.blockDate),
+  index("class_blocks_date_status_idx").on(table.blockDate, table.status),
+]);
+
+// Agenda de clases — asignación de alumno a bloque + asistencia tri-estado.
+// studentId sin cascade: historial protegido (D8). Sin block_date/student_id
+// denormalizados (D17): el filtro por fecha se resuelve por join a class_blocks.
+export const blockEnrollments = pgTable("block_enrollments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  blockId: uuid("block_id").notNull().references(() => classBlocks.id, { onDelete: "cascade" }),
+  studentId: uuid("student_id").notNull().references(() => users.id, { onDelete: "no action" }),
+  status: blockEnrollmentStatusEnum("status").notNull().default('scheduled'),
+  attended: boolean("attended"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("block_enrollments_block_student_idx").on(table.blockId, table.studentId),
+  index("block_enrollments_student_status_idx").on(table.studentId, table.status),
+  index("block_enrollments_student_attended_idx").on(table.studentId, table.attended),
+]);
+
 export const rubricsRelations = relations(rubrics, ({ one, many }) => ({
   owner: one(users, {
     fields: [rubrics.ownerId],
@@ -810,6 +875,37 @@ export const coachTransitionsRelations = relations(coachTransitions, ({ one }) =
   }),
 }));
 
+export const weeklySlotsRelations = relations(weeklySlots, ({ one, many }) => ({
+  course: one(courses, {
+    fields: [weeklySlots.courseId],
+    references: [courses.id],
+  }),
+  blocks: many(classBlocks),
+}));
+
+export const classBlocksRelations = relations(classBlocks, ({ one, many }) => ({
+  course: one(courses, {
+    fields: [classBlocks.courseId],
+    references: [courses.id],
+  }),
+  weeklySlot: one(weeklySlots, {
+    fields: [classBlocks.weeklySlotId],
+    references: [weeklySlots.id],
+  }),
+  enrollments: many(blockEnrollments),
+}));
+
+export const blockEnrollmentsRelations = relations(blockEnrollments, ({ one }) => ({
+  block: one(classBlocks, {
+    fields: [blockEnrollments.blockId],
+    references: [classBlocks.id],
+  }),
+  student: one(users, {
+    fields: [blockEnrollments.studentId],
+    references: [users.id],
+  }),
+}));
+
 export type Rubric = typeof rubrics.$inferSelect;
 export type NewRubric = typeof rubrics.$inferInsert;
 export type RubricLevel = typeof rubricLevels.$inferSelect;
@@ -836,3 +932,369 @@ export type AcademyAccessRequest = typeof academyAccessRequests.$inferSelect;
 export type NewAcademyAccessRequest = typeof academyAccessRequests.$inferInsert;
 export type CoachTransition = typeof coachTransitions.$inferSelect;
 export type NewCoachTransition = typeof coachTransitions.$inferInsert;
+export type WeeklySlot = typeof weeklySlots.$inferSelect;
+export type NewWeeklySlot = typeof weeklySlots.$inferInsert;
+export type ClassBlock = typeof classBlocks.$inferSelect;
+export type NewClassBlock = typeof classBlocks.$inferInsert;
+export type BlockEnrollment = typeof blockEnrollments.$inferSelect;
+export type NewBlockEnrollment = typeof blockEnrollments.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// Padel Evaluativo — Torneos: motor de agenda (v0.12 — motor-torneo-ts)
+// Módulo de DB independiente (D2): CERO FK a courses/academies. Solo 2 FK
+// entrantes a users (ownerId/requestedBy, "no action").
+// ---------------------------------------------------------------------------
+
+export const tournamentStatusEnum = pgEnum('tournament_status', [
+  'draft', 'agenda_draft', 'archived',
+]);
+
+export const tournamentPhaseEnum = pgEnum('tournament_phase', [
+  'previa', 'final',
+]);
+
+// engineStatus NO es enum: es varchar(32) para no acoplar la DB a la
+// nomenclatura del solver (optimal | feasible_time_limit | infeasible | ...).
+export const tournamentRunStatusEnum = pgEnum('tournament_run_status', [
+  'queued', 'running', 'succeeded', 'infeasible', 'failed', 'invalid',
+]);
+
+export const tournamentMatchRoundEnum = pgEnum('tournament_match_round', [
+  'grupo', '16vos', '8vos', '4tos', 'semi', 'final',
+]);
+
+export type TournamentStatus = (typeof tournamentStatusEnum.enumValues)[number];
+export type TournamentPhase = (typeof tournamentPhaseEnum.enumValues)[number];
+export type TournamentRunStatus = (typeof tournamentRunStatusEnum.enumValues)[number];
+export type TournamentMatchRound = (typeof tournamentMatchRoundEnum.enumValues)[number];
+
+// Torneo importado por el coach. Archivar = soft (status=archived): la
+// instancia y los slots históricos siguen consultables. No hay DELETE en M1.
+// params: { fronteraSabado, descansoFinal, maxSeguidos, bloqueFinalObjetivo,
+//           dobleDuraEn, W_* } — ver technical-design §4.2.
+export const tournaments = pgTable("tournaments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  ownerId: uuid("owner_id").notNull().references(() => users.id, { onDelete: "no action" }),
+  name: varchar("name", { length: 200 }).notNull(),
+  startDate: date("start_date", { mode: "string" }).notNull(),
+  endDate: date("end_date", { mode: "string" }).notNull(),
+  status: tournamentStatusEnum("status").notNull().default('draft'),
+  blockMinutes: integer("block_minutes").notNull().default(75),
+  courts: integer("courts").notNull().default(8),
+  params: jsonb("params").notNull().default({}),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("tournaments_owner_updated_idx").on(table.ownerId, table.updatedAt),
+  index("tournaments_owner_status_idx").on(table.ownerId, table.status),
+]);
+
+// Bloque de calendario materializado: idx 0..N-1 aritado por calendar.ts.
+// dayLabel ('Jue') + startTime ('HH:mm') son strings: el motor nunca usa Date.
+export const tournamentBlocks = pgTable("tournament_blocks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tournamentId: uuid("tournament_id").notNull().references(() => tournaments.id, { onDelete: "cascade" }),
+  idx: integer("idx").notNull(),
+  dayLabel: varchar("day_label", { length: 3 }).notNull(),
+  startTime: varchar("start_time", { length: 5 }).notNull(),
+  phase: tournamentPhaseEnum("phase").notNull(),
+  isExtension: boolean("is_extension").notNull().default(false),
+  capacity: integer("capacity").notNull(),
+}, (table) => [
+  uniqueIndex("tournament_blocks_tournament_idx_uq").on(table.tournamentId, table.idx),
+]);
+
+// Categoría (1ra/2da/3ra...). sortOrder materializado: P-3 exige orden
+// determinista (nunca Object.keys) para que el cuadro y los codes coincidan.
+export const tournamentCategories = pgTable("tournament_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tournamentId: uuid("tournament_id").notNull().references(() => tournaments.id, { onDelete: "cascade" }),
+  code: varchar("code", { length: 10 }).notNull(),
+  sex: varchar("sex", { length: 1 }).notNull(),
+  level: integer("level"),
+  sortOrder: integer("sort_order").notNull(),
+}, (table) => [
+  uniqueIndex("tournament_categories_tournament_code_uq").on(table.tournamentId, table.code),
+  index("tournament_categories_tournament_sort_idx").on(table.tournamentId, table.sortOrder),
+]);
+
+// Grupo de previa dentro de una categoría. size ∈ {3,4} (R5 del loader).
+export const tournamentGroups = pgTable("tournament_groups", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tournamentId: uuid("tournament_id").notNull().references(() => tournaments.id, { onDelete: "cascade" }),
+  categoryId: uuid("category_id").notNull().references(() => tournamentCategories.id, { onDelete: "cascade" }),
+  code: varchar("code", { length: 10 }).notNull(),
+  size: integer("size").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+}, (table) => [
+  uniqueIndex("tournament_groups_category_code_uq").on(table.categoryId, table.code),
+  index("tournament_groups_tournament_idx").on(table.tournamentId),
+]);
+
+// Persona por documento. Una persona puede jugar en >1 pareja solo si las
+// categorías son distintas (R2 del loader).
+export const tournamentPersons = pgTable("tournament_persons", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tournamentId: uuid("tournament_id").notNull().references(() => tournaments.id, { onDelete: "cascade" }),
+  documentId: varchar("document_id", { length: 50 }).notNull(),
+  sex: varchar("sex", { length: 1 }),
+  displayName: varchar("display_name", { length: 200 }),
+}, (table) => [
+  uniqueIndex("tournament_persons_tournament_document_uq").on(table.tournamentId, table.documentId),
+]);
+
+// Pareja (team) inscrita en 1 grupo de 1 categoría (R1 del loader).
+export const tournamentTeams = pgTable("tournament_teams", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tournamentId: uuid("tournament_id").notNull().references(() => tournaments.id, { onDelete: "cascade" }),
+  categoryId: uuid("category_id").notNull().references(() => tournamentCategories.id, { onDelete: "cascade" }),
+  groupId: uuid("group_id").notNull().references(() => tournamentGroups.id, { onDelete: "cascade" }),
+  code: varchar("code", { length: 20 }).notNull(),
+  sortOrder: integer("sort_order").notNull(),
+}, (table) => [
+  uniqueIndex("tournament_teams_tournament_code_uq").on(table.tournamentId, table.code),
+  index("tournament_teams_group_idx").on(table.groupId),
+  index("tournament_teams_tournament_idx").on(table.tournamentId),
+]);
+
+// Miembros de la pareja. idx (personId) sirve el lookup de "doble categoría".
+export const tournamentTeamMembers = pgTable("tournament_team_members", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  teamId: uuid("team_id").notNull().references(() => tournamentTeams.id, { onDelete: "cascade" }),
+  personId: uuid("person_id").notNull().references(() => tournamentPersons.id, { onDelete: "cascade" }),
+}, (table) => [
+  uniqueIndex("tournament_team_members_team_person_uq").on(table.teamId, table.personId),
+  index("tournament_team_members_person_idx").on(table.personId),
+]);
+
+// no_disponible temporal: bloque de previa en el que la pareja no puede jugar.
+export const tournamentTeamAvailability = pgTable("tournament_team_availability", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  teamId: uuid("team_id").notNull().references(() => tournamentTeams.id, { onDelete: "cascade" }),
+  blockIdx: integer("block_idx").notNull(),
+}, (table) => [
+  uniqueIndex("tournament_team_availability_team_block_uq").on(table.teamId, table.blockIdx),
+]);
+
+// Partido materializado en la transacción de import (Q2). sourceGroups/feeders
+// guardan CÓDIGOS (["3ra-G1"], ["3ra-8vos-1"]), no UUIDs: legibles en SQL.
+export const tournamentMatches = pgTable("tournament_matches", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tournamentId: uuid("tournament_id").notNull().references(() => tournaments.id, { onDelete: "cascade" }),
+  categoryId: uuid("category_id").notNull().references(() => tournamentCategories.id, { onDelete: "cascade" }),
+  phase: tournamentPhaseEnum("phase").notNull(),
+  round: tournamentMatchRoundEnum("round").notNull(),
+  groupId: uuid("group_id").references(() => tournamentGroups.id, { onDelete: "set null" }),
+  teamAId: uuid("team_a_id").references(() => tournamentTeams.id, { onDelete: "set null" }),
+  teamBId: uuid("team_b_id").references(() => tournamentTeams.id, { onDelete: "set null" }),
+  sourceGroups: jsonb("source_groups").notNull().default([]),
+  feeders: jsonb("feeders").notNull().default([]),
+  code: varchar("code", { length: 60 }).notNull(),
+}, (table) => [
+  uniqueIndex("tournament_matches_tournament_code_uq").on(table.tournamentId, table.code),
+  index("tournament_matches_tournament_phase_idx").on(table.tournamentId, table.phase),
+  index("tournament_matches_category_idx").on(table.categoryId),
+]);
+
+// Corrida del motor (job). params = snapshot completo + timeLimitMs + mipRelGap
+// ⇒ un run es reproducible sin releer el torneo.
+// UNIQUE parcial: garantía DB del 409 (solo 1 run activo por torneo).
+export const tournamentRuns = pgTable("tournament_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tournamentId: uuid("tournament_id").notNull().references(() => tournaments.id, { onDelete: "cascade" }),
+  requestedBy: uuid("requested_by").notNull().references(() => users.id, { onDelete: "no action" }),
+  status: tournamentRunStatusEnum("status").notNull().default('queued'),
+  params: jsonb("params").notNull(),
+  engineStatus: varchar("engine_status", { length: 32 }),
+  objective: numeric("objective"),
+  mipGap: numeric("mip_gap"),
+  timeMs: integer("time_ms"),
+  diagnostics: jsonb("diagnostics"),
+  error: jsonb("error"),
+  slotsCount: integer("slots_count").notNull().default(0),
+  dispatchAttempts: integer("dispatch_attempts").notNull().default(0),
+  lastDispatchAt: timestamp("last_dispatch_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  startedAt: timestamp("started_at"),
+  finishedAt: timestamp("finished_at"),
+}, (table) => [
+  uniqueIndex("tournament_runs_active_uq")
+    .on(table.tournamentId)
+    .where(sql`status in ('queued', 'running')`),
+  index("tournament_runs_tournament_created_idx").on(table.tournamentId, table.createdAt),
+  index("tournament_runs_tournament_status_idx").on(table.tournamentId, table.status),
+]);
+
+// Asignación final (match → bloque + cancha) de un run. Se escriben en la misma
+// transacción que el estado terminal: nunca agenda parcial.
+export const tournamentAgendaSlots = pgTable("tournament_agenda_slots", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runId: uuid("run_id").notNull().references(() => tournamentRuns.id, { onDelete: "cascade" }),
+  matchId: uuid("match_id").notNull().references(() => tournamentMatches.id, { onDelete: "cascade" }),
+  blockIdx: integer("block_idx").notNull(),
+  court: integer("court").notNull(),
+}, (table) => [
+  uniqueIndex("tournament_agenda_slots_run_match_uq").on(table.runId, table.matchId),
+  uniqueIndex("tournament_agenda_slots_run_block_court_uq").on(table.runId, table.blockIdx, table.court),
+  index("tournament_agenda_slots_run_block_idx").on(table.runId, table.blockIdx),
+]);
+
+export const tournamentsRelations = relations(tournaments, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [tournaments.ownerId],
+    references: [users.id],
+  }),
+  blocks: many(tournamentBlocks),
+  categories: many(tournamentCategories),
+  groups: many(tournamentGroups),
+  persons: many(tournamentPersons),
+  teams: many(tournamentTeams),
+  matches: many(tournamentMatches),
+  runs: many(tournamentRuns),
+}));
+
+export const tournamentBlocksRelations = relations(tournamentBlocks, ({ one }) => ({
+  tournament: one(tournaments, {
+    fields: [tournamentBlocks.tournamentId],
+    references: [tournaments.id],
+  }),
+}));
+
+export const tournamentCategoriesRelations = relations(tournamentCategories, ({ one, many }) => ({
+  tournament: one(tournaments, {
+    fields: [tournamentCategories.tournamentId],
+    references: [tournaments.id],
+  }),
+  groups: many(tournamentGroups),
+  teams: many(tournamentTeams),
+  matches: many(tournamentMatches),
+}));
+
+export const tournamentGroupsRelations = relations(tournamentGroups, ({ one, many }) => ({
+  tournament: one(tournaments, {
+    fields: [tournamentGroups.tournamentId],
+    references: [tournaments.id],
+  }),
+  category: one(tournamentCategories, {
+    fields: [tournamentGroups.categoryId],
+    references: [tournamentCategories.id],
+  }),
+  teams: many(tournamentTeams),
+  matches: many(tournamentMatches),
+}));
+
+export const tournamentPersonsRelations = relations(tournamentPersons, ({ one, many }) => ({
+  tournament: one(tournaments, {
+    fields: [tournamentPersons.tournamentId],
+    references: [tournaments.id],
+  }),
+  teamMemberships: many(tournamentTeamMembers),
+}));
+
+export const tournamentTeamsRelations = relations(tournamentTeams, ({ one, many }) => ({
+  tournament: one(tournaments, {
+    fields: [tournamentTeams.tournamentId],
+    references: [tournaments.id],
+  }),
+  category: one(tournamentCategories, {
+    fields: [tournamentTeams.categoryId],
+    references: [tournamentCategories.id],
+  }),
+  group: one(tournamentGroups, {
+    fields: [tournamentTeams.groupId],
+    references: [tournamentGroups.id],
+  }),
+  members: many(tournamentTeamMembers),
+  availability: many(tournamentTeamAvailability),
+}));
+
+export const tournamentTeamMembersRelations = relations(tournamentTeamMembers, ({ one }) => ({
+  team: one(tournamentTeams, {
+    fields: [tournamentTeamMembers.teamId],
+    references: [tournamentTeams.id],
+  }),
+  person: one(tournamentPersons, {
+    fields: [tournamentTeamMembers.personId],
+    references: [tournamentPersons.id],
+  }),
+}));
+
+export const tournamentTeamAvailabilityRelations = relations(tournamentTeamAvailability, ({ one }) => ({
+  team: one(tournamentTeams, {
+    fields: [tournamentTeamAvailability.teamId],
+    references: [tournamentTeams.id],
+  }),
+}));
+
+export const tournamentMatchesRelations = relations(tournamentMatches, ({ one, many }) => ({
+  tournament: one(tournaments, {
+    fields: [tournamentMatches.tournamentId],
+    references: [tournaments.id],
+  }),
+  category: one(tournamentCategories, {
+    fields: [tournamentMatches.categoryId],
+    references: [tournamentCategories.id],
+  }),
+  group: one(tournamentGroups, {
+    fields: [tournamentMatches.groupId],
+    references: [tournamentGroups.id],
+  }),
+  teamA: one(tournamentTeams, {
+    relationName: "matchTeamA",
+    fields: [tournamentMatches.teamAId],
+    references: [tournamentTeams.id],
+  }),
+  teamB: one(tournamentTeams, {
+    relationName: "matchTeamB",
+    fields: [tournamentMatches.teamBId],
+    references: [tournamentTeams.id],
+  }),
+  slots: many(tournamentAgendaSlots),
+}));
+
+export const tournamentRunsRelations = relations(tournamentRuns, ({ one, many }) => ({
+  tournament: one(tournaments, {
+    fields: [tournamentRuns.tournamentId],
+    references: [tournaments.id],
+  }),
+  requester: one(users, {
+    relationName: "requestedRuns",
+    fields: [tournamentRuns.requestedBy],
+    references: [users.id],
+  }),
+  slots: many(tournamentAgendaSlots),
+}));
+
+export const tournamentAgendaSlotsRelations = relations(tournamentAgendaSlots, ({ one }) => ({
+  run: one(tournamentRuns, {
+    fields: [tournamentAgendaSlots.runId],
+    references: [tournamentRuns.id],
+  }),
+  match: one(tournamentMatches, {
+    fields: [tournamentAgendaSlots.matchId],
+    references: [tournamentMatches.id],
+  }),
+}));
+
+export type Tournament = typeof tournaments.$inferSelect;
+export type NewTournament = typeof tournaments.$inferInsert;
+export type TournamentBlock = typeof tournamentBlocks.$inferSelect;
+export type NewTournamentBlock = typeof tournamentBlocks.$inferInsert;
+export type TournamentCategory = typeof tournamentCategories.$inferSelect;
+export type NewTournamentCategory = typeof tournamentCategories.$inferInsert;
+export type TournamentGroup = typeof tournamentGroups.$inferSelect;
+export type NewTournamentGroup = typeof tournamentGroups.$inferInsert;
+export type TournamentPerson = typeof tournamentPersons.$inferSelect;
+export type NewTournamentPerson = typeof tournamentPersons.$inferInsert;
+export type TournamentTeam = typeof tournamentTeams.$inferSelect;
+export type NewTournamentTeam = typeof tournamentTeams.$inferInsert;
+export type TournamentTeamMember = typeof tournamentTeamMembers.$inferSelect;
+export type NewTournamentTeamMember = typeof tournamentTeamMembers.$inferInsert;
+export type TournamentTeamAvailability = typeof tournamentTeamAvailability.$inferSelect;
+export type NewTournamentTeamAvailability = typeof tournamentTeamAvailability.$inferInsert;
+export type TournamentMatch = typeof tournamentMatches.$inferSelect;
+export type NewTournamentMatch = typeof tournamentMatches.$inferInsert;
+export type TournamentRun = typeof tournamentRuns.$inferSelect;
+export type NewTournamentRun = typeof tournamentRuns.$inferInsert;
+export type TournamentAgendaSlot = typeof tournamentAgendaSlots.$inferSelect;
+export type NewTournamentAgendaSlot = typeof tournamentAgendaSlots.$inferInsert;

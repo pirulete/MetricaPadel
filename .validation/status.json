@@ -1,17 +1,17 @@
 {
   "status": "pass",
-  "last_validated": "2026-11-03T05:15:44.607Z",
+  "last_validated": "2026-11-10T02:35:23.112Z",
   "gates_passed": 19,
   "gates_failed": 0,
   "gates_warning": 4,
   "failed_gates": [],
   "warning_gates": [
-    "e2e_tests",
     "api_integration",
     "env_vars",
+    "loop_metrics",
     "file_size"
   ],
-  "risk_level": "LOW",
+  "risk_level": "HIGH",
   "gates_run": [
     "typecheck",
     "lint",
@@ -37,6 +37,6 @@
     "coverage_check",
     "loop_metrics"
   ],
-  "test_coverage_delta": 33,
-  "message": "⚠️ All 19 gates passed, 4 warning(s): [e2e_tests] E2E Tests, [api_integration] API Integration Tests, [env_vars] Env Vars, [file_size] File size"
+  "test_coverage_delta": null,
+  "message": "⚠️ All 19 gates passed, 4 warning(s): [api_integration] API Integration Tests, [env_vars] Env Vars, [loop_metrics] Loop metrics (rework rate), [file_size] File size"
 }

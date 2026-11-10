@@ -1,0 +1,23 @@
+{
+  "change_id": "2026-11-04-class-agenda",
+  "change_class": "feature",
+  "validated_at": "2026-11-04T15:34:00Z",
+  "typecheck": "pass",
+  "lint": "pass",
+  "unit_tests": "pass",
+  "api_tests": "pass",
+  "e2e_tests": "pass",
+  "build": "pass",
+  "secrets": "pass",
+  "sast": "pass",
+  "features_check": "pass",
+  "migrations_check": "pass",
+  "docs_check": "pass",
+  "artifact_completeness": "pass",
+  "security_check": "pass",
+  "coverage_check": "pass",
+  "evidence_check": "pass",
+  "gates_passed": 15,
+  "gates_failed": 0,
+  "overall": "pass"
+}

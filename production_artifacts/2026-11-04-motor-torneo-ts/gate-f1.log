@@ -1,0 +1,33 @@
+=== GATE F1 etapa A: cold start (--time 1) ===
+fixture: 247 partidos · 38 bloques · 8 canchas · seed=7
+params: == DEFAULT_PARAMS
+modelo: nVars=5020/5020 nConstraints=6604/6604 nNonZeros=56683/56683 (build 70 ms)
+familias: {"R1":247,"R2":38,"R3":2812,"R3b":400,"R5":1618,"DIA":846,"MX":155,"MN":155,"SEG":325,"FIN":8} vs golden {"DIA":846,"FIN":8,"MN":155,"MX":155,"R1":247,"R2":38,"R3":2812,"R3b":400,"R5":1618,"SEG":325}
+L3: MATCH ✅
+
+solve: timeLimit=1s gap=0.01
+resultado: status=feasible_time_limit objective=96595 gap=0.9005435063926704 solver=30150 ms wall=30154 ms rss=290 MB
+mensaje: HiGHS modelStatus=13 solución=2
+partidos asignados: 247/247
+canchas asignadas: 247/247
+verify errores: 0
+real 31.55
+user 32.76
+sys 0.60
+
+=== GATE F1 etapa A: corrida completa (--time 240) ===
+fixture: 247 partidos · 38 bloques · 8 canchas · seed=7
+params: == DEFAULT_PARAMS
+modelo: nVars=5020/5020 nConstraints=6604/6604 nNonZeros=56683/56683 (build 74 ms)
+familias: {"R1":247,"R2":38,"R3":2812,"R3b":400,"R5":1618,"DIA":846,"MX":155,"MN":155,"SEG":325,"FIN":8} vs golden {"DIA":846,"FIN":8,"MN":155,"MX":155,"R1":247,"R2":38,"R3":2812,"R3b":400,"R5":1618,"SEG":325}
+L3: MATCH ✅
+
+solve: timeLimit=240s gap=0.01
+resultado: status=feasible_time_limit objective=13115 gap=0.25520396492565767 solver=240160 ms wall=240166 ms rss=378 MB
+mensaje: HiGHS modelStatus=13 solución=2
+partidos asignados: 247/247
+canchas asignadas: 247/247
+verify errores: 0
+real 241.54
+user 242.58
+sys 1.22

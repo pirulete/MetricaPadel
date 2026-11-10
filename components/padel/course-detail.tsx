@@ -29,6 +29,10 @@ import { EmptyState } from "@/components/padel/empty-state"
 import { AssignRubricModal } from "@/components/padel/assign-rubric-modal"
 import { AddStudentModal } from "@/components/padel/add-student-modal"
 import { EditCourseModal } from "@/components/padel/edit-course-modal"
+import { AgendaWeekList } from "@/components/padel/agenda-week-list"
+import { EnableWeekDialog } from "@/components/padel/enable-week-dialog"
+import { BlockAssignmentSheet } from "@/components/padel/block-assignment-sheet"
+import { useClassAgenda } from "@/hooks/use-class-agenda"
 
 export type CourseDetailData = {
   course: {
@@ -61,11 +65,19 @@ const LEVEL_LABELS: Record<CourseDetailData["course"]["level"], string> = {
   avanzado: "Avanzado",
 }
 
-/** Detalle de curso P07: tabs Alumnos / Rúbricas + código invite + acciones. */
+/** Detalle de curso P07: tabs Alumnos / Rúbricas / Agenda + código invite + acciones. */
 export function CourseDetail({ course }: { course: CourseDetailData }) {
   const router = useRouter()
   const [copied, setCopied] = React.useState(false)
   const [removingId, setRemovingId] = React.useState<string | null>(null)
+  const templateRef = React.useRef<HTMLDivElement>(null)
+  // El server (`GET /api/courses/[id]` con guardAdmin + ownership) es la única
+  // autoridad: esta vista sólo la recibe el coach dueño del curso.
+  const agenda = useClassAgenda({
+    courseId: course.course.id,
+    students: course.students,
+    courseArchived: course.course.status === "archived",
+  })
 
   const copyCode = async () => {
     try {
@@ -167,6 +179,7 @@ export function CourseDetail({ course }: { course: CourseDetailData }) {
         <TabsList>
           <TabsTrigger value="students">Alumnos</TabsTrigger>
           <TabsTrigger value="rubrics">Rúbricas</TabsTrigger>
+          <TabsTrigger value="agenda">Agenda</TabsTrigger>
         </TabsList>
 
         <TabsContent value="students" className="mt-4">
@@ -243,6 +256,70 @@ export function CourseDetail({ course }: { course: CourseDetailData }) {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="agenda" className="mt-4">
+          <div ref={templateRef}>
+            <AgendaWeekList
+              weekNumber={agenda.week.weekNumber}
+              weekRange={agenda.weekRange}
+              blocks={agenda.blocks}
+              templateCount={agenda.templateCount}
+              plannedCount={agenda.plannedCount}
+              weekEnabled={agenda.weekEnabled}
+              loading={agenda.blocksLoading}
+              error={agenda.blocksError}
+              onRetry={agenda.reload}
+              onPreviousWeek={agenda.goToPreviousWeek}
+              onNextWeek={agenda.goToNextWeek}
+              onEnableWeek={() => agenda.setEnableWeekOpen(true)}
+              onBlockOpen={agenda.openBlock}
+              onConfigureTemplate={() =>
+                templateRef.current?.scrollIntoView({ behavior: "smooth", block: "end" })
+              }
+              courseArchived={agenda.courseArchived}
+              slotManager={{
+                slots: agenda.slots,
+                loading: agenda.slotsLoading,
+                error: agenda.slotsError,
+                onRetry: agenda.reloadSlots,
+                disabled: agenda.courseArchived || agenda.busy,
+                onCreate: agenda.createSlot,
+                onUpdate: agenda.updateSlot,
+                onDelete: agenda.deleteSlot,
+              }}
+            />
+          </div>
+
+          <EnableWeekDialog
+            open={agenda.enableWeekOpen}
+            onOpenChange={agenda.setEnableWeekOpen}
+            weekLabel={`Semana ${agenda.week.weekNumber}`}
+            weekRange={agenda.weekRange}
+            plannedBlocks={agenda.plannedBlocks}
+            submitting={agenda.busy}
+            courseArchived={agenda.courseArchived}
+            onConfirm={() => void agenda.confirmEnableWeek()}
+          />
+
+          <BlockAssignmentSheet
+            open={agenda.selectedBlock !== null}
+            onOpenChange={(open) => {
+              if (!open) agenda.closeBlock()
+            }}
+            block={agenda.selectedBlock}
+            enrollments={agenda.enrollments}
+            availableStudents={agenda.availableStudents}
+            loading={agenda.sheetLoading}
+            error={agenda.sheetError}
+            onRetry={agenda.reloadBlock}
+            busy={agenda.busy}
+            courseArchived={agenda.courseArchived}
+            onAssign={agenda.assignStudents}
+            onAttendance={agenda.markAttendance}
+            onRemove={agenda.removeStudent}
+            onStatusChange={agenda.changeBlockStatus}
+          />
         </TabsContent>
       </Tabs>
     </div>

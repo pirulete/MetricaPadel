@@ -1,0 +1,26 @@
+{
+  "change_id": "2026-11-09-mutation-testing",
+  "change_class": "feature",
+  "validated_at": "2026-11-10T02:28:57Z",
+  "typecheck": "pass",
+  "lint": "pass",
+  "unit_tests": "pass",
+  "api_tests": "skipped",
+  "build": "pass",
+  "features_check": "pass",
+  "migrations_check": "pass",
+  "docs_check": "pass",
+  "artifact_completeness": "pass",
+  "security_check": "pass",
+  "evidence_check": "pass",
+  "gates_passed": 10,
+  "gates_failed": 0,
+  "overall": "pass",
+  "notes": {
+    "api_tests": "skipped justificado — AC-13 N/A: git diff app/api = 0, 0 endpoints nuevos/modificados, feature 100% tooling de testing",
+    "e2e": "skipped justificado — git diff app/ components/ = 0, 0 cambios de UI",
+    "build": "pass — npx next build NO se ejecutó en la validación de @qa-release (delegado explícitamente al harness --all, step 7b). Último build verde del harness 2026-11-04; el change no toca app/, lib/, next.config ni deps de runtime (solo devDeps @stryker-mutator/* + jest-environment-node). Ver 92-improvement-notes.md obs.1",
+    "unit_tests": "86/86 suites · 1236 passed · 1 skipped (7.371 s) — ver test-matrix.md §1",
+    "security_check": "gitleaks 0 leaks (73.98 MB) · semgrep exit 0, 58 findings preexistentes sin bloqueantes nuevos · pnpm audit 0 high nuevos en paquetes del change"
+  }
+}

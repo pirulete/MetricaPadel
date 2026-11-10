@@ -1,0 +1,19 @@
+{
+  "change_id": "2026-11-09-mutation-testing",
+  "change_class": "feature",
+  "timestamp": "2026-11-10T02:28:57Z",
+  "files_changed": 20,
+  "tests_added": 4,
+  "tests_updated": 8,
+  "test_coverage_delta": null,
+  "gates_passed": 13,
+  "gates_failed": 0,
+  "notes": {
+    "files_changed_detail": "20 archivos (excluye production_artifacts/): 3 nuevos de config (stryker.conf.mjs, jest.config.mutation.js) + package.json + pnpm-lock.yaml + .gitignore + docs (ARCHITECTURE.md, FEATURES.md) + 4 tests nuevos (motor-torneo/{courts,objective,types}.test.ts, torneos/dispatch.test.ts) + 1 helper nuevo (motor-torneo/fixtures.ts) + 8 tests ampliados (bracket, calendar, diagnostics, loader, model, solver-parity, verify, validations/torneo)",
+    "tests_added": "4 suites nuevas (courts, objective, types, dispatch). fixtures.ts es helper compartido, no suite",
+    "tests_updated": "8 suites ampliadas con asserts exactos tras el triaje",
+    "test_coverage_delta": "null por diseño — el change no busca delta de cobertura sino de mutation score; gate --coverage PASS sin regresión (lib 92.6% lines vs 88.6% baseline)",
+    "mutation_score": "54.93% -> 86.90% (+31.97), 1863 mutantes, 148/148 triados, determinismo |Δ| = 0.00",
+    "production_loc_changed": "0 (git diff HEAD -- lib/ app/ components/ hooks/ vacío — AC-07/AC-08)"
+  }
+}

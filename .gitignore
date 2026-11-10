@@ -41,3 +41,14 @@ test-results/
 playwright-report/
 opencode-backup.zip
 .stryker-tmp/
+
+# mutation testing reports
+reports/mutation/
+.stryker-tmp-*/
+
+# referencia Python congelada del motor de torneos (no es deliverable)
+motor_torneo/.venv/
+__pycache__/
+
+# macOS
+.DS_Store

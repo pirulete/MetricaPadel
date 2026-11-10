@@ -207,6 +207,18 @@ Principio: **NUNCA permitir LOCKED** en rutas privadas. TEMPORARY solo si explí
 - **Dependencia nueva**: solo `highs` (WASM). Si el bundler intenta empaquetar el `.wasm`, `serverExternalPackages: ['highs']` en `next.config.mjs`. Runtime `nodejs`, **nunca `edge`**.
 - **Env vars**: `TOURNAMENT_WORKER_SECRET`, `TOURNAMENT_MAX_TIME_LIMIT_MS` (default 240000), `TOURNAMENT_WORKER_URL` (override para plan B contenedor).
 
+## Mutation testing (Stryker) — v0.13
+
+- **Qué es**: mutation testing **opt-in** sobre la lógica pura de torneos. Mide si los tests *detectan* un cambio de lógica (un mutante que sobrevive = assert ausente), no si "pasan". **NO es gate del harness `--all`** (mismo patrón opt-in que `RUN_SLOW_PARITY`): una corrida completa cuesta 45–99 min.
+- **Config** `stryker.conf.mjs`: `testRunner: "jest"` + `checkers: ["typescript"]` (descarta mutantes que no compilan), `coverageAnalysis: "perTest"`, `concurrency: 1` (HiGHS es WASM → evita OOM), `ignoreStatic: true`, `cleanTempDir: "always"` (nunca deja sandbox residual que rompa `--lint`) e `ignorePatterns` explícitos de 15 entradas. `thresholds: { high: 86.9, low: 81.9, break: 81.9 }` — regla: `high` = score medido, `low` = `break` = score − 5.
+- **Scope (`mutate`)**: `lib/motor-torneo/*.ts` (bracket, calendar, courts, diagnostics, engine, loader, model, objective, solver, verify, types) + `lib/torneos/{limits,dispatch}.ts` + `lib/validations/torneos.ts`. Fuera: tests, `lib/db`, `app/`, `components/`, `hooks/`, `scripts/`.
+- **Config Jest dedicada** `jest.config.mutation.js`: spread de `jest.config.js` (que **no** se modifica, para no alterar `pnpm test:unit`) con `collectCoverage: false`, `verbose: false`, `testTimeout: 60_000`, `testMatch` acotado a `tests/unit/{motor-torneo,torneos}/*.test.ts` + `tests/unit/validations/torneo.test.ts`, y `purity.test.ts` excluido (es un linter estático, no cubre el código mutado). Hoy: **13 suites / 252 tests**.
+- **Comandos**: `pnpm test:mutation` (completa), `npx stryker run --dryRun` (verifica scope sin mutar), `pnpm test:mutation:phase-b` (solo `engine`+`courts`+`solver`, el tramo WASM lento). **Nunca** con `RUN_SLOW_PARITY=1`: el caso lento de paridad son ~240 s por mutante.
+- **Números oficiales** (fórmula Stryker v10: `(killed+timeout)/(killed+timeout+survived+noCoverage)`): baseline **54.93%** (1863 mutantes: 644 killed / 434 survived / 105 no-coverage) → **86.90%** tras el triaje (967 killed / 98 survived / 50 no-coverage). Determinismo verificado (Δ = 0.00 entre dos corridas completas).
+- **Flujo de triaje obligatorio**: baseline medido → **cada** `Survived`/`NoCoverage` recibe una única decisión en `mutation-triage.md` (`killed` con assert nuevo **solo** en `tests/unit/` · `equivalent` con prueba de una línea · `excluded` por coste) → **0 filas sin decisión** (cierre: 148/148). Nunca se fija un threshold antes de medir y nunca se toca `lib/**` para matar mutantes.
+- **Reportes**: viven en `reports/mutation/` (HTML + `mutation.json`) y el sandbox `.stryker-tmp/` — **ambos gitignored**. Los artifacts del change (`mutation-baseline.md`, `mutation-triage.md`) sí se commitean.
+- **Alcance de la señal**: el score cubre **solo lógica pura**. No dice nada de SQL, route handlers, UI ni auth — para eso siguen vigentes los gates de API/E2E.
+
 ## Convenciones de Migraciones
 
 - **Siempre usar `pnpm run db:generate` tras modificar `lib/db/schema.ts`** — nunca crear SQL a mano.

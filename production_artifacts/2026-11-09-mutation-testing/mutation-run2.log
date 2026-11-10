@@ -1,0 +1,603 @@
+[32m18:42:50 (19354) INFO ProjectReader[39m Found 2 of 766 file(s) to be mutated.
+[32m18:42:51 (19354) INFO Instrumenter[39m Instrumented 2 source file(s) with 562 mutant(s)
+[32m18:42:51 (19354) INFO ConcurrencyTokenProvider[39m Creating 1 checker process(es) and 1 test runner process(es).
+[32m18:43:08 (19354) INFO BroadcastReporter[39m Detected that current console does not support the "progress" reporter, downgrading to "progress-append-only" reporter
+[32m18:43:09 (19354) INFO DryRunExecutor[39m Starting initial test run (jest test runner with "perTest" coverage analysis). This may take a while.
+[32m18:43:11 (19354) INFO DryRunExecutor[39m Initial test run succeeded. Ran 64 tests in 2 seconds (net 617 ms, overhead 1534 ms).
+Mutation testing 0% (elapsed: <1m, remaining: ~1h 37m) 1/557 tested (0 survived, 0 timed out)
+Mutation testing 0% (elapsed: <1m, remaining: ~48m) 4/557 tested (0 survived, 0 timed out)
+Mutation testing 1% (elapsed: <1m, remaining: ~41m) 7/557 tested (1 survived, 0 timed out)
+Mutation testing 1% (elapsed: <1m, remaining: ~54m) 10/557 tested (1 survived, 0 timed out)
+Mutation testing 1% (elapsed: <1m, remaining: ~1h 7m) 13/557 tested (1 survived, 0 timed out)
+Mutation testing 1% (elapsed: ~1m, remaining: ~1h 3m) 15/557 tested (1 survived, 0 timed out)
+Mutation testing 1% (elapsed: ~1m, remaining: ~1h 0m) 18/557 tested (1 survived, 0 timed out)
+Mutation testing 2% (elapsed: ~1m, remaining: ~54m) 21/557 tested (1 survived, 0 timed out)
+Mutation testing 2% (elapsed: ~1m, remaining: ~53m) 24/557 tested (1 survived, 0 timed out)
+Mutation testing 3% (elapsed: ~1m, remaining: ~52m) 26/557 tested (1 survived, 0 timed out)
+Mutation testing 3% (elapsed: ~1m, remaining: ~49m) 29/557 tested (1 survived, 0 timed out)
+Mutation testing 4% (elapsed: ~2m, remaining: ~46m) 32/557 tested (1 survived, 0 timed out)
+Mutation testing 4% (elapsed: ~2m, remaining: ~48m) 35/557 tested (1 survived, 0 timed out)
+Mutation testing 4% (elapsed: ~2m, remaining: ~49m) 38/557 tested (1 survived, 0 timed out)
+Mutation testing 4% (elapsed: ~2m, remaining: ~47m) 41/557 tested (1 survived, 0 timed out)
+Mutation testing 5% (elapsed: ~2m, remaining: ~45m) 44/557 tested (1 survived, 0 timed out)
+Mutation testing 5% (elapsed: ~2m, remaining: ~45m) 46/557 tested (1 survived, 0 timed out)
+Mutation testing 6% (elapsed: ~3m, remaining: ~44m) 49/557 tested (1 survived, 0 timed out)
+Mutation testing 6% (elapsed: ~3m, remaining: ~43m) 52/557 tested (2 survived, 0 timed out)
+Mutation testing 7% (elapsed: ~3m, remaining: ~42m) 55/557 tested (2 survived, 0 timed out)
+Mutation testing 7% (elapsed: ~3m, remaining: ~41m) 58/557 tested (2 survived, 0 timed out)
+Mutation testing 8% (elapsed: ~3m, remaining: ~40m) 61/557 tested (2 survived, 0 timed out)
+Mutation testing 8% (elapsed: ~3m, remaining: ~40m) 63/557 tested (2 survived, 0 timed out)
+Mutation testing 8% (elapsed: ~4m, remaining: ~40m) 66/557 tested (3 survived, 0 timed out)
+Mutation testing 9% (elapsed: ~4m, remaining: ~39m) 69/557 tested (3 survived, 0 timed out)
+Mutation testing 10% (elapsed: ~4m, remaining: ~39m) 72/557 tested (3 survived, 0 timed out)
+Mutation testing 10% (elapsed: ~4m, remaining: ~38m) 75/557 tested (3 survived, 0 timed out)
+Mutation testing 10% (elapsed: ~4m, remaining: ~39m) 78/557 tested (3 survived, 0 timed out)
+Mutation testing 10% (elapsed: ~4m, remaining: ~41m) 81/557 tested (3 survived, 0 timed out)
+Mutation testing 10% (elapsed: ~5m, remaining: ~42m) 84/557 tested (3 survived, 0 timed out)
+Mutation testing 10% (elapsed: ~5m, remaining: ~43m) 87/557 tested (4 survived, 0 timed out)
+Mutation testing 10% (elapsed: ~5m, remaining: ~45m) 89/557 tested (5 survived, 0 timed out)
+Mutation testing 10% (elapsed: ~5m, remaining: ~46m) 92/557 tested (5 survived, 0 timed out)
+Mutation testing 11% (elapsed: ~5m, remaining: ~45m) 95/557 tested (5 survived, 0 timed out)
+Mutation testing 11% (elapsed: ~5m, remaining: ~45m) 97/557 tested (5 survived, 0 timed out)
+Mutation testing 11% (elapsed: ~6m, remaining: ~44m) 100/557 tested (5 survived, 0 timed out)
+Mutation testing 12% (elapsed: ~6m, remaining: ~44m) 103/557 tested (6 survived, 0 timed out)
+Mutation testing 12% (elapsed: ~6m, remaining: ~43m) 106/557 tested (7 survived, 0 timed out)
+Mutation testing 13% (elapsed: ~6m, remaining: ~43m) 108/557 tested (7 survived, 0 timed out)
+Mutation testing 13% (elapsed: ~6m, remaining: ~43m) 111/557 tested (7 survived, 0 timed out)
+Mutation testing 13% (elapsed: ~6m, remaining: ~42m) 115/557 tested (7 survived, 0 timed out)
+Mutation testing 14% (elapsed: ~7m, remaining: ~42m) 117/557 tested (7 survived, 0 timed out)
+Mutation testing 14% (elapsed: ~7m, remaining: ~41m) 121/557 tested (7 survived, 0 timed out)
+Mutation testing 15% (elapsed: ~7m, remaining: ~41m) 123/557 tested (7 survived, 0 timed out)
+Mutation testing 15% (elapsed: ~7m, remaining: ~40m) 126/557 tested (7 survived, 0 timed out)
+Mutation testing 16% (elapsed: ~7m, remaining: ~39m) 129/557 tested (7 survived, 0 timed out)
+Mutation testing 16% (elapsed: ~7m, remaining: ~39m) 132/557 tested (7 survived, 0 timed out)
+Mutation testing 17% (elapsed: ~8m, remaining: ~38m) 135/557 tested (7 survived, 0 timed out)
+Mutation testing 17% (elapsed: ~8m, remaining: ~38m) 138/557 tested (7 survived, 0 timed out)
+Mutation testing 17% (elapsed: ~8m, remaining: ~38m) 141/557 tested (7 survived, 0 timed out)
+Mutation testing 18% (elapsed: ~8m, remaining: ~37m) 145/557 tested (7 survived, 0 timed out)
+Mutation testing 19% (elapsed: ~8m, remaining: ~36m) 148/557 tested (7 survived, 0 timed out)
+Mutation testing 19% (elapsed: ~8m, remaining: ~36m) 150/557 tested (7 survived, 0 timed out)
+Mutation testing 19% (elapsed: ~9m, remaining: ~36m) 153/557 tested (7 survived, 0 timed out)
+Mutation testing 20% (elapsed: ~9m, remaining: ~35m) 156/557 tested (7 survived, 0 timed out)
+Mutation testing 20% (elapsed: ~9m, remaining: ~35m) 159/557 tested (7 survived, 0 timed out)
+Mutation testing 21% (elapsed: ~9m, remaining: ~35m) 161/557 tested (7 survived, 0 timed out)
+Mutation testing 21% (elapsed: ~9m, remaining: ~34m) 164/557 tested (7 survived, 0 timed out)
+Mutation testing 22% (elapsed: ~9m, remaining: ~34m) 167/557 tested (8 survived, 0 timed out)
+Mutation testing 22% (elapsed: ~10m, remaining: ~34m) 170/557 tested (8 survived, 0 timed out)
+Mutation testing 23% (elapsed: ~10m, remaining: ~34m) 173/557 tested (8 survived, 0 timed out)
+Mutation testing 23% (elapsed: ~10m, remaining: ~33m) 176/557 tested (8 survived, 0 timed out)
+Mutation testing 23% (elapsed: ~10m, remaining: ~34m) 178/557 tested (9 survived, 0 timed out)
+Mutation testing 23% (elapsed: ~10m, remaining: ~34m) 182/557 tested (10 survived, 0 timed out)
+Mutation testing 24% (elapsed: ~10m, remaining: ~33m) 184/557 tested (10 survived, 0 timed out)
+Mutation testing 24% (elapsed: ~11m, remaining: ~33m) 187/557 tested (10 survived, 0 timed out)
+Mutation testing 25% (elapsed: ~11m, remaining: ~33m) 190/557 tested (10 survived, 0 timed out)
+Mutation testing 25% (elapsed: ~11m, remaining: ~33m) 192/557 tested (10 survived, 0 timed out)
+Mutation testing 25% (elapsed: ~11m, remaining: ~33m) 194/557 tested (11 survived, 0 timed out)
+Mutation testing 26% (elapsed: ~11m, remaining: ~32m) 196/557 tested (12 survived, 0 timed out)
+Mutation testing 26% (elapsed: ~11m, remaining: ~32m) 198/557 tested (12 survived, 0 timed out)
+Mutation testing 26% (elapsed: ~12m, remaining: ~32m) 201/557 tested (13 survived, 0 timed out)
+Mutation testing 27% (elapsed: ~12m, remaining: ~32m) 203/557 tested (13 survived, 2 timed out)
+Mutation testing 27% (elapsed: ~12m, remaining: ~32m) 204/557 tested (13 survived, 2 timed out)
+Mutation testing 27% (elapsed: ~12m, remaining: ~32m) 205/557 tested (13 survived, 2 timed out)
+Mutation testing 27% (elapsed: ~12m, remaining: ~33m) 205/557 tested (13 survived, 2 timed out)
+Mutation testing 27% (elapsed: ~12m, remaining: ~33m) 207/557 tested (13 survived, 2 timed out)
+Mutation testing 28% (elapsed: ~13m, remaining: ~32m) 209/557 tested (13 survived, 2 timed out)
+Mutation testing 28% (elapsed: ~13m, remaining: ~32m) 211/557 tested (13 survived, 2 timed out)
+Mutation testing 28% (elapsed: ~13m, remaining: ~32m) 213/557 tested (13 survived, 2 timed out)
+Mutation testing 29% (elapsed: ~13m, remaining: ~32m) 216/557 tested (13 survived, 2 timed out)
+Mutation testing 29% (elapsed: ~13m, remaining: ~32m) 218/557 tested (13 survived, 2 timed out)
+Mutation testing 30% (elapsed: ~13m, remaining: ~31m) 221/557 tested (14 survived, 2 timed out)
+Mutation testing 30% (elapsed: ~14m, remaining: ~31m) 224/557 tested (14 survived, 2 timed out)
+Mutation testing 30% (elapsed: ~14m, remaining: ~31m) 225/557 tested (14 survived, 2 timed out)
+Mutation testing 31% (elapsed: ~14m, remaining: ~31m) 228/557 tested (14 survived, 2 timed out)
+Mutation testing 31% (elapsed: ~14m, remaining: ~30m) 231/557 tested (14 survived, 2 timed out)
+Mutation testing 32% (elapsed: ~14m, remaining: ~30m) 233/557 tested (14 survived, 2 timed out)
+Mutation testing 32% (elapsed: ~14m, remaining: ~30m) 236/557 tested (14 survived, 2 timed out)
+Mutation testing 32% (elapsed: ~15m, remaining: ~30m) 239/557 tested (15 survived, 2 timed out)
+Mutation testing 33% (elapsed: ~15m, remaining: ~30m) 241/557 tested (15 survived, 2 timed out)
+Mutation testing 33% (elapsed: ~15m, remaining: ~30m) 244/557 tested (15 survived, 2 timed out)
+Mutation testing 34% (elapsed: ~15m, remaining: ~30m) 247/557 tested (15 survived, 2 timed out)
+Mutation testing 34% (elapsed: ~15m, remaining: ~29m) 249/557 tested (15 survived, 2 timed out)
+Mutation testing 34% (elapsed: ~15m, remaining: ~29m) 252/557 tested (15 survived, 2 timed out)
+Mutation testing 35% (elapsed: ~16m, remaining: ~29m) 254/557 tested (15 survived, 2 timed out)
+Mutation testing 35% (elapsed: ~16m, remaining: ~29m) 257/557 tested (15 survived, 2 timed out)
+Mutation testing 36% (elapsed: ~16m, remaining: ~28m) 260/557 tested (15 survived, 2 timed out)
+Mutation testing 36% (elapsed: ~16m, remaining: ~28m) 262/557 tested (15 survived, 2 timed out)
+Mutation testing 36% (elapsed: ~16m, remaining: ~28m) 265/557 tested (15 survived, 2 timed out)
+Mutation testing 37% (elapsed: ~16m, remaining: ~28m) 268/557 tested (15 survived, 2 timed out)
+Mutation testing 37% (elapsed: ~17m, remaining: ~27m) 270/557 tested (15 survived, 2 timed out)
+Mutation testing 38% (elapsed: ~17m, remaining: ~27m) 273/557 tested (15 survived, 2 timed out)
+Mutation testing 38% (elapsed: ~17m, remaining: ~27m) 276/557 tested (15 survived, 2 timed out)
+Mutation testing 39% (elapsed: ~17m, remaining: ~27m) 278/557 tested (15 survived, 2 timed out)
+Mutation testing 39% (elapsed: ~17m, remaining: ~26m) 281/557 tested (15 survived, 2 timed out)
+Mutation testing 40% (elapsed: ~17m, remaining: ~26m) 284/557 tested (15 survived, 2 timed out)
+Mutation testing 40% (elapsed: ~18m, remaining: ~26m) 287/557 tested (15 survived, 2 timed out)
+Mutation testing 41% (elapsed: ~18m, remaining: ~25m) 290/557 tested (15 survived, 2 timed out)
+Mutation testing 41% (elapsed: ~18m, remaining: ~25m) 292/557 tested (15 survived, 2 timed out)
+Mutation testing 41% (elapsed: ~18m, remaining: ~25m) 295/557 tested (15 survived, 2 timed out)
+Mutation testing 42% (elapsed: ~18m, remaining: ~25m) 298/557 tested (15 survived, 2 timed out)
+Mutation testing 42% (elapsed: ~18m, remaining: ~25m) 300/557 tested (15 survived, 2 timed out)
+Mutation testing 43% (elapsed: ~19m, remaining: ~24m) 303/557 tested (15 survived, 2 timed out)
+Mutation testing 44% (elapsed: ~19m, remaining: ~24m) 306/557 tested (15 survived, 2 timed out)
+Mutation testing 45% (elapsed: ~19m, remaining: ~23m) 310/557 tested (15 survived, 2 timed out)
+Mutation testing 45% (elapsed: ~19m, remaining: ~23m) 312/557 tested (15 survived, 2 timed out)
+Mutation testing 46% (elapsed: ~19m, remaining: ~22m) 315/557 tested (15 survived, 2 timed out)
+Mutation testing 47% (elapsed: ~19m, remaining: ~22m) 318/557 tested (15 survived, 2 timed out)
+Mutation testing 47% (elapsed: ~20m, remaining: ~21m) 321/557 tested (15 survived, 2 timed out)
+Mutation testing 48% (elapsed: ~20m, remaining: ~21m) 324/557 tested (15 survived, 2 timed out)
+Mutation testing 49% (elapsed: ~20m, remaining: ~20m) 327/557 tested (15 survived, 2 timed out)
+Mutation testing 49% (elapsed: ~20m, remaining: ~20m) 330/557 tested (15 survived, 2 timed out)
+Mutation testing 50% (elapsed: ~20m, remaining: ~20m) 333/557 tested (15 survived, 2 timed out)
+Mutation testing 50% (elapsed: ~20m, remaining: ~20m) 335/557 tested (16 survived, 2 timed out)
+Mutation testing 51% (elapsed: ~21m, remaining: ~20m) 338/557 tested (16 survived, 3 timed out)
+Mutation testing 51% (elapsed: ~21m, remaining: ~19m) 341/557 tested (17 survived, 3 timed out)
+Mutation testing 52% (elapsed: ~21m, remaining: ~19m) 344/557 tested (17 survived, 4 timed out)
+Mutation testing 52% (elapsed: ~21m, remaining: ~19m) 347/557 tested (17 survived, 4 timed out)
+Mutation testing 53% (elapsed: ~21m, remaining: ~19m) 349/557 tested (18 survived, 4 timed out)
+Mutation testing 53% (elapsed: ~21m, remaining: ~18m) 352/557 tested (19 survived, 4 timed out)
+Mutation testing 54% (elapsed: ~22m, remaining: ~18m) 355/557 tested (22 survived, 4 timed out)
+Mutation testing 55% (elapsed: ~22m, remaining: ~18m) 358/557 tested (23 survived, 4 timed out)
+Mutation testing 55% (elapsed: ~22m, remaining: ~17m) 361/557 tested (23 survived, 4 timed out)
+Mutation testing 56% (elapsed: ~22m, remaining: ~17m) 363/557 tested (23 survived, 4 timed out)
+Mutation testing 57% (elapsed: ~22m, remaining: ~17m) 366/557 tested (23 survived, 4 timed out)
+Mutation testing 57% (elapsed: ~22m, remaining: ~16m) 369/557 tested (23 survived, 4 timed out)
+Mutation testing 58% (elapsed: ~23m, remaining: ~16m) 372/557 tested (23 survived, 4 timed out)
+Mutation testing 59% (elapsed: ~23m, remaining: ~15m) 375/557 tested (23 survived, 4 timed out)
+Mutation testing 59% (elapsed: ~23m, remaining: ~15m) 377/557 tested (23 survived, 4 timed out)
+Mutation testing 59% (elapsed: ~23m, remaining: ~15m) 380/557 tested (23 survived, 4 timed out)
+Mutation testing 59% (elapsed: ~23m, remaining: ~15m) 382/557 tested (23 survived, 4 timed out)
+Mutation testing 60% (elapsed: ~23m, remaining: ~15m) 384/557 tested (24 survived, 4 timed out)
+Mutation testing 61% (elapsed: ~24m, remaining: ~15m) 387/557 tested (24 survived, 4 timed out)
+Mutation testing 61% (elapsed: ~24m, remaining: ~15m) 390/557 tested (24 survived, 4 timed out)
+Mutation testing 62% (elapsed: ~24m, remaining: ~14m) 393/557 tested (25 survived, 4 timed out)
+Mutation testing 62% (elapsed: ~24m, remaining: ~14m) 396/557 tested (25 survived, 4 timed out)
+Mutation testing 63% (elapsed: ~24m, remaining: ~14m) 399/557 tested (25 survived, 4 timed out)
+Mutation testing 64% (elapsed: ~24m, remaining: ~13m) 401/557 tested (25 survived, 4 timed out)
+Mutation testing 64% (elapsed: ~25m, remaining: ~13m) 404/557 tested (25 survived, 4 timed out)
+Mutation testing 65% (elapsed: ~25m, remaining: ~13m) 407/557 tested (25 survived, 4 timed out)
+Mutation testing 66% (elapsed: ~25m, remaining: ~12m) 410/557 tested (25 survived, 4 timed out)
+Mutation testing 66% (elapsed: ~25m, remaining: ~12m) 413/557 tested (25 survived, 4 timed out)
+Mutation testing 67% (elapsed: ~25m, remaining: ~12m) 416/557 tested (25 survived, 4 timed out)
+Mutation testing 67% (elapsed: ~25m, remaining: ~12m) 418/557 tested (25 survived, 4 timed out)
+Mutation testing 68% (elapsed: ~26m, remaining: ~11m) 421/557 tested (25 survived, 4 timed out)
+Mutation testing 69% (elapsed: ~26m, remaining: ~11m) 424/557 tested (25 survived, 4 timed out)
+Mutation testing 69% (elapsed: ~26m, remaining: ~11m) 426/557 tested (25 survived, 4 timed out)
+Mutation testing 70% (elapsed: ~26m, remaining: ~10m) 429/557 tested (25 survived, 4 timed out)
+Mutation testing 71% (elapsed: ~26m, remaining: ~10m) 432/557 tested (25 survived, 4 timed out)
+Mutation testing 71% (elapsed: ~26m, remaining: ~10m) 435/557 tested (25 survived, 4 timed out)
+Mutation testing 72% (elapsed: ~27m, remaining: ~10m) 438/557 tested (25 survived, 4 timed out)
+Mutation testing 73% (elapsed: ~27m, remaining: ~9m) 440/557 tested (25 survived, 4 timed out)
+Mutation testing 73% (elapsed: ~27m, remaining: ~9m) 443/557 tested (25 survived, 4 timed out)
+Mutation testing 74% (elapsed: ~27m, remaining: ~9m) 446/557 tested (25 survived, 4 timed out)
+Mutation testing 75% (elapsed: ~27m, remaining: ~9m) 449/557 tested (25 survived, 4 timed out)
+Mutation testing 75% (elapsed: ~27m, remaining: ~8m) 452/557 tested (25 survived, 4 timed out)
+Mutation testing 76% (elapsed: ~28m, remaining: ~8m) 455/557 tested (26 survived, 4 timed out)
+Mutation testing 77% (elapsed: ~28m, remaining: ~8m) 458/557 tested (26 survived, 4 timed out)
+Mutation testing 77% (elapsed: ~28m, remaining: ~7m) 461/557 tested (26 survived, 4 timed out)
+Mutation testing 78% (elapsed: ~28m, remaining: ~7m) 464/557 tested (26 survived, 4 timed out)
+Mutation testing 79% (elapsed: ~28m, remaining: ~7m) 466/557 tested (26 survived, 4 timed out)
+Mutation testing 79% (elapsed: ~28m, remaining: ~7m) 468/557 tested (26 survived, 4 timed out)
+Mutation testing 80% (elapsed: ~29m, remaining: ~7m) 471/557 tested (26 survived, 4 timed out)
+Mutation testing 81% (elapsed: ~29m, remaining: ~6m) 474/557 tested (26 survived, 4 timed out)
+Mutation testing 81% (elapsed: ~29m, remaining: ~6m) 477/557 tested (26 survived, 4 timed out)
+Mutation testing 82% (elapsed: ~29m, remaining: ~6m) 480/557 tested (26 survived, 4 timed out)
+Mutation testing 82% (elapsed: ~29m, remaining: ~6m) 483/557 tested (26 survived, 4 timed out)
+Mutation testing 83% (elapsed: ~29m, remaining: ~5m) 485/557 tested (26 survived, 4 timed out)
+Mutation testing 84% (elapsed: ~30m, remaining: ~5m) 488/557 tested (26 survived, 4 timed out)
+Mutation testing 84% (elapsed: ~30m, remaining: ~5m) 491/557 tested (26 survived, 4 timed out)
+Mutation testing 85% (elapsed: ~30m, remaining: ~5m) 494/557 tested (26 survived, 4 timed out)
+Mutation testing 86% (elapsed: ~30m, remaining: ~4m) 497/557 tested (26 survived, 4 timed out)
+Mutation testing 87% (elapsed: ~30m, remaining: ~4m) 500/557 tested (26 survived, 4 timed out)
+Mutation testing 87% (elapsed: ~30m, remaining: ~4m) 503/557 tested (26 survived, 4 timed out)
+Mutation testing 88% (elapsed: ~31m, remaining: ~4m) 505/557 tested (26 survived, 4 timed out)
+Mutation testing 89% (elapsed: ~31m, remaining: ~3m) 509/557 tested (27 survived, 4 timed out)
+Mutation testing 89% (elapsed: ~31m, remaining: ~3m) 511/557 tested (27 survived, 4 timed out)
+Mutation testing 90% (elapsed: ~31m, remaining: ~3m) 515/557 tested (27 survived, 4 timed out)
+Mutation testing 90% (elapsed: ~31m, remaining: ~3m) 517/557 tested (28 survived, 4 timed out)
+Mutation testing 91% (elapsed: ~31m, remaining: ~3m) 520/557 tested (28 survived, 4 timed out)
+Mutation testing 91% (elapsed: ~32m, remaining: ~2m) 523/557 tested (29 survived, 4 timed out)
+Mutation testing 92% (elapsed: ~32m, remaining: ~2m) 526/557 tested (30 survived, 4 timed out)
+Mutation testing 92% (elapsed: ~32m, remaining: ~2m) 528/557 tested (30 survived, 4 timed out)
+Mutation testing 93% (elapsed: ~32m, remaining: ~2m) 531/557 tested (31 survived, 4 timed out)
+Mutation testing 94% (elapsed: ~32m, remaining: ~1m) 534/557 tested (31 survived, 4 timed out)
+Mutation testing 95% (elapsed: ~32m, remaining: ~1m) 537/557 tested (31 survived, 4 timed out)
+Mutation testing 95% (elapsed: ~33m, remaining: ~1m) 540/557 tested (31 survived, 4 timed out)
+Mutation testing 96% (elapsed: ~33m, remaining: ~1m) 543/557 tested (31 survived, 4 timed out)
+Mutation testing 97% (elapsed: ~33m, remaining: ~1m) 545/557 tested (31 survived, 4 timed out)
+Mutation testing 97% (elapsed: ~33m, remaining: <1m) 548/557 tested (31 survived, 4 timed out)
+Mutation testing 98% (elapsed: ~33m, remaining: <1m) 551/557 tested (31 survived, 4 timed out)
+Mutation testing 99% (elapsed: ~33m, remaining: <1m) 554/557 tested (31 survived, 4 timed out)
+
+All tests
+  diagnostics.test.ts
+    ✓ computeSemaforo rojo si ρ > 1 (no cabe) [line 72] (killed 8)
+    ✓ computeSemaforo amarillo si 0.85 < ρ ≤ 1 [line 78] (killed 5)
+    ✓ computeSemaforo verde si ρ ≤ 0.85 [line 84] (killed 1)
+    ✓ computeSemaforo EC-16: fase con partidos y 0 casillas ⇒ rojo e Infinity (nunca NaN) [line 89] (killed 4)
+    ✓ computeSemaforo la extensión no cuenta en la capacidad base [line 99] (killed 4)
+    ✘ computeDiagnosis — indicadores semáforo por fase (extensión aparte) [line 177] (covered 0)
+    ✘ computeDiagnosis — indicadores ocupación por tramo, extensión y horario laboral [line 187] (covered 0)
+    ✘ computeDiagnosis — indicadores indicadores de grupos y parejas [line 198] (covered 0)
+    ✘ computeDiagnosis — indicadores finales y primer partido de cuadro [line 208] (covered 0)
+    ✘ computeDiagnosis — indicadores ningún indicador numérico es NaN [line 217] (covered 0)
+    ✓ computeDiagnosis — indicadores detecta una violación de disponibilidad [line 233] (killed 8)
+    ✓ computeSemaforo — bordes de color fase con 0 casillas y 0 partidos ⇒ verde y occupancy 0 (no NaN) [line 358] (killed 5)
+    ~ computeSemaforo — bordes de color fase con casillas y 0 partidos ⇒ occupancy 0 [line 372] (covered 31)
+    ✓ computeSemaforo — bordes de color ρ exactamente 0.85 ⇒ verde (el umbral es estricto) [line 379] (killed 1)
+    ~ computeSemaforo — bordes de color ρ exactamente 1 ⇒ amarillo (no rojo) [line 388] (covered 40)
+    ✓ computeDiagnosis — ocupación por tramo agrega capacidad y partidos por (día, fase, extensión) [line 399] (killed 10)
+    ✓ computeDiagnosis — choques de doble categoría 2 finales blandas en el mismo bloque ⇒ 1 choque [line 464] (killed 14)
+    ~ computeDiagnosis — choques de doble categoría 3 finales blandas en el mismo bloque ⇒ 2 choques [line 472] (covered 193)
+    ✓ computeDiagnosis — choques de doble categoría las finales duras (8vos) no son choques blandos [line 480] (killed 3)
+    ~ computeDiagnosis — choques de doble categoría partidos potenciales sin bloque no generan choques [line 488] (covered 155)
+    ✓ computeDiagnosis — maxBloquesSeguidos detecta 3 bloques seguidos del mismo día [line 495] (killed 17)
+    ✓ computeDiagnosis — maxBloquesSeguidos una final potencial agendada no alarga la racha de previa [line 503] (killed 4)
+    ✓ computeDiagnosis — maxBloquesSeguidos corta la racha al cambiar de día aunque los idx sean contiguos [line 511] (killed 3)
+    ✓ computeDiagnosis — maxBloquesSeguidos ordena los bloques antes de medir la racha [line 519] (killed 2)
+    ✓ computeDiagnosis — maxBloquesSeguidos no cuenta bloques no consecutivos del mismo día como racha [line 527] (killed 1)
+    ~ computeDiagnosis — maxBloquesSeguidos reinicia la racha después de un corte [line 535] (covered 242)
+    ~ computeDiagnosis — maxBloquesSeguidos ignora los partidos potenciales sin bloque al medir la racha [line 543] (covered 237)
+    ✓ computeDiagnosis — indicadores de grupo grupo como unidad: mismo día y span ≤ 2 (tam 3) [line 553] (killed 23)
+    ✓ computeDiagnosis — indicadores de grupo no es unidad si el span supera 2 bloques [line 564] (killed 3)
+    ✓ computeDiagnosis — indicadores de grupo mismoDia exige el mismo dayLabel aunque los idx sean contiguos [line 573] (killed 3)
+    ✓ computeDiagnosis — indicadores de grupo tam 4 exige span ≤ 1 [line 582] (killed 2)
+    ✓ computeDiagnosis — indicadores de grupo sin cancha asignada no cuenta como misma cancha [line 591] (killed 1)
+    ~ computeDiagnosis — indicadores de grupo omite los partidos del grupo sin bloque asignado [line 599] (covered 197)
+    ✓ computeDiagnosis — indicadores de grupo un grupo desconocido usa tam 3 por defecto [line 608] (killed 1)
+    ✓ computeDiagnosis — indicadores de grupo mide el span entre bloques aunque no incluya el bloque 0 [line 618] (killed 1)
+    ✓ computeDiagnosis — indicadores de grupo dos canchas distintas no cuentan como misma cancha [line 627] (killed 1)
+    ✓ computeDiagnosis — días por pareja una pareja en 3 días no cuenta como 2 días [line 638] (killed 9)
+    ✓ computeDiagnosis — finales y primer partido de cuadro solo lista las finales (ronda final), ordenadas por bloque [line 675] (killed 7)
+    ✓ computeDiagnosis — finales y primer partido de cuadro el primer partido de cuadro es el del bloque más temprano [line 687] (killed 7)
+    ✓ computeDiagnosis — finales y primer partido de cuadro en empate de bloque gana el primero en el orden determinista [line 698] (killed 1)
+    ✓ computeDiagnosis — finales y primer partido de cuadro un partido de cuadro sin bloque no es candidato [line 709] (killed 1)
+    ~ computeDiagnosis — finales y primer partido de cuadro ordena las finales por bloque con 3 categorías [line 720] (covered 147)
+    ✓ computeDiagnosis — partidos agendados, extensión y horario laboral cuenta solo los partidos con bloque asignado [line 769] (killed 5)
+    ✓ computeDiagnosis — partidos agendados, extensión y horario laboral cuenta los partidos en bloques de extensión [line 777] (killed 4)
+    ✓ computeDiagnosis — partidos agendados, extensión y horario laboral horario laboral: Jue/Vie estrictamente antes de las 19:00 [line 789] (killed 7)
+    ~ computeDiagnosis — partidos agendados, extensión y horario laboral un partido sin bloque no cuenta como laboral (no lanza) [line 797] (covered 148)
+  model.test.ts
+    ✓ buildModel — L3 exacta (fixture de referencia) reproduce nVars/nConstraints/nNonZeros de model-stats.json [line 177] (killed 106)
+    ✓ buildModel — L3 exacta (fixture de referencia) reproduce el conteo de cada familia de restricciones [line 188] (killed 6)
+    ~ buildModel — variables x en la instancia mini con frontera sábado, previa solo en bloques de previa y final solo en final [line 195] (covered 178)
+    ✓ buildModel — variables x en la instancia mini sin frontera sábado, la final puede caer en cualquier bloque [line 206] (killed 3)
+    ✓ buildModel — variables x en la instancia mini disponibilidad dura elimina la variable; relajada le pone W_DISPONIBILIDAD [line 214] (killed 6)
+    ✓ buildModel — R5 acumulada coeficientes exactos en t=4 y corte por redundancia en t=5 (sep=2) [line 230] (killed 3)
+    ~ buildModel — costos del objetivo d/mx/mn/f usan los W_* de DEFAULT_PARAMS [line 246] (covered 178)
+    ~ buildModel — costos del objetivo crea e[persona,día,ventana] solo para doble categoría con > maxSeguidos [line 254] (covered 219)
+    ✓ buildModel — orden determinista (P-3) ordena los partidos por id antes de crear las variables x [line 299] (killed 4)
+    ✓ buildModel — costo por bloque (extensión y final temprana) un bloque de extensión suma W_EXTENSION y el base no [line 334] (killed 4)
+    ✓ buildModel — costo por bloque (extensión y final temprana) la final paga W_TEMPRANO por índice de bloque y la previa nada [line 340] (killed 3)
+    ✓ buildModel — R3b (doble categoría blanda) solo crea choque en bloques con ≥2 finales blandas potenciales [line 420] (killed 5)
+    ✓ buildModel — R3b (doble categoría blanda) un bloque con una sola final blanda potencial no genera choque [line 435] (killed 2)
+    ✓ buildModel — casos defensivos ignora parejas que no existen al leer los bloqueos [line 442] (killed 1)
+    ✓ buildModel — casos defensivos un feeder sin variables (todo bloqueado) no rompe R5 [line 451] (killed 1)
+    ✓ toCSC transpone las tripletas a formato CSC con starts acumulados [line 457] (killed 1)
+  solver-parity.test.ts
+    ✓ L2 · caso rápido (instancia truncada a 1 categoría) agenda TS válida y L3 exacto sobre el modelo completo [line 189] (killed 23)
+    ✘ L2 · referencia completa vs Python paridad de validez e indicadores — lento (~240 s): habilitar con RUN_SLOW_PARITY=1 [line 271] (covered 0)
+
+[Survived] ConditionalExpression
+lib/motor-torneo/diagnostics.ts:103:7
+-     if (capacity === 0) return matches > 0 ? "rojo" : "verde";
++     if (false) return matches > 0 ? "rojo" : "verde";
+Ran all tests for this mutant.
+
+[Survived] StringLiteral
+lib/motor-torneo/diagnostics.ts:151:76
+-       const key = `${bloque.dayLabel}|${bloque.phase}|${bloque.isExtension ? "ext" : "base"}`;
++       const key = `${bloque.dayLabel}|${bloque.phase}|${bloque.isExtension ? "" : "base"}`;
+Ran all tests for this mutant.
+
+[Survived] StringLiteral
+lib/motor-torneo/diagnostics.ts:168:76
+-       const key = `${bloque.dayLabel}|${bloque.phase}|${bloque.isExtension ? "ext" : "base"}`;
++       const key = `${bloque.dayLabel}|${bloque.phase}|${bloque.isExtension ? "" : "base"}`;
+Ran all tests for this mutant.
+
+[Survived] ConditionalExpression
+lib/motor-torneo/diagnostics.ts:199:11
+-         if (count > 1) clashes += count - 1;
++         if (true) clashes += count - 1;
+Tests ran:
+    computeDiagnosis — choques de doble categoría 2 finales blandas en el mismo bloque ⇒ 1 choque
+    computeDiagnosis — choques de doble categoría 3 finales blandas en el mismo bloque ⇒ 2 choques
+    computeDiagnosis — choques de doble categoría las finales duras (8vos) no son choques blandos
+  and 1 more test!
+
+
+[Survived] EqualityOperator
+lib/motor-torneo/diagnostics.ts:199:11
+-         if (count > 1) clashes += count - 1;
++         if (count >= 1) clashes += count - 1;
+Tests ran:
+    computeDiagnosis — choques de doble categoría 2 finales blandas en el mismo bloque ⇒ 1 choque
+    computeDiagnosis — choques de doble categoría 3 finales blandas en el mismo bloque ⇒ 2 choques
+    computeDiagnosis — choques de doble categoría las finales duras (8vos) no son choques blandos
+  and 1 more test!
+
+
+[Survived] ArrayDeclaration
+lib/motor-torneo/diagnostics.ts:214:39
+-       const teams = (partido.parejas ?? []).filter((pareja) =>
++       const teams = (partido.parejas ?? ["Stryker was here"]).filter((pareja) =>
+Tests ran:
+    computeDiagnosis — ocupación por tramo agrega capacidad y partidos por (día, fase, extensión)
+    computeDiagnosis — partidos agendados, extensión y horario laboral cuenta los partidos en bloques de extensión
+    computeDiagnosis — partidos agendados, extensión y horario laboral horario laboral: Jue/Vie estrictamente antes de las 19:00
+  and 1 more test!
+
+
+[Survived] OptionalChaining
+lib/motor-torneo/diagnostics.ts:215:7
+-         inst.parejas[pareja]?.bloqueados.has(bloque.idx),
++         inst.parejas[pareja].bloqueados.has(bloque.idx),
+Ran all tests for this mutant.
+
+[NoCoverage] StringLiteral
+lib/motor-torneo/diagnostics.ts:261:69
+-         blocks.map((blockIdx) => blockAt(inst, blockIdx)?.dayLabel ?? ""),
++         blocks.map((blockIdx) => blockAt(inst, blockIdx)?.dayLabel ?? "Stryker was here!"),
+
+[Survived] ArrayDeclaration
+lib/motor-torneo/diagnostics.ts:291:45
+-       for (const pareja of partido.parejas ?? []) {
++       for (const pareja of partido.parejas ?? ["Stryker was here"]) {
+Tests ran:
+    computeDiagnosis — ocupación por tramo agrega capacidad y partidos por (día, fase, extensión)
+    computeDiagnosis — partidos agendados, extensión y horario laboral cuenta los partidos en bloques de extensión
+    computeDiagnosis — partidos agendados, extensión y horario laboral horario laboral: Jue/Vie estrictamente antes de las 19:00
+  and 1 more test!
+
+
+[Survived] ConditionalExpression
+lib/motor-torneo/diagnostics.ts:302:14
+-       else if (days.size === 2) dosDias += 1;
++       else if (false) dosDias += 1;
+Ran all tests for this mutant.
+
+[Survived] AssignmentOperator
+lib/motor-torneo/diagnostics.ts:302:31
+-       else if (days.size === 2) dosDias += 1;
++       else if (days.size === 2) dosDias -= 1;
+Ran all tests for this mutant.
+
+[Survived] OptionalChaining
+lib/motor-torneo/diagnostics.ts:321:11
+-             inst.partidos[matchId]?.phase === "previa" &&
++             inst.partidos[matchId].phase === "previa" &&
+Ran all tests for this mutant.
+
+[Survived] ConditionalExpression
+lib/motor-torneo/diagnostics.ts:322:11
+-             bloqueDe[matchId] !== undefined,
++             true,
+Ran all tests for this mutant.
+
+[Survived] EqualityOperator
+lib/motor-torneo/diagnostics.ts:329:21
+-       for (let i = 1; i < blocks.length; i += 1) {
++       for (let i = 1; i <= blocks.length; i += 1) {
+Ran all tests for this mutant.
+
+[Survived] BlockStatement
+lib/motor-torneo/diagnostics.ts:334:14
+-         } else {
+-           run = 1;
+-         }
++         } else {}
+Ran all tests for this mutant.
+
+[Survived] LogicalOperator
+lib/motor-torneo/diagnostics.ts:363:26
+-     finals.sort((a, b) => (bloqueDe[a.matchId] ?? 0) - (bloqueDe[b.matchId] ?? 0));
++     finals.sort((a, b) => (bloqueDe[a.matchId] && 0) - (bloqueDe[b.matchId] ?? 0));
+Tests ran:
+    computeDiagnosis — finales y primer partido de cuadro solo lista las finales (ronda final), ordenadas por bloque
+    computeDiagnosis — finales y primer partido de cuadro el primer partido de cuadro es el del bloque más temprano
+    computeDiagnosis — finales y primer partido de cuadro en empate de bloque gana el primero en el orden determinista
+  and 2 more tests!
+
+
+[Survived] EqualityOperator
+lib/motor-torneo/model.ts:145:19
+-     for (let j = 0; j < numCols; j++) counts[j + 1] += counts[j];
++     for (let j = 0; j <= numCols; j++) counts[j + 1] += counts[j];
+Tests ran:
+    toCSC transpone las tripletas a formato CSC con starts acumulados
+    L2 · caso rápido (instancia truncada a 1 categoría) agenda TS válida y L3 exacto sobre el modelo completo
+
+
+[Survived] EqualityOperator
+lib/motor-torneo/model.ts:152:19
+-     for (let k = 0; k < model.cols.length; k++) {
++     for (let k = 0; k <= model.cols.length; k++) {
+Tests ran:
+    toCSC transpone las tripletas a formato CSC con starts acumulados
+    L2 · caso rápido (instancia truncada a 1 categoría) agenda TS válida y L3 exacto sobre el modelo completo
+
+
+[Survived] ConditionalExpression
+lib/motor-torneo/model.ts:163:3
+-     a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
++     true ? -1 : a.id > b.id ? 1 : 0;
+Tests ran:
+    buildModel — L3 exacta (fixture de referencia) reproduce nVars/nConstraints/nNonZeros de model-stats.json
+    buildModel — L3 exacta (fixture de referencia) reproduce el conteo de cada familia de restricciones
+    buildModel — variables x en la instancia mini con frontera sábado, previa solo en bloques de previa y final solo en final
+  and 14 more tests!
+
+
+[Survived] EqualityOperator
+lib/motor-torneo/model.ts:163:3
+-     a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
++     a.id <= b.id ? -1 : a.id > b.id ? 1 : 0;
+Tests ran:
+    buildModel — L3 exacta (fixture de referencia) reproduce nVars/nConstraints/nNonZeros de model-stats.json
+    buildModel — L3 exacta (fixture de referencia) reproduce el conteo de cada familia de restricciones
+    buildModel — variables x en la instancia mini con frontera sábado, previa solo en bloques de previa y final solo en final
+  and 14 more tests!
+
+
+[Survived] ConditionalExpression
+lib/motor-torneo/model.ts:163:22
+-     a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
++     a.id < b.id ? -1 : true ? 1 : 0;
+Tests ran:
+    buildModel — L3 exacta (fixture de referencia) reproduce nVars/nConstraints/nNonZeros de model-stats.json
+    buildModel — L3 exacta (fixture de referencia) reproduce el conteo de cada familia de restricciones
+    buildModel — variables x en la instancia mini con frontera sábado, previa solo en bloques de previa y final solo en final
+  and 13 more tests!
+
+
+[Survived] ConditionalExpression
+lib/motor-torneo/model.ts:163:22
+-     a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
++     a.id < b.id ? -1 : false ? 1 : 0;
+Tests ran:
+    buildModel — L3 exacta (fixture de referencia) reproduce nVars/nConstraints/nNonZeros de model-stats.json
+    buildModel — L3 exacta (fixture de referencia) reproduce el conteo de cada familia de restricciones
+    buildModel — variables x en la instancia mini con frontera sábado, previa solo en bloques de previa y final solo en final
+  and 13 more tests!
+
+
+[Survived] EqualityOperator
+lib/motor-torneo/model.ts:163:22
+-     a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
++     a.id < b.id ? -1 : a.id >= b.id ? 1 : 0;
+Tests ran:
+    buildModel — L3 exacta (fixture de referencia) reproduce nVars/nConstraints/nNonZeros de model-stats.json
+    buildModel — L3 exacta (fixture de referencia) reproduce el conteo de cada familia de restricciones
+    buildModel — variables x en la instancia mini con frontera sábado, previa solo en bloques de previa y final solo en final
+  and 13 more tests!
+
+
+[Survived] EqualityOperator
+lib/motor-torneo/model.ts:163:22
+-     a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
++     a.id < b.id ? -1 : a.id <= b.id ? 1 : 0;
+Tests ran:
+    buildModel — L3 exacta (fixture de referencia) reproduce nVars/nConstraints/nNonZeros de model-stats.json
+    buildModel — L3 exacta (fixture de referencia) reproduce el conteo de cada familia de restricciones
+    buildModel — variables x en la instancia mini con frontera sábado, previa solo en bloques de previa y final solo en final
+  and 13 more tests!
+
+
+[Survived] ConditionalExpression
+lib/motor-torneo/model.ts:195:9
+-       if (m.phase === "previa") {
++       if (true) {
+Tests ran:
+    buildModel — L3 exacta (fixture de referencia) reproduce nVars/nConstraints/nNonZeros de model-stats.json
+    buildModel — L3 exacta (fixture de referencia) reproduce el conteo de cada familia de restricciones
+    buildModel — variables x en la instancia mini con frontera sábado, previa solo en bloques de previa y final solo en final
+  and 14 more tests!
+
+
+[NoCoverage] ArrayDeclaration
+lib/motor-torneo/model.ts:196:43
+-         for (const parejaId of m.parejas ?? []) {
++         for (const parejaId of m.parejas ?? ["Stryker was here"]) {
+
+[Survived] ArrayDeclaration
+lib/motor-torneo/model.ts:197:68
+-           for (const bloque of inst.parejas[parejaId]?.bloqueados ?? []) {
++           for (const bloque of inst.parejas[parejaId]?.bloqueados ?? ["Stryker was here"]) {
+Tests ran:
+    buildModel — casos defensivos ignora parejas que no existen al leer los bloqueos
+
+
+[NoCoverage] ArrayDeclaration
+lib/motor-torneo/model.ts:255:41
+-       for (const parejaId of m.parejas ?? []) {
++       for (const parejaId of m.parejas ?? ["Stryker was here"]) {
+
+[Survived] ArrayDeclaration
+lib/motor-torneo/model.ts:257:53
+-           ...(builder.partidosPareja.get(parejaId) ?? []),
++           ...(builder.partidosPareja.get(parejaId) ?? ["Stryker was here"]),
+Tests ran:
+    buildModel — L3 exacta (fixture de referencia) reproduce nVars/nConstraints/nNonZeros de model-stats.json
+    buildModel — L3 exacta (fixture de referencia) reproduce el conteo de cada familia de restricciones
+    buildModel — variables x en la instancia mini con frontera sábado, previa solo en bloques de previa y final solo en final
+  and 14 more tests!
+
+
+[Survived] OptionalChaining
+lib/motor-torneo/model.ts:318:27
+-         for (const grupo of inst.partidos[alimentador]?.gruposOrigen ?? []) {
++         for (const grupo of inst.partidos[alimentador].gruposOrigen ?? []) {
+Tests ran:
+    buildModel — L3 exacta (fixture de referencia) reproduce nVars/nConstraints/nNonZeros de model-stats.json
+    buildModel — L3 exacta (fixture de referencia) reproduce el conteo de cada familia de restricciones
+    buildModel — costos del objetivo crea e[persona,día,ventana] solo para doble categoría con > maxSeguidos
+  and 2 more tests!
+
+
+[NoCoverage] ArrayDeclaration
+lib/motor-torneo/model.ts:318:71
+-         for (const grupo of inst.partidos[alimentador]?.gruposOrigen ?? []) {
++         for (const grupo of inst.partidos[alimentador]?.gruposOrigen ?? ["Stryker was here"]) {
+
+[NoCoverage] ArrayDeclaration
+lib/motor-torneo/model.ts:324:62
+-         feeders.push(...(builder.partidosDeGrupo.get(grupo) ?? []));
++         feeders.push(...(builder.partidosDeGrupo.get(grupo) ?? ["Stryker was here"]));
+
+[Survived] MethodExpression
+lib/motor-torneo/model.ts:327:16
+-       const vm = [...(builder.varsDe.get(m.id) ?? [])].sort((a, b) => a[0] - b[0]);
++       const vm = [...(builder.varsDe.get(m.id) ?? [])];
+Tests ran:
+    buildModel — L3 exacta (fixture de referencia) reproduce nVars/nConstraints/nNonZeros de model-stats.json
+    buildModel — L3 exacta (fixture de referencia) reproduce el conteo de cada familia de restricciones
+    buildModel — variables x en la instancia mini con frontera sábado, previa solo en bloques de previa y final solo en final
+  and 13 more tests!
+
+
+[Survived] ArithmeticOperator
+lib/motor-torneo/model.ts:327:69
+-       const vm = [...(builder.varsDe.get(m.id) ?? [])].sort((a, b) => a[0] - b[0]);
++       const vm = [...(builder.varsDe.get(m.id) ?? [])].sort((a, b) => a[0] + b[0]);
+Tests ran:
+    buildModel — L3 exacta (fixture de referencia) reproduce nVars/nConstraints/nNonZeros de model-stats.json
+    buildModel — L3 exacta (fixture de referencia) reproduce el conteo de cada familia de restricciones
+    buildModel — variables x en la instancia mini con frontera sábado, previa solo en bloques de previa y final solo en final
+  and 12 more tests!
+
+
+[Survived] MethodExpression
+lib/motor-torneo/model.ts:329:18
+-         const vf = [...(builder.varsDe.get(feeder) ?? [])].sort((a, b) => a[0] - b[0]);
++         const vf = [...(builder.varsDe.get(feeder) ?? [])];
+Tests ran:
+    buildModel — L3 exacta (fixture de referencia) reproduce nVars/nConstraints/nNonZeros de model-stats.json
+    buildModel — L3 exacta (fixture de referencia) reproduce el conteo de cada familia de restricciones
+    buildModel — variables x en la instancia mini con frontera sábado, previa solo en bloques de previa y final solo en final
+  and 13 more tests!
+
+
+[Survived] ArithmeticOperator
+lib/motor-torneo/model.ts:329:73
+-         const vf = [...(builder.varsDe.get(feeder) ?? [])].sort((a, b) => a[0] - b[0]);
++         const vf = [...(builder.varsDe.get(feeder) ?? [])].sort((a, b) => a[0] + b[0]);
+Tests ran:
+    buildModel — L3 exacta (fixture de referencia) reproduce nVars/nConstraints/nNonZeros de model-stats.json
+    buildModel — L3 exacta (fixture de referencia) reproduce el conteo de cada familia de restricciones
+    buildModel — variables x en la instancia mini con frontera sábado, previa solo en bloques de previa y final solo en final
+  and 13 more tests!
+
+
+Ran 11.05 tests per mutant on average.
+----------------|------------------|----------|-----------|------------|----------|----------|
+                | % Mutation score |          |           |            |          |          |
+File            |  total | covered | # killed | # timeout | # survived | # no cov | # errors |
+----------------|--------|---------|----------|-----------|------------|----------|----------|
+All files       |  90.37 |   91.60 |      334 |         4 |         31 |        5 |      183 |
+ diagnostics.ts |  91.44 |   91.94 |      169 |         2 |         15 |        1 |      113 |
+ model.ts       |  89.30 |   91.26 |      165 |         2 |         16 |        4 |       70 |
+----------------|--------|---------|----------|-----------|------------|----------|----------|
+[32m19:17:09 (19354) INFO MutationTestReportHelper[39m Final mutation score of 90.37 is greater than or equal to break threshold 0
+[32m19:17:09 (19354) INFO JsonReporter[39m Your report can be found at: file:///Users/milo/Downloads/Antigravity/padel-evaluation/reports/mutation/mutation.json
+[32m19:17:09 (19354) INFO HtmlReporter[39m Your report can be found at: file:///Users/milo/Downloads/Antigravity/padel-evaluation/reports/mutation/mutation.html
+[32m19:17:09 (19354) INFO MutationTestExecutor[39m Done in 34 minutes and 18 seconds.

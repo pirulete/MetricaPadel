@@ -10,10 +10,16 @@
  */
 import instanceJson from "../../fixtures/torneo/instance.json";
 import statsJson from "../../fixtures/torneo/model-stats.json";
-import { buildModel } from "@/lib/motor-torneo/model";
+import { buildModel, toCSC } from "@/lib/motor-torneo/model";
 import { buildBlocks } from "@/lib/motor-torneo/calendar";
-import { deriveStructure } from "@/lib/motor-torneo/bracket";
 import { DEFAULT_PARAMS } from "@/lib/motor-torneo/objective";
+import {
+  buildInstance,
+  miniInstance,
+  objectiveInstance,
+  pareja,
+  rowCoefs,
+} from "./fixtures";
 import type {
   Bloque,
   CalendarioTramo,
@@ -34,90 +40,6 @@ const golden = statsJson as unknown as {
 
 /** Deliberadamente vacío: cualquier delta real debe justificarse aquí. */
 const KNOWN_DELTAS = { nVars: 0, nConstraints: 0, nNonZeros: 0 };
-
-const MINI_TRAMOS: CalendarioTramo[] = [
-  { dayLabel: "Jue", startTime: "14:00", blocks: 2, phase: "previa", isExtension: false },
-  { dayLabel: "Sab", startTime: "08:00", blocks: 2, phase: "previa", isExtension: false },
-  { dayLabel: "Jue", startTime: "19:00", blocks: 2, phase: "final", isExtension: false },
-];
-
-function pareja(
-  id: string,
-  personas: string[],
-  grupo: string,
-  categoria: string,
-  bloqueados: number[] = [],
-): Pareja {
-  return { id, categoria, grupo, personas, bloqueados: new Set(bloqueados) };
-}
-
-function buildInstance(
-  categorias: Record<string, Categoria>,
-  grupos: Record<string, Grupo>,
-  parejas: Record<string, Pareja>,
-  tramos: CalendarioTramo[] = MINI_TRAMOS,
-  courts = 2,
-): Instancia {
-  const personas: Record<string, Persona> = {};
-  for (const [code, p] of Object.entries(parejas)) {
-    for (const person of p.personas) {
-      personas[person] ??= { sexo: null, parejas: [] };
-      personas[person].parejas.push(code);
-    }
-  }
-  const partidos = Object.fromEntries(
-    deriveStructure(categorias, grupos).map((partido) => [partido.id, partido]),
-  );
-  return {
-    bloques: buildBlocks(tramos, courts),
-    nCanchas: courts,
-    categorias,
-    grupos,
-    parejas,
-    personas,
-    partidos,
-  };
-}
-
-/** 1 categoría, 1 grupo de 3 parejas ⇒ 3 partidos de previa + 1 final. */
-function miniInstance(blocked: Record<string, number[]> = {}): Instancia {
-  const categorias: Record<string, Categoria> = {
-    C1: { sex: "H", level: 1, grupos: ["C1-G1"] },
-  };
-  const grupos: Record<string, Grupo> = {
-    "C1-G1": { categoria: "C1", parejas: ["A", "B", "C"], tam: 3 },
-  };
-  const parejas: Record<string, Pareja> = {
-    A: pareja("A", ["P1", "P2"], "C1-G1", "C1", blocked.A),
-    B: pareja("B", ["P3", "P4"], "C1-G1", "C1", blocked.B),
-    C: pareja("C", ["P5", "P6"], "C1-G1", "C1", blocked.C),
-  };
-  return buildInstance(categorias, grupos, parejas);
-}
-
-/** 2 grupos en la misma categoría y una persona en parejas de ambos (doble). */
-function objectiveInstance(): Instancia {
-  const categorias: Record<string, Categoria> = {
-    C1: { sex: "H", level: 1, grupos: ["C1-G1", "C1-G2"] },
-  };
-  const grupos: Record<string, Grupo> = {
-    "C1-G1": { categoria: "C1", parejas: ["A", "B", "C"], tam: 3 },
-    "C1-G2": { categoria: "C1", parejas: ["D", "E", "F"], tam: 3 },
-  };
-  const parejas: Record<string, Pareja> = {
-    A: pareja("A", ["P1", "P2"], "C1-G1", "C1"),
-    B: pareja("B", ["P3", "P4"], "C1-G1", "C1"),
-    C: pareja("C", ["P5", "P6"], "C1-G1", "C1"),
-    D: pareja("D", ["P1", "P7"], "C1-G2", "C1"),
-    E: pareja("E", ["P8", "P9"], "C1-G2", "C1"),
-    F: pareja("F", ["P10", "P11"], "C1-G2", "C1"),
-  };
-  const tramos: CalendarioTramo[] = [
-    { dayLabel: "Jue", startTime: "14:00", blocks: 4, phase: "previa", isExtension: false },
-    { dayLabel: "Dom", startTime: "08:00", blocks: 2, phase: "final", isExtension: false },
-  ];
-  return buildInstance(categorias, grupos, parejas, tramos);
-}
 
 interface ReferenceFixture {
   bloques: Bloque[];
@@ -154,16 +76,6 @@ function familyCounts(rowNames: readonly string[]): Record<string, number> {
     counts[family] = (counts[family] ?? 0) + 1;
   }
   return counts;
-}
-
-function rowCoefs(model: ReturnType<typeof buildModel>, rowName: string) {
-  const row = model.rowNames.indexOf(rowName);
-  expect(row).toBeGreaterThanOrEqual(0);
-  const coefs: Record<string, number> = {};
-  for (let k = 0; k < model.rows.length; k += 1) {
-    if (model.rows[k] === row) coefs[model.colNames[model.cols[k]]] = model.vals[k];
-  }
-  return coefs;
 }
 
 function costOf(model: ReturnType<typeof buildModel>, name: string): number {
@@ -254,5 +166,240 @@ describe("buildModel — costos del objetivo", () => {
     const model = buildModel(objectiveInstance());
     expect(costOf(model, "e[P1,Jue,0]")).toBe(DEFAULT_PARAMS.W_SEGUIDOS);
     expect(model.colNames.filter((name) => name.startsWith("e["))).toEqual(["e[P1,Jue,0]"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Triaje de mutantes 3a: orden determinista (P-3), costos por bloque, R3b y
+// casos defensivos del builder.
+// ---------------------------------------------------------------------------
+
+describe("buildModel — orden determinista (P-3)", () => {
+  /** Partidos insertados en M, Z, A: el orden de inserción NO es el orden por id ni su reverso. */
+  function orderingInstance(): Instancia {
+    const tramos: CalendarioTramo[] = [
+      { dayLabel: "Sab", startTime: "08:00", blocks: 2, phase: "previa", isExtension: false },
+    ];
+    const partidos = ["M", "Z", "A"].map(
+      (id): Partido => ({
+        id,
+        categoria: "C1",
+        phase: "previa",
+        ronda: "grupo",
+        grupo: null,
+        parejas: [id],
+        gruposOrigen: [],
+        alimentadores: [],
+      }),
+    );
+    return {
+      bloques: buildBlocks(tramos, 2),
+      nCanchas: 2,
+      categorias: { C1: { sex: "H", level: 1, grupos: [] } },
+      grupos: {},
+      parejas: {
+        A: pareja("A", ["P1", "P2"], "", "C1"),
+        M: pareja("M", ["P3", "P4"], "", "C1"),
+        Z: pareja("Z", ["P5", "P6"], "", "C1"),
+      },
+      personas: {},
+      partidos: Object.fromEntries(partidos.map((partido) => [partido.id, partido])),
+    };
+  }
+
+  it("ordena los partidos por id antes de crear las variables x", () => {
+    const model = buildModel(orderingInstance());
+    expect(model.colNames.slice(0, 6)).toEqual([
+      "x[A,0]",
+      "x[A,1]",
+      "x[M,0]",
+      "x[M,1]",
+      "x[Z,0]",
+      "x[Z,1]",
+    ]);
+  });
+});
+
+describe("buildModel — costo por bloque (extensión y final temprana)", () => {
+  /** Previa base 0-1, previa extensión 2, final 3. */
+  function miniExtraInstance(): Instancia {
+    const categorias: Record<string, Categoria> = {
+      C1: { sex: "H", level: 1, grupos: ["C1-G1"] },
+    };
+    const grupos: Record<string, Grupo> = {
+      "C1-G1": { categoria: "C1", parejas: ["A", "B", "C"], tam: 3 },
+    };
+    const parejas: Record<string, Pareja> = {
+      A: pareja("A", ["P1", "P2"], "C1-G1", "C1"),
+      B: pareja("B", ["P3", "P4"], "C1-G1", "C1"),
+      C: pareja("C", ["P5", "P6"], "C1-G1", "C1"),
+    };
+    const tramos: CalendarioTramo[] = [
+      { dayLabel: "Jue", startTime: "14:00", blocks: 2, phase: "previa", isExtension: false },
+      { dayLabel: "Jue", startTime: "17:30", blocks: 1, phase: "previa", isExtension: true },
+      { dayLabel: "Sab", startTime: "08:00", blocks: 1, phase: "final", isExtension: false },
+    ];
+    return buildInstance(categorias, grupos, parejas, tramos);
+  }
+
+  it("un bloque de extensión suma W_EXTENSION y el base no", () => {
+    const model = buildModel(miniExtraInstance());
+    expect(costOf(model, "x[C1-G1-P1,2]")).toBe(DEFAULT_PARAMS.W_EXTENSION);
+    expect(costOf(model, "x[C1-G1-P1,0]")).toBe(0);
+  });
+
+  it("la final paga W_TEMPRANO por índice de bloque y la previa nada", () => {
+    const model = buildModel(miniInstance());
+    expect(costOf(model, "x[C1-final-1,4]")).toBe(DEFAULT_PARAMS.W_TEMPRANO * 4);
+    expect(costOf(model, "x[C1-final-1,5]")).toBe(DEFAULT_PARAMS.W_TEMPRANO * 5);
+    expect(costOf(model, "x[C1-G1-P1,2]")).toBe(0);
+  });
+});
+
+describe("buildModel — R3b (doble categoría blanda)", () => {
+  /** P1 es doble (A en G1, D en G2); solo hay 1 final blanda (4tos) y 1 dura (8vos). */
+  function singleBlandoInstance(): Instancia {
+    const tramos: CalendarioTramo[] = [
+      { dayLabel: "Jue", startTime: "14:00", blocks: 2, phase: "previa", isExtension: false },
+      { dayLabel: "Dom", startTime: "10:00", blocks: 2, phase: "final", isExtension: false },
+    ];
+    return {
+      bloques: buildBlocks(tramos, 2),
+      nCanchas: 2,
+      categorias: { C1: { sex: "H", level: 1, grupos: [] } },
+      grupos: {},
+      parejas: {
+        A: pareja("A", ["P1", "P2"], "G1", "C1"),
+        B: pareja("B", ["P3", "P4"], "G1", "C1"),
+        D: pareja("D", ["P1", "P5"], "G2", "C1"),
+        E: pareja("E", ["P6", "P7"], "G2", "C1"),
+      },
+      personas: {
+        P1: { sexo: null, parejas: ["A", "D"] },
+        P2: { sexo: null, parejas: ["A"] },
+        P3: { sexo: null, parejas: ["B"] },
+        P4: { sexo: null, parejas: ["B"] },
+        P5: { sexo: null, parejas: ["D"] },
+        P6: { sexo: null, parejas: ["E"] },
+        P7: { sexo: null, parejas: ["E"] },
+      },
+      partidos: {
+        A1: {
+          id: "A1",
+          categoria: "C1",
+          phase: "previa",
+          ronda: "grupo",
+          grupo: "G1",
+          parejas: ["A", "B"],
+          gruposOrigen: ["G1"],
+          alimentadores: [],
+        },
+        B1: {
+          id: "B1",
+          categoria: "C1",
+          phase: "previa",
+          ronda: "grupo",
+          grupo: "G2",
+          parejas: ["D", "E"],
+          gruposOrigen: ["G2"],
+          alimentadores: [],
+        },
+        F1: {
+          id: "F1",
+          categoria: "C1",
+          phase: "final",
+          ronda: "4tos",
+          grupo: null,
+          parejas: null,
+          gruposOrigen: ["G1", "G2"],
+          alimentadores: [],
+        },
+        F2: {
+          id: "F2",
+          categoria: "C1",
+          phase: "final",
+          ronda: "8vos",
+          grupo: null,
+          parejas: null,
+          gruposOrigen: ["G1", "G2"],
+          alimentadores: [],
+        },
+      },
+    };
+  }
+
+  it("solo crea choque en bloques con ≥2 finales blandas potenciales", () => {
+    const model = buildModel(objectiveInstance());
+    const choques = model.colNames.filter((name) => name.startsWith("choque["));
+    expect(choques).toEqual(["choque[P1,4]", "choque[P1,5]"]);
+
+    const col = model.columnByKey.get("choque[P1,4]") as number;
+    expect(model.cost[col]).toBe(DEFAULT_PARAMS.W_DOBLE_BLANDO);
+    expect(model.integrality[col]).toBe(0);
+    expect(model.ub[col]).toBe(3);
+
+    const coefs = rowCoefs(model, "R3b[P1,4]");
+    expect(coefs["choque[P1,4]"]).toBe(-1);
+    expect(Object.values(coefs).filter((valor) => valor === 1)).toHaveLength(3);
+  });
+
+  it("un bloque con una sola final blanda potencial no genera choque", () => {
+    const model = buildModel(singleBlandoInstance());
+    expect(model.colNames.filter((name) => name.startsWith("choque["))).toEqual([]);
+  });
+});
+
+describe("buildModel — casos defensivos", () => {
+  it("ignora parejas que no existen al leer los bloqueos", () => {
+    const inst = miniInstance();
+    inst.partidos["C1-G1-P1"].parejas = ["GHOST", "A"];
+    expect(() => buildModel(inst)).not.toThrow();
+    expect(
+      buildModel(inst).xVars.filter((v) => v.matchId === "C1-G1-P1"),
+    ).toHaveLength(4);
+  });
+
+  it("un feeder sin variables (todo bloqueado) no rompe R5", () => {
+    expect(() => buildModel(miniInstance({ A: [0, 1, 2, 3] }))).not.toThrow();
+  });
+});
+
+describe("toCSC", () => {
+  it("transpone las tripletas a formato CSC con starts acumulados", () => {
+    const model = buildModel(miniInstance());
+    const csc = toCSC(model);
+
+    expect(csc.format).toBe("csc");
+    expect(csc.numRows).toBe(model.rowLo.length);
+    expect(csc.numCols).toBe(model.colNames.length);
+    expect(csc.starts).toHaveLength(model.colNames.length + 1);
+    expect(csc.starts[model.colNames.length]).toBe(model.rows.length);
+    expect(csc.indices).toHaveLength(model.rows.length);
+    expect(csc.values).toHaveLength(model.vals.length);
+
+    const col = model.columnByKey.get("x[C1-G1-P1,0]") as number;
+    const filas = Array.from(csc.indices.slice(csc.starts[col], csc.starts[col + 1]));
+    expect(filas).toContain(model.rowNames.indexOf("R1[C1-G1-P1]"));
+  });
+});
+
+describe("buildModel — determinismo ante el orden de inserción", () => {
+  it("reordenar inst.partidos no cambia el orden de xVars ni el de R1", () => {
+    const normal = miniInstance();
+    const invertida: Instancia = {
+      ...normal,
+      partidos: Object.fromEntries(Object.entries(normal.partidos).reverse()),
+    };
+
+    const a = buildModel(normal);
+    const b = buildModel(invertida);
+
+    const claves = (m: typeof a) => m.xVars.map((v) => `${v.matchId},${v.block}`);
+    expect(claves(b)).toEqual(claves(a));
+
+    const r1 = (m: typeof a) => m.rowNames.filter((n) => n.startsWith("R1["));
+    expect(r1(b)).toEqual(r1(a));
+    // y ambos en orden de id, que es lo que byId garantiza
+    expect(r1(a)).toEqual([...r1(a)].sort());
   });
 });

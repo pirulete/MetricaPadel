@@ -1,5 +1,51 @@
 # FEATURES — Registro de Cambios
 
+## ✨ Mutation testing con Stryker — módulo torneos (2026-11-09)
+
+> status: released (entrada de especificación — superseded por la entrada de release al final del archivo; devDeps/`concurrency` aquí son históricos, ver `technical-design-v2.md` y `acceptance-criteria.md`)
+> release: v0.13
+> date: 2026-11-09
+> change_id: 2026-11-09-mutation-testing
+> module: infra
+> tags: [testing, tooling, quality]
+
+### Problema
+
+El módulo torneos (v0.12) es el de mayor riesgo del repo —un MILP con reglas duras— y su única validación es cobertura de líneas (`lib` 88.6%, `lib/motor-torneo` 95.94%) más paridad Python↔TS. Ninguna detecta un `>=` cambiado por `>`, un `&&` por `||` o un peso `W_*` alterado: un mutante que sobrevive es la prueba directa de un assert ausente. Además `jest.config.js` fuerza `collectCoverage` y `verbose`, haciendo inviable correr la suite por mutante.
+
+### Solución Propuesta
+
+- **StrykerJS opt-in** con 4 devDeps en un solo major: `@stryker-mutator/{core,jest-runner,typescript-checker,html-reporter}` (dependencia aprobada explícitamente por el usuario).
+- **Config dedicada** `jest.config.mutation.js` (sin `collectCoverage`, sin `verbose`, `testTimeout` 60 s, `testMatch` acotado) + `stryker.conf.mjs` (`coverageAnalysis: perTest`, `typescript-checker`, `timeoutFactor 3`, `concurrency 2`).
+- **Scope**: `lib/motor-torneo/**` (11 módulos puros), `lib/torneos/{limits,dispatch}.ts`, `lib/validations/torneos.ts`. Excluye tests, DB, rutas y UI.
+- **Scripts** `test:mutation` / `test:mutation:report`. **No** entra a `validate-harness.js --all` (mismo patrón opt-in que `RUN_SLOW_PARITY`).
+- **Proceso obligatorio**: baseline medido → threshold = score − 5 → triaje 100% de sobrevivientes (matar con asserts o justificar equivalencia en config).
+- **Cero cambios de lógica de negocio**: solo tests, configs, `package.json`, docs.
+
+### Archivos Esperados
+
+- `stryker.conf.mjs` ✨, `jest.config.mutation.js` ✨
+- `package.json` 🔧 (4 devDeps + 2 scripts), `pnpm-lock.yaml` 🔧, `.gitignore` 🔧
+- `tests/unit/**` 🔧 (asserts reforzados; `tests/unit/torneos/dispatch.test.ts` ✨ si aplica)
+- `ARCHITECTURE.md` 🔧 (sección "Mutation testing (Stryker)")
+- `production_artifacts/2026-11-09-mutation-testing/*` ✨
+
+### Tests
+
+- Unit: asserts nuevos/fortalecidos en `tests/unit/motor-torneo/*`, `tests/unit/torneos/limits.test.ts`, `tests/unit/validations/torneo.test.ts`.
+- API/E2E: **N/A justificado** — 0 endpoints y 0 cambios de UI en este change.
+- Evidencia de calidad: `mutation-baseline.md` + `mutation-triage.md` (0 sobrevivientes sin triar).
+
+### Variables de Entorno
+
+Ninguna nueva.
+
+### Out-of-scope v0.13
+
+fast-check/property-based testing · mutación de route handlers, queries SQL, componentes React ni hooks · integración como gate bloqueante del harness `--all` · workflow de CI/badge · `mutmut` sobre el prototipo Python · refactor de producción para "hacer mutable" código · cambios en thresholds de cobertura · thresholds por archivo · histórico de score en DB.
+
+- Spec: `production_artifacts/2026-11-09-mutation-testing/{feature-spec,release-scope}.md`
+
 ## ✨ Módulo Torneos — motor de agenda en TypeScript (Milestone 1: cargador real + agenda borrador) (2026-11-04)
 
 > status: proposed (spec lista; sin código — pendiente gate F1: spike HiGHS WASM en Vercel)
@@ -2556,3 +2602,55 @@ La agenda de un torneo (8 categorías, 50 grupos, 155 parejas, 247 partidos, 38 
 ### Bug conocido
 
 - **BUG-01 (severidad media, mobile)**: en `/torneos/[id]` con agenda generada el documento desborda horizontalmente a 375 px (`scrollWidth=750`) porque el contenedor de `AgendaGrid` (`max-w-full overflow-x-auto`) crece en vez de recortar. Repro en `production_artifacts/2026-11-04-motor-torneo-ts/test-matrix.md` (F5c).
+
+## ✨ Mutation testing con Stryker (módulo torneos) — 2026-11-09
+
+> status: released
+> release: v0.13
+> date: 2026-11-09
+> change_id: 2026-11-09-mutation-testing
+> module: infra
+> tags: [testing, tooling, quality]
+
+### Problema
+
+El repo **no tenía ningún test de mutación** (`grep -ri "stryker|mutation"` → 0 coincidencias): la calidad del motor de torneos se medía solo con cobertura de líneas (`lib` 88.6%, `lib/motor-torneo` 95.94%) y con paridad Python↔TS. Ninguna de las dos detecta **asserts huecos**: cobertura alta con `expect(x).toBeDefined()` da 100% de líneas y 0% de detección. Un `>=` cambiado por `>`, un `&&` por `||` o un peso `W_*` alterado pasaban inadvertidos y producían agendas inválidas sin que fallara ningún test.
+
+### Solución Implementada
+
+- **StrykerJS 10.1.1** (major único) con `@stryker-mutator/{core,jest-runner,typescript-checker}` + `jest-environment-node@^30.4.1` como pin de entorno (pnpm no hoistea; el runner lo resuelve por `require.resolve`) — **4 devDeps aprobadas explícitamente por el usuario**. `html-reporter` descartado: el reporter `html` vive en `core` desde v5. Compatibilidad con Jest 30 verificada por peer deps (`jest-runner` solo declara peer `core`).
+- **Config dedicada**: `stryker.conf.mjs` (`coverageAnalysis: perTest`, `checkers: ["typescript"]`, `concurrency: 1` por WASM, `ignoreStatic: true`, `cleanTempDir: "always"`, `ignorePatterns` de 15 entradas) + `jest.config.mutation.js` (spread de `jest.config.js` sin `collectCoverage` ni `verbose`, `testTimeout` 60 s, `testMatch` acotado al scope).
+- **Scope puro**: `lib/motor-torneo/*.ts` (11 módulos) + `lib/torneos/{limits,dispatch}.ts` + `lib/validations/torneos.ts`. Cero mutantes en `app/`, `components/`, `hooks/`, `lib/db/`, `scripts/` ni tests.
+- **Proceso baseline → triaje → threshold**: baseline medido dos veces (**54.93%**, Δ = 0.00, 1863 mutantes, 644 killed / 434 survived / 105 no-coverage) → triaje en **7 sub-chunks** (3a…3g) matando con asserts nuevos (solo en `tests/unit/`, 0 líneas en `lib/**`) y documentando equivalentes/excluidos → corrida definitiva **86.90%** (967 killed / 98 survived / 50 no-coverage) → `thresholds: { high: 86.9, low: 81.9, break: 81.9 }` (score − 5).
+- **Triaje cerrado**: **148/148** sobrevivientes + no-coverage con decisión (0 sin decisión, AC-06); equivalentes 134 (7.2% < 10%, no se activa la señal de diseño EC-01); 22 `excluded` por coste de re-solve WASM, todos en `solver.ts`.
+- **Opt-in real**: `test:mutation` / `test:mutation:phase-b` (+ `--dryRun`), **fuera** de `scripts/validate-harness.js --all` y de husky (mismo patrón que `RUN_SLOW_PARITY`, prohibido correrlo con esa var). Reportes en `reports/mutation/` (gitignored).
+- **Simplicidad**: @ponytail-reviewer consolidó las 3 copias de fixtures en `tests/unit/motor-torneo/fixtures.ts` y derivó la config Jest por spread → **neto ≈ −104 líneas** sin perder casos.
+
+### Archivos Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `stryker.conf.mjs` | ✨ Nuevo — config de mutación (scope, thresholds, sandbox) |
+| `jest.config.mutation.js` | ✨ Nuevo — config Jest derivada (sin coverage/verbose) |
+| `package.json`, `pnpm-lock.yaml` | 🔧 Modificados — 4 devDeps + 2 scripts |
+| `.gitignore` | 🔧 Modificado — `.stryker-tmp-*/`, `reports/mutation/` |
+| `tests/unit/motor-torneo/fixtures.ts` | ✨ Nuevo — `miniInstance`/`objectiveInstance`/`rowCoefs` compartidos |
+| `tests/unit/motor-torneo/{objective,courts,types}.test.ts`, `tests/unit/torneos/dispatch.test.ts` | ✨ Nuevos — cobertura de los huecos detectados por el baseline |
+| `tests/unit/motor-torneo/{model,verify,diagnostics,loader,bracket,calendar,solver-parity}.test.ts`, `tests/unit/validations/torneo.test.ts` | 🔧 Ampliados — asserts exactos por mutante |
+| `ARCHITECTURE.md` | 🔧 Modificado — sección "Mutation testing (Stryker) — v0.13" |
+| `lib/**`, `app/**`, `components/**`, `hooks/**` | **0 líneas** (AC-08) |
+
+### Tests
+
+- Nuevos: `tests/unit/motor-torneo/{objective,types,courts}.test.ts`, `tests/unit/torneos/dispatch.test.ts` (con `jest.mock("@/lib/db")` + `PgDialect` nativo) y `fixtures.ts` compartido.
+- Ampliados: `model`, `verify`, `diagnostics`, `loader`, `bracket`, `calendar`, `solver-parity` y `validations/torneo` (asserts numéricos exactos, longitud de violaciones, códigos de error específicos).
+- Suite final: **86 suites / 1236 tests** (1 skip = paridad lenta opt-in) · tsc 0 · lint 0.
+- Mutación: **13 suites / 252 tests** en `jest.config.mutation.js --listTests`, todas dentro del scope.
+- API/E2E: **N/A justificado** — 0 endpoints y 0 cambios de UI en este change (`git diff app/` = 0). Evidencia de calidad equivalente: `mutation-baseline.md` + `mutation-triage.md`.
+
+### Variables de Entorno
+
+Ninguna nueva — la herramienta es local/opt-in y no toca DB ni runtime.
+
+- Artifacts: `production_artifacts/2026-11-09-mutation-testing/{feature-spec,technical-design-v2,mutation-baseline,mutation-triage,ponytail-review-report,acceptance-criteria,test-matrix,release-report}.md` + `evidence-manifest.json`
+- Release: **APTO para `rama-preview`** (13/13 AC PASS; condición: gate `--build` del harness `--all`). tsc 0 · lint 0 errores · 86 suites / 1236 tests · coverage gate PASS (lib 92.6%) · determinismo Δ=0.00.

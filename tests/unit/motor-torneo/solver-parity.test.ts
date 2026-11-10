@@ -45,8 +45,14 @@ import instanceJson from "../../fixtures/torneo/instance.json";
 import statsJson from "../../fixtures/torneo/model-stats.json";
 import { computeDiagnosis, type DiagnosisReport } from "@/lib/motor-torneo/diagnostics";
 import { runEngine, type EngineRunResult } from "@/lib/motor-torneo/engine";
-import { buildModel } from "@/lib/motor-torneo/model";
+import { buildModel, type BuiltModel } from "@/lib/motor-torneo/model";
 import { DEFAULT_PARAMS } from "@/lib/motor-torneo/objective";
+import {
+  MAX_TIME_LIMIT_MS,
+  MIN_TIME_LIMIT_MS,
+  clampTimeLimitMs,
+  solveMilp,
+} from "@/lib/motor-torneo/solver";
 import type {
   Bloque,
   Categoria,
@@ -228,6 +234,206 @@ describe("L2 · caso rápido (instancia truncada a 1 categoría)", () => {
     },
     45_000,
   );
+});
+
+// ---------------------------------------------------------------------------
+// Solver: clamp del presupuesto y estados terminales (WASM en modelos mínimos)
+// ---------------------------------------------------------------------------
+
+describe("clampTimeLimitMs", () => {
+  it("ausente, no finito o no positivo ⇒ techo máximo", () => {
+    expect(clampTimeLimitMs(undefined)).toBe(MAX_TIME_LIMIT_MS);
+    expect(clampTimeLimitMs(Number.NaN)).toBe(MAX_TIME_LIMIT_MS);
+    expect(clampTimeLimitMs(Number.POSITIVE_INFINITY)).toBe(MAX_TIME_LIMIT_MS);
+    expect(clampTimeLimitMs(0)).toBe(MAX_TIME_LIMIT_MS);
+    expect(clampTimeLimitMs(-5)).toBe(MAX_TIME_LIMIT_MS);
+  });
+
+  it("recorta a [30 s, 240 s] y redondea los decimales", () => {
+    expect(clampTimeLimitMs(1_000)).toBe(MIN_TIME_LIMIT_MS);
+    expect(clampTimeLimitMs(300_000)).toBe(MAX_TIME_LIMIT_MS);
+    expect(clampTimeLimitMs(60_000.6)).toBe(60_001);
+    expect(clampTimeLimitMs(45_000)).toBe(45_000);
+  });
+});
+
+/** Modelo MILP mínimo construido a mano (sin `buildModel`, sin torneo real). */
+function craftedModel(overrides: Partial<BuiltModel>): BuiltModel {
+  return {
+    colNames: ["x"],
+    rowNames: [],
+    lb: [0],
+    ub: [1],
+    integrality: [1],
+    cost: [0],
+    rows: [],
+    cols: [],
+    vals: [],
+    rowLo: [],
+    rowHi: [],
+    columnByKey: new Map(),
+    stats: { nVars: 1, nConstraints: 0, nNonZeros: 0 },
+    xVars: [{ matchId: "m1", block: 0, col: 0 }],
+    ...overrides,
+  };
+}
+
+describe("solveMilp · estados terminales", () => {
+  it("modelo infeasible ⇒ status infeasible, sin asignación ni objective", async () => {
+    // x binaria en {0,1} con la fila `x >= 2`: imposible.
+    const model = craftedModel({
+      rowNames: ["r1"],
+      rows: [0],
+      cols: [0],
+      vals: [1],
+      rowLo: [2],
+      rowHi: [Number.POSITIVE_INFINITY],
+      stats: { nVars: 1, nConstraints: 1, nNonZeros: 1 },
+    });
+
+    const result = await solveMilp(model, { timeLimitMs: MIN_TIME_LIMIT_MS });
+
+    expect(result.status).toBe("infeasible");
+    expect(result.assignment).toEqual({});
+    expect(result.objective).toBeNull();
+    expect(result.mipGap).toBeNull();
+    expect(result.message).toContain("sin solución primal");
+    expect(result.timeMs).toBeGreaterThanOrEqual(0);
+  }, 30_000);
+
+  it("variable continua libre con costo no acotado ⇒ status unbounded", async () => {
+    const model = craftedModel({
+      lb: [Number.NEGATIVE_INFINITY],
+      ub: [Number.POSITIVE_INFINITY],
+      integrality: [0],
+      cost: [1],
+    });
+
+    const result = await solveMilp(model, { timeLimitMs: MIN_TIME_LIMIT_MS });
+
+    expect(result.status).toBe("unbounded");
+    expect(result.assignment).toEqual({});
+  }, 30_000);
+
+  it("optimal ⇒ mapea a bloque solo las variables con valor > 0.5", async () => {
+    // Costo −1 ⇒ el óptimo único es x=1, bloque 0.
+    const model = craftedModel({ cost: [-1] });
+
+    const result = await solveMilp(model, { timeLimitMs: MIN_TIME_LIMIT_MS });
+
+    expect(result.status).toBe("optimal");
+    expect(typeof result.objective).toBe("number");
+    expect(result.assignment).toEqual({ m1: 0 });
+  }, 30_000);
+});
+
+// ---------------------------------------------------------------------------
+// Engine: estados terminales (agenda no resuelta vs verificada con errores)
+// ---------------------------------------------------------------------------
+
+describe("runEngine · estados terminales", () => {
+  it("modelo infeasible ⇒ sin agenda, verificación omitida, tiempos por defecto", async () => {
+    // `capacity: 0` con un partido de previa ⇒ R1 (=1) choca con R2 (<=0).
+    const inst: Instancia = {
+      bloques: [
+        {
+          idx: 0,
+          dayLabel: "Sáb",
+          startTime: "09:00",
+          phase: "previa",
+          isExtension: false,
+          capacity: 0,
+        },
+      ],
+      nCanchas: 1,
+      categorias: {},
+      grupos: {},
+      parejas: {},
+      personas: {},
+      partidos: {
+        m1: {
+          id: "m1",
+          categoria: "X",
+          phase: "previa",
+          ronda: "grupo",
+          grupo: null,
+          parejas: [],
+          gruposOrigen: [],
+          alimentadores: [],
+        },
+      },
+    };
+
+    // Sin `options`: el presupuesto sale de `params.tiempoMax * 1000` (120 s).
+    const run = await runEngine(inst);
+
+    expect(run.diagnostico.status).toBe("infeasible");
+    expect(run.meta.ok).toBe(false);
+    expect(run.meta.flagged).toBe(false);
+    expect(run.meta.verificationSkipped).toBe(true);
+    expect(run.meta.assigned).toBe(0);
+    expect(run.meta.courtsAssigned).toBe(0);
+    expect(run.meta.matches).toBe(1);
+    expect(run.meta.timeLimitMs).toBe(DEFAULT_PARAMS.tiempoMax * 1000);
+    expect(run.bloqueDe).toEqual({});
+    expect(run.canchaDe).toEqual({});
+    expect(run.verificacion.errores).toEqual([]);
+  }, 30_000);
+
+  it("agenda resuelta con errores del verificador ⇒ flagged y ok=false", async () => {
+    // Fase previa con capacidad 2 pero `nCanchas: 1`: el solver agenda los 2
+    // partidos en el bloque y `assignCourts` solo puede dar 1 cancha ⇒ el
+    // verificador reporta `court_range` (ok=false, flagged=true).
+    const inst: Instancia = {
+      bloques: [
+        {
+          idx: 0,
+          dayLabel: "Sáb",
+          startTime: "09:00",
+          phase: "previa",
+          isExtension: false,
+          capacity: 2,
+        },
+      ],
+      nCanchas: 1,
+      categorias: {},
+      grupos: {},
+      parejas: {},
+      personas: {},
+      partidos: {
+        m1: {
+          id: "m1",
+          categoria: "X",
+          phase: "previa",
+          ronda: "grupo",
+          grupo: null,
+          parejas: [],
+          gruposOrigen: [],
+          alimentadores: [],
+        },
+        m2: {
+          id: "m2",
+          categoria: "X",
+          phase: "previa",
+          ronda: "grupo",
+          grupo: null,
+          parejas: [],
+          gruposOrigen: [],
+          alimentadores: [],
+        },
+      },
+    };
+
+    const run = await runEngine(inst, DEFAULT_PARAMS, { timeLimitMs: MIN_TIME_LIMIT_MS });
+
+    expect(SOLVED_STATUSES).toContain(run.diagnostico.status);
+    expect(run.meta.assigned).toBe(2);
+    expect(run.meta.courtsAssigned).toBe(1);
+    expect(run.meta.flagged).toBe(true);
+    expect(run.meta.ok).toBe(false);
+    expect(run.meta.verificationSkipped).toBe(false);
+    expect(run.verificacion.errores.length).toBeGreaterThan(0);
+  }, 30_000);
 });
 
 // ---------------------------------------------------------------------------

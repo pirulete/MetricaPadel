@@ -15,6 +15,26 @@ import type { CalendarioTramo } from "@/lib/motor-torneo/types";
 
 const COURTS = 8;
 
+describe("CALENDARIO — golden de tramos (mutantes estáticos de 17-26)", () => {
+  it("son los 6 tramos del prototipo, con horario, fase y extensión exactos", () => {
+    expect(CALENDARIO).toEqual([
+      { dayLabel: "Jue", startTime: "14:00", blocks: 7, phase: "previa", isExtension: false },
+      { dayLabel: "Vie", startTime: "14:00", blocks: 7, phase: "previa", isExtension: false },
+      { dayLabel: "Sab", startTime: "08:00", blocks: 8, phase: "previa", isExtension: false },
+      { dayLabel: "Sab", startTime: "18:00", blocks: 4, phase: "final", isExtension: false },
+      { dayLabel: "Dom", startTime: "08:00", blocks: 9, phase: "final", isExtension: false },
+      { dayLabel: "Dom", startTime: "19:15", blocks: 3, phase: "final", isExtension: true },
+    ]);
+  });
+
+  it("acepta los bordes del formato HH:mm (00:00 y 23:59) y rechaza 24:00 / 60 min", () => {
+    expect(parseHHmm("00:00")).toBe(0);
+    expect(parseHHmm("23:59")).toBe(23 * 60 + 59);
+    expect(() => parseHHmm("24:00")).toThrow(/Hora inválida/);
+    expect(() => parseHHmm("12:60")).toThrow(/Hora inválida/);
+  });
+});
+
 describe("buildBlocks — grilla del torneo real", () => {
   const blocks = buildBlocks(CALENDARIO, COURTS);
 
@@ -68,6 +88,10 @@ describe("buildBlocks — grilla del torneo real", () => {
   it("rechaza un número de canchas inválido", () => {
     expect(() => buildBlocks(CALENDARIO, -1)).toThrow(/Canchas inválidas/);
     expect(() => buildBlocks(CALENDARIO, 2.5)).toThrow(/Canchas inválidas/);
+    // 0 canchas es un torneo sin disponibilidad, no un error (mutante 90: `<` → `<=`).
+    const sinCanchas = buildBlocks(CALENDARIO, 0);
+    expect(sinCanchas).toHaveLength(38);
+    expect(sinCanchas.every((b) => b.capacity === 0)).toBe(true);
   });
 });
 
@@ -90,6 +114,24 @@ describe("assertNoOverlap — EC-09", () => {
       { dayLabel: "Dom", startTime: "18:00", blocks: 2, phase: "final", isExtension: true },
     ];
     expect(() => assertNoOverlap(solapados)).toThrow(/Solape en Dom/);
+    // El mensaje nombra el tramo previo con el que se cruza (mutante 68).
+    expect(() => assertNoOverlap(solapados)).toThrow(
+      "Solape en Dom: 18:00 (2 bloques) se cruza con el tramo de 08:00",
+    );
+    // Contiguo exacto (start === previo.end) NO es solape (mutante 65: `true` / `<` → `<=`).
+    expect(() =>
+      assertNoOverlap([
+        { dayLabel: "Sab", startTime: "08:00", blocks: 2, phase: "previa", isExtension: false },
+        { dayLabel: "Sab", startTime: "10:30", blocks: 2, phase: "final", isExtension: false },
+      ]),
+    ).not.toThrow();
+    // Tramo previo que arranca justo al cerrar el actual (previo.start === end) NO es solape.
+    expect(() =>
+      assertNoOverlap([
+        { dayLabel: "Dom", startTime: "15:30", blocks: 2, phase: "final", isExtension: true },
+        { dayLabel: "Dom", startTime: "14:15", blocks: 1, phase: "final", isExtension: false },
+      ]),
+    ).not.toThrow();
   });
 
   it("no compara días distintos", () => {
@@ -111,6 +153,12 @@ describe("assertNoOverlap — EC-09", () => {
         { dayLabel: "Jue", startTime: "14:00", blocks: 1.5, phase: "previa", isExtension: false },
       ]),
     ).toThrow(/bloques inválidos/);
+    // blocks = 0 es un tramo vacío válido: sólo los negativos se rechazan (mutante 55: `<` → `<=`).
+    expect(() =>
+      assertNoOverlap([
+        { dayLabel: "Jue", startTime: "14:00", blocks: 0, phase: "previa", isExtension: false },
+      ]),
+    ).not.toThrow();
   });
 
   it("se ejecuta antes de construir (buildBlocks propaga el error)", () => {

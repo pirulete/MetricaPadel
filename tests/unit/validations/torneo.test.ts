@@ -1,7 +1,8 @@
 /**
  * Unit tests de los schemas de request del módulo Torneos (M1) y del clamp del
  * presupuesto de solve (AC-09).
- * @jest-environment node
+ * (Sin docblock `@jest-environment`: el env `node` ya viene de jest.config.js y
+ * el docblock rompe la cobertura `perTest` de Stryker — ver app-notes.md chunk 1.)
  */
 import { generateAgendaSchema, runQuerySchema } from "@/lib/validations/torneos";
 import {

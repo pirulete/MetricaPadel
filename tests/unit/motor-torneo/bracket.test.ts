@@ -133,6 +133,29 @@ describe("L1 — estructura exacta contra structure.json (seed 7)", () => {
   });
 });
 
+describe("deriveStructure — validación de la instancia", () => {
+  it("lanza si una categoría referencia un grupo inexistente", () => {
+    const categorias = {
+      "1ra": { code: "1ra", grupos: ["GHOST"] },
+    } as unknown as Record<string, Categoria>;
+
+    expect(() => deriveStructure(categorias, {})).toThrow(
+      "Grupo GHOST no existe en la instancia",
+    );
+  });
+
+  it("sin byes, la primera ronda cruza los grupos i y (i + g/2) % g", () => {
+    for (const g of [2, 4, 8]) {
+      const grupoCodes = codes(g);
+      const primera = buildBracket("X", grupoCodes).filter((m) => m.feeders.length === 0);
+      const esperado = Array.from({ length: g }, (_, i) =>
+        [grupoCodes[i], grupoCodes[(i + g / 2) % g]].sort(),
+      );
+      expect(primera.map((match) => match.sourceGroups)).toEqual(esperado);
+    }
+  });
+});
+
 describe("groupPairings — liguilla del grupo", () => {
   it("3 parejas: todos contra todos", () => {
     expect(groupPairings(3)).toEqual([
